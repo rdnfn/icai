@@ -1,2 +1,2 @@
 # Inverse Constitutional AI
-Compressing pairwise preferences into constitution of principles.
+Compressing pairwise preference data into a short constitution of principles.
