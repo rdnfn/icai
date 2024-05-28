@@ -1,2 +1,2 @@
-# icai
-Inverse Constitutional AI: compressing pairwise preferences into constitution of principles.
+# Inverse Constitutional AI
+Compressing pairwise preferences into constitution of principles.
