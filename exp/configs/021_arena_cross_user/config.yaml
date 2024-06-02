@@ -1,0 +1,55 @@
+data_path: "./data/processed/lmsys/chatbot_arena_conversations-arena_user_16039-jokes-12.csv"
+test_data_path: "./data/processed/lmsys/chatbot_arena_conversations-arena_user_20887-stories-9.csv"
+alg_model: "openai/gpt-4o-2024-05-13"
+s1_num_principles_per_instance: 3
+s2_num_clusters: 20
+s3_max_principles: 3
+s3_filter_min_relevance: 0.01
+annotator:
+  is_single_annotator: true
+  base_constitutional_annotator_configs:
+    #- data/annotator_configs/chatgpt_fn_constitutional_base_neutral_v1
+    - data/annotator_configs/gpt4o_fn_constitutional_base_neutral_v2
+  other_annotator_configs:
+    #- data/annotator_configs/chatgpt_fn_noinstruction
+    - data/annotator_configs/alpaca_eval_gpt4o_fn_noinstruction
+alg_prompts:
+  generator_prompts:
+  - '<|im_start|>system
+
+    Your job is to analyse data and come up with explanations. You''re an expert at
+    this.
+
+    <|im_end|>
+
+    <|im_start|>user
+
+    Selected sample:
+
+    {preferred_sample}
+
+
+    Other sample:
+
+    {rejected_sample}
+
+
+    Given the data above, why do you think the annotator selected the given sample
+    over the other sample? Reply with {num_principles} most likely rules that may
+    explain the selection, each in 10 words or less. Be specific and focus on the
+    differences between the two samples.  Always suggest as rule that starts with ''Select the
+    response that...''.
+    Important: suggest rules that are specific to the shown samples, not general or generic rules!
+    Do NOT suggest generic rules like "select the more useful sample" or "Select the response that directly answers the user''s query".
+    Instead, suggest specific rules like "select x over y if z", based on the specific samples and their topic z. For example, if the samples are about translation, create rule in the context of translation.
+
+    Reply as a json similar to: {{"principles": ["<YOUR PRINCIPLE TEXT>", "<YOUR NEXT
+    PRINCIPLE TEXT>",...]}}.
+
+    DO NOT respond with any text apart from the json format above!
+
+    DO NOT add markdown formatting around JSON.
+
+    ONLY REPLY IN JSON FORMAT
+
+    <|im_end|>'

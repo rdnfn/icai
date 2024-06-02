@@ -1,0 +1,42 @@
+[project]
+name = "inverse_cai"
+version = "0.1.0"
+authors = [
+  { name="rdnfn", email="hi@arduin.io" },
+  { name="timokau" },
+]
+description = "Inverse Constitutional AI"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  "langchain",
+  "python-dotenv",
+  "langchain-openai",
+  "langchain-anthropic",
+  "langchain-community",
+  "scikit-learn",
+  "anthropic",
+  "loguru",
+  "hydra-core",
+  "pandas",
+  "matplotlib",
+  "datasets", # To fetch huggingface datasets
+  "wandb",
+  "alpaca-eval",
+  "nbconvert",
+
+  "jupyter",
+  "ipywidgets", # IProgress in jupyter notebooks
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+icai-exp = "inverse_cai.experiment.core:run"

@@ -1,0 +1,13 @@
+data_path: "./data/processed/synthetic/synthetic_data_orthogonal_adcbg.csv"
+s1_num_principles_per_instance: 2
+alg_model: openai/gpt-3.5-turbo-0125 # openai/gpt-4-turbo-2024-04-09
+s2_num_clusters: 40
+s3_max_principles: 1
+annotator:
+  is_single_annotator: true
+  base_constitutional_annotator_configs:
+    - data/annotator_configs/chatgpt_fn_constitutional_base_neutral_v1
+    #- data/annotator_configs/gpt4_fn_constitutional_base_neutral_v1
+  other_annotator_configs: []
+    #- data/annotator_configs/chatgpt_fn_noinstruction
+    #- data/annotator_configs/alpaca_eval_gpt4_turbo_fn_noinstruction

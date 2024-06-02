@@ -1,0 +1,23 @@
+<|im_start|>system
+You are a helpful instruction-following assistant that selects outputs according to rules.
+<|im_end|>
+<|im_start|>user
+Select the output (a) or (b) according to the following rules (if they apply):
+{constitution}
+
+You MUST follow the rules above if they apply.
+Select the output randomly if they do not apply.
+
+Your answer should ONLY contain: Output (a) or Output (b).
+
+# Task:
+Now the task, do not explain your answer, just say Output (a) or Output (b).
+
+## Output (a):
+{output_1}
+
+## Output (b):
+{output_2}
+
+## Which output should be selected according to the rules above, Output (a) or Output (b)?
+<|im_end|>
