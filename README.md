@@ -1,7 +1,7 @@
 
 # Inverse Constitutional AI
 
-Repository containing code for the paper "Inverse Constitutional AI: Compressing Preferences into Principles" (*pdf coming soon*). The figure below provides an overview of the *Inverse Constitutional AI* (ICAI) problem we introduce: starting from a set of pairwise preference feedback, we derive a set of natural language principles (a *constitution*) that explain the preference data.
+Repository containing code for the paper "Inverse Constitutional AI: Compressing Preferences into Principles" ([pdf](./paper/inverse_constitutional_ai_20240602.pdf)). The figure below provides an overview of the *Inverse Constitutional AI* (ICAI) problem we introduce: starting from a set of pairwise preference feedback, we derive a set of natural language principles (a *constitution*) that explain the preference data.
 For validation, we re-construct the original preferences with an LLM judging according to the generated constitution. The constitution represents a (highly compact) compression of the preferences.
 
 <p align="center">
