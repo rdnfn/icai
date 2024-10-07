@@ -177,9 +177,7 @@ def annotate(
                 "use null in command-line and yaml instead of Python's None."
             )
         elif constitution == "":
-            raise ValueError(
-                "Constitution is an empty string. This seems like a mistake?."
-            )
+            logger.error("Constitution is an empty string. This seems like a mistake?")
         const_configs = generate_constitutional_annotator_configs(
             config=config,
             tmp_files_path=tmp_files_path,
