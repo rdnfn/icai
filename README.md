@@ -1,7 +1,7 @@
 
 # Inverse Constitutional AI
 
-Repository containing code for the paper "Inverse Constitutional AI: Compressing Preferences into Principles" ([pdf](./paper/inverse_constitutional_ai_20240602.pdf)). The figure below provides an overview of the *Inverse Constitutional AI* (ICAI) problem we introduce: starting from a set of pairwise preference feedback, we derive a set of natural language principles (a *constitution*) that explain the preference data.
+Repository containing code for the paper "Inverse Constitutional AI: Compressing Preferences into Principles" ([pdf](https://arxiv.org/abs/2406.06560)). The figure below provides an overview of the *Inverse Constitutional AI* (ICAI) problem we introduce: starting from a set of pairwise preference feedback, we derive a set of natural language principles (a *constitution*) that explain the preference data.
 For validation, we re-construct the original preferences with an LLM judging according to the generated constitution. The constitution represents a (highly compact) compression of the preferences.
 
 <p align="center">
@@ -10,7 +10,7 @@ For validation, we re-construct the original preferences with an LLM judging acc
 
 # Motivation
 
-Feedback data plays an important role in fine-tuning and evaluating state-of-the-art AI models. Often pairwise text preferences are used: given two texts, human (or AI) annotators select the “better” one. Such feedback data is widely used to align models to human preferences (e.g., reinforcement learning from human feedback), or to rank models according to human preferences (e.g., Chatbot Arena). Despite its wide-spread use, prior work has demonstrated that human-annotated pairwise text preference data often exhibits unintended biases. For example, human annotators have been shown to prefer assertive over truthful texts in certain contexts. Models trained or evaluated on this data may implicitly encode these biases in a manner hard to identify. To be able to better understand existing pairwise text preference data, we formulate its interpretation as a compression task: the *Inverse Constitutional AI* problem. Read the full paper (*coming soon*) for more background.
+Feedback data plays an important role in fine-tuning and evaluating state-of-the-art AI models. Often pairwise text preferences are used: given two texts, human (or AI) annotators select the “better” one. Such feedback data is widely used to align models to human preferences (e.g., reinforcement learning from human feedback), or to rank models according to human preferences (e.g., Chatbot Arena). Despite its wide-spread use, prior work has demonstrated that human-annotated pairwise text preference data often exhibits unintended biases. For example, human annotators have been shown to prefer assertive over truthful texts in certain contexts. Models trained or evaluated on this data may implicitly encode these biases in a manner hard to identify. To be able to better understand existing pairwise text preference data, we formulate its interpretation as a compression task: the *Inverse Constitutional AI* problem. Read the [full paper](https://arxiv.org/abs/2406.06560) for more background.
 
 # Algorithm
 
