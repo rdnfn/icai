@@ -1,5 +1,6 @@
 from loguru import logger
 import pandas as pd
+import random
 
 from inverse_cai.algorithm.clustering import (
     get_cluster_summaries,
@@ -20,12 +21,15 @@ def run(
     save_path: str,
     num_principles_generated_per_ranking: int,
     num_clusters: int,
+    random_clusters: bool,
+    skip_voting: bool,
     require_majority_true: bool,
     require_majority_relevant: bool,
     require_majority_valid: bool,
     require_minimum_relevance: float,
     order_by: str,
     max_principles: int,
+    ratio_of_max_principles_to_cluster_again: float,
     model_name: str,
     config: ExpConfig,
     load_path: str = None,
@@ -73,6 +77,7 @@ def run(
     clusters = cluster_principles(
         principles,
         num_clusters=num_clusters,
+        random_clusters=random_clusters,
     )
     save_to_json(clusters, save_path / "020_principle_clusters.json")
 
@@ -88,85 +93,109 @@ def run(
     ### STAGE 3: Get votes for principles
     logger.info("Stage 3: Get votes for principles")
 
-    raw_votes, combined_votes = get_votes_for_principles(
-        feedback_df=feedback,
-        summaries=summaries,
-        max_votes_in_single_prompt=config.s3_filter_max_votes_in_single_prompt,
-        model_name=model_name,
-        config=config,
-    )
-
-    raw_votes.to_csv(save_path / "040_votes_per_comparison.csv")
-    save_to_json(combined_votes, save_path / "041_votes_per_cluster.json")
-
-    # visualise
-    inverse_cai.visualisation.plot_approval_bars(
-        categories=list(summaries.values()),
-        votes=list(combined_votes.values()),
-        path=save_path / "042_principle_approval_votes.png",
-    )
-
-    filtered_plinciple_keys = filter_according_to_votes(
-        combined_votes=combined_votes,
-        require_majority_true=require_majority_true,
-        require_majority_relevant=require_majority_relevant,
-        require_majority_valid=require_majority_valid,
-        require_minimum_relevance=require_minimum_relevance,
-        order_by=order_by,
-        max_principles=int(max_principles * 1.5),  # todo add parameter for this
-    )
-
-    filtered_principles = [summaries[key] for key in filtered_plinciple_keys]
-
-    save_to_json(filtered_principles, save_path / "050_filtered_principles.json")
-
-    if len(filtered_principles) < max_principles:
-        logger.warning(
-            "Number of filtered principles is less than max principles. "
-            "Using all filtered principles. "
-            "Skipping final clustering and subsampling step."
+    if not skip_voting:
+        raw_votes, combined_votes = get_votes_for_principles(
+            feedback_df=feedback,
+            summaries=summaries,
+            max_votes_in_single_prompt=config.s3_filter_max_votes_in_single_prompt,
+            model_name=model_name,
+            config=config,
         )
-        final_principles = filtered_principles
+
+        raw_votes.to_csv(save_path / "040_votes_per_comparison.csv")
+        save_to_json(combined_votes, save_path / "041_votes_per_cluster.json")
+
+        # visualise
+        inverse_cai.visualisation.plot_approval_bars(
+            categories=list(summaries.values()),
+            votes=list(combined_votes.values()),
+            path=save_path / "042_principle_approval_votes.png",
+        )
+
+        filtered_plinciple_keys = filter_according_to_votes(
+            combined_votes=combined_votes,
+            require_majority_true=require_majority_true,
+            require_majority_relevant=require_majority_relevant,
+            require_majority_valid=require_majority_valid,
+            require_minimum_relevance=require_minimum_relevance,
+            order_by=order_by,
+            max_principles=int(
+                max_principles * ratio_of_max_principles_to_cluster_again
+            ),
+        )
+
+        filtered_principles = [summaries[key] for key in filtered_plinciple_keys]
+
+        save_to_json(filtered_principles, save_path / "050_filtered_principles.json")
+
+        if len(filtered_principles) <= max_principles:
+            logger.warning(
+                "Number of filtered principles is less or equal to max principles. "
+                "Using all filtered principles. "
+                "Skipping final clustering and subsampling step."
+            )
+            final_principles = filtered_principles
+        elif len(set(filtered_principles)) < max_principles:
+            logger.warning(
+                "Number of unique filtered principles is less than max principles. "
+                "Cannot apply clustering."
+                "Simply using first 'max_principles' principles."
+            )
+            final_principles = filtered_principles[:max_principles]
+        else:
+            logger.info(
+                f"Final clustering and subsampling step. Going from {len(filtered_principles)} to {max_principles} principles."
+            )
+            filtered_clusters = cluster_principles(
+                filtered_principles,
+                num_clusters=max_principles,
+                random_clusters=False,
+            )
+
+            # filtered summaries are first occuring principles in filter_principles for each cluster
+            def find_first_in_second_list(list1, list2):
+                # Create a set of indices from list2 based on elements in list1
+                index_map = {element: list2.index(element) for element in list1}
+                # Return the element in list1 with the minimum index in list2
+                selection = min(list1, key=lambda x: index_map[x])
+                logger.info(f"Selected {selection} out of {list1}.")
+                return selection
+
+            filtered_summaries = {
+                key: find_first_in_second_list(
+                    filtered_clusters[key], filtered_principles
+                )
+                for key in filtered_clusters
+            }
+
+            print_clusters(filtered_clusters, filtered_summaries)
+            combined_clusters = {
+                filtered_summaries[key]: filtered_clusters[key]
+                for key in filtered_clusters
+            }
+            save_to_json(combined_clusters, save_path / "51_final_clusters.json")
+
+            # ensure we retain original order set during filtering
+            final_principles = [
+                value
+                for value in filtered_principles
+                if value in filtered_summaries.values()
+            ]
+
     else:
-        logger.info(
-            f"Final clustering and subsampling step. Going from {len(filtered_principles)} to {max_principles} principles."
-        )
-        filtered_clusters = cluster_principles(
-            filtered_principles,
-            num_clusters=max_principles,
-        )
+        logger.warning("Skipping voting stage")
+        combined_votes = None
+        filtered_principles = None
 
-        # filtered summaries are first occuring principles in filter_principles for each cluster
-        def find_first_in_second_list(list1, list2):
-            # Create a set of indices from list2 based on elements in list1
-            index_map = {element: list2.index(element) for element in list1}
-            # Return the element in list1 with the minimum index in list2
-            selection = min(list1, key=lambda x: index_map[x])
-            logger.info(f"Selected {selection} out of {list1}.")
-            return selection
-
-        filtered_summaries = {
-            key: find_first_in_second_list(filtered_clusters[key], filtered_principles)
-            for key in filtered_clusters
-        }
-
-        print_clusters(filtered_clusters, filtered_summaries)
-        combined_clusters = {
-            filtered_summaries[key]: filtered_clusters[key] for key in filtered_clusters
-        }
-        save_to_json(combined_clusters, save_path / "51_final_clusters.json")
-
-        # ensure we retain original order set during filtering
-        final_principles = [
-            value
-            for value in filtered_principles
-            if value in filtered_summaries.values()
-        ]
+        # randomly sample from all principles instead of voting
+        available_principles = list(summaries.values())
+        final_principles = random.choices(available_principles, k=max_principles)
 
     # Generate constitution text from principles
     constitution = "\n".join(
         [f"{i+1}. " + principle for i, principle in enumerate(final_principles)]
     )
+
     logger.info(f"Constitution generated:\n\n{constitution}\n")
     save_to_json(constitution, save_path / "060_constitution.json")
 

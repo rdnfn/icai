@@ -85,6 +85,20 @@ def setup_data(
     return data
 
 
+def assert_no_identical_rows(df1, df2):
+
+    concatenated_df = pd.concat([df1, df2])
+    unique_df = concatenated_df.drop_duplicates()
+
+    # Check if the lengths are the same
+    if len(concatenated_df) != len(unique_df):
+        raise ValueError(
+            "Identical rows found between the two test and train DataFrames."
+        )
+    else:
+        logger.info("All good. No identical rows found between test and train splits.")
+
+
 def add_loguru_to_hydra():
     # add logger
     # From https://github.com/facebookresearch/hydra/issues/2735#issuecomment-1774523324
@@ -163,6 +177,7 @@ def run(cfg: DictConfig):
 
     data = setup_train_data(cfg)
     test_data = setup_test_data(cfg)
+    assert_no_identical_rows(data, test_data)
 
     if cfg.generate_constitution:
         results = inverse_cai.algorithm.run(
@@ -170,10 +185,13 @@ def run(cfg: DictConfig):
             feedback=data,
             num_principles_generated_per_ranking=cfg.s1_num_principles_per_instance,
             num_clusters=cfg.s2_num_clusters,
+            random_clusters=cfg.s2_random_clusters,
+            skip_voting=cfg.s3_skip_voting_entirely,
             require_majority_true=cfg.s3_filter_majority_true,
             require_majority_relevant=cfg.s3_filter_majority_relevant,
             require_majority_valid=cfg.s3_filter_majority_valid,
             require_minimum_relevance=cfg.s3_filter_min_relevance,
+            ratio_of_max_principles_to_cluster_again=cfg.s3_ratio_of_max_principles_to_cluster_again,
             order_by=cfg.s3_order_by,
             max_principles=cfg.s3_max_principles,
             model_name=cfg.alg_model,

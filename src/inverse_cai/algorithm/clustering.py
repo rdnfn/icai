@@ -1,4 +1,5 @@
 import random
+import copy
 from sklearn.cluster import KMeans
 from loguru import logger
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -9,7 +10,53 @@ from inverse_cai.experiment.config import ExpConfig
 import inverse_cai.algorithm.utils
 
 
-def cluster_principles(principles: list, num_clusters: int):
+def cluster_principles(
+    principles: list,
+    num_clusters: int,
+    random_clusters: bool,
+):
+    """
+    Cluster principles.
+    """
+    if random_clusters:
+        return cluster_principles_random(principles, num_clusters)
+    elif num_clusters >= len(set(principles)):
+        logger.warning(
+            (
+                "Number of clusters is less than the number of unique principles. "
+                "Clustering will be skipped, only direct string matches will be deduplicated."
+            )
+        )
+        return {i: [principle] for i, principle in enumerate(set(principles))}
+    else:
+        return cluster_principles_with_embedding(principles, num_clusters)
+
+
+def cluster_principles_random(
+    principles: list,
+    num_clusters: int,
+):
+    """
+    Cluster principles randomly.
+    """
+    logger.info(f"Clustering principles randomly into {num_clusters} clusters")
+    principles = copy.deepcopy(principles)
+    principles_by_cluster = {}
+    # shuffle the principles
+    random.shuffle(principles)
+    for i, principle in enumerate(principles):
+        cluster = i % num_clusters
+        if cluster not in principles_by_cluster:
+            principles_by_cluster[cluster] = []
+        principles_by_cluster[cluster].append(principle)
+
+    return principles_by_cluster
+
+
+def cluster_principles_with_embedding(
+    principles: list,
+    num_clusters: int,
+):
     """
     Cluster principles.
     """

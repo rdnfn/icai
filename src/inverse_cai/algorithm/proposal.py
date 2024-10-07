@@ -44,12 +44,14 @@ def generate_principles_from_feedback(
     )
 
     if num_principles_per_ranking == 1:
-        logger.error(
-            "Generating a single principle per sample currently ",
-            "not well supported. The generation prompt likely refers to ",
-            "multiple principles by default. ",
-            "Consider changing the generation prompt ",
-            "to work well in this scenario via the config.",
+        logger.warning(
+            (
+                "Generating a single principle per sample currently "
+                "not well supported. The generation prompt likely refers to "
+                "multiple principles by default. "
+                "Consider changing the generation prompt "
+                "to work well in this scenario via the config."
+            )
         )
 
     # initialize the principles column

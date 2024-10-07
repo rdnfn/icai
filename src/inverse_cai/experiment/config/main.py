@@ -83,8 +83,10 @@ class ExpConfig:
 
     # Stage 2: principle clustering and de-duplication
     s2_num_clusters: int = 3
+    s2_random_clusters: bool = False
 
     # Stage 3: principle approximate voting
+    s3_skip_voting_entirely: bool = False
     s3_filter_max_votes_in_single_prompt: int = 40
     s3_filter_majority_true: bool = True
     s3_filter_majority_relevant: bool = False
@@ -94,6 +96,9 @@ class ExpConfig:
     )
     s3_order_by: str = "for_minus_against"
     s3_max_principles: Optional[int] = None
+    s3_ratio_of_max_principles_to_cluster_again: float = (
+        1.5  # proportion of max_principles to sample from filtered principle to then cluster again (until finally getting max principles)
+    )
 
     # Stage 9: AI judgment
     annotator: Optional[AnnotatorConfig] = field(default_factory=AnnotatorConfig)
