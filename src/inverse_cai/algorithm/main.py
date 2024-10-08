@@ -119,8 +119,10 @@ def run(
             require_majority_valid=require_majority_valid,
             require_minimum_relevance=require_minimum_relevance,
             order_by=order_by,
-            max_principles=int(
-                max_principles * ratio_of_max_principles_to_cluster_again
+            max_principles=(
+                int(max_principles * ratio_of_max_principles_to_cluster_again)
+                if max_principles is not None
+                else None
             ),
         )
 
@@ -128,20 +130,14 @@ def run(
 
         save_to_json(filtered_principles, save_path / "050_filtered_principles.json")
 
-        if len(filtered_principles) <= max_principles:
+        if not max_principles or len(filtered_principles) <= max_principles:
             logger.warning(
-                "Number of filtered principles is less or equal to max principles. "
+                "Number of filtered principles is less or equal to max principles, "
+                "or max principles is not set. "
                 "Using all filtered principles. "
                 "Skipping final clustering and subsampling step."
             )
             final_principles = filtered_principles
-        elif len(set(filtered_principles)) < max_principles:
-            logger.warning(
-                "Number of unique filtered principles is less than max principles. "
-                "Cannot apply clustering."
-                "Simply using first 'max_principles' principles."
-            )
-            final_principles = filtered_principles[:max_principles]
         else:
             logger.info(
                 f"Final clustering and subsampling step. Going from {len(filtered_principles)} to {max_principles} principles."
