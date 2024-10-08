@@ -40,7 +40,7 @@ class AnnotatorConfig:
     )
     other_annotator_configs: list[str] = field(
         default_factory=lambda: [
-            "chatgpt_fn",  # annotators to test against
+            "data/annotator_configs/chatgpt_fn_noinstruction",  # annotators to test against
         ]
     )
     test_data_only: bool = False  # whether to only annotate the test data
