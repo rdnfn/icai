@@ -10,7 +10,7 @@ def filter_according_to_votes(
     require_majority_valid: bool,
     require_minimum_relevance: Optional[float],
     order_by: str,
-    max_principles: int,
+    max_principles: int | None,
 ) -> list:
     """
     Filter principles according to votes.
