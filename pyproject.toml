@@ -29,9 +29,9 @@ dependencies = [
   "wandb",
   "alpaca-eval",
   "nbconvert",
-
   "jupyter",
   "ipywidgets", # IProgress in jupyter notebooks
+  "gradio",
 ]
 
 [build-system]
@@ -40,3 +40,4 @@ build-backend = "hatchling.build"
 
 [project.scripts]
 icai-exp = "inverse_cai.experiment.core:run"
+icai-app = "inverse_cai.app.main:run"
