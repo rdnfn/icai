@@ -9,7 +9,9 @@ def greet(name):
 
 def create_data_loader():
     with gr.Group():
-        datapath = gr.Textbox(label="Data Path")
+        datapath = gr.Textbox(
+            label="Data Path", value="exp/outputs/2024-10-08_18-24-23"
+        )
         load_btn = gr.Button("Load")
 
         load_btn.click(load_data, inputs=[datapath])
