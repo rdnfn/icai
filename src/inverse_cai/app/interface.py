@@ -1,4 +1,5 @@
 import gradio as gr
+import pandas as pd
 
 from inverse_cai.app.loader import load_data
 
@@ -20,6 +21,10 @@ def create_principle_view(out: dict):
     out["title"] = gr.Textbox(label="Title")
     out["principle_box"] = gr.Markdown("*Principle View*")
 
+    # note: barplot without any args can lead to
+    # silent error
+    out["barplot"] = gr.BarPlot(pd.DataFrame())
+
 
 def generate():
 
@@ -35,6 +40,10 @@ def generate():
                 with gr.Group() as principle_group:
                     create_principle_view(out)
 
-        inp["load_btn"].click(load_data, inputs=[inp["datapath"]])
+        inp["load_btn"].click(
+            load_data,
+            inputs=[inp["datapath"]],
+            outputs=[out["barplot"]],
+        )
 
     return demo

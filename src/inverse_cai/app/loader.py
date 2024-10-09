@@ -5,11 +5,6 @@ import gradio as gr
 
 
 def load_data(path: str):
-
-    print("test")
-
-    gr.Info(f"Loading data from path '{path}'")
-
     # check results dir inside the path
     results_dir = pathlib.Path(path) / "results"
     if not results_dir.exists():
@@ -30,9 +25,10 @@ def load_data(path: str):
 
     votes_df = create_votes_df(votes)
 
-    gr.Info(f"Loaded votes: {votes}")
-
-    return gr.Markdown(votes), gr.BarPlot(votes_df)
+    return gr.BarPlot(
+        votes_df,
+        caption="agreement",
+    )
 
 
 def create_votes_df(dict_votes: dict):
