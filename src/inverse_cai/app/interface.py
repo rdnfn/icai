@@ -7,31 +7,34 @@ def greet(name):
     return "Hello " + name + "!"
 
 
-def create_data_loader():
+def create_data_loader(inp: dict):
     with gr.Group():
-        datapath = gr.Textbox(
+        inp["datapath"] = gr.Textbox(
             label="Data Path", value="exp/outputs/2024-10-08_18-24-23"
         )
-        load_btn = gr.Button("Load")
-
-        load_btn.click(load_data, inputs=[datapath])
+        inp["load_btn"] = gr.Button("Load")
 
 
-def create_principle_view():
+def create_principle_view(out: dict):
     # placeholder gradio text
-    title = gr.Textbox(label="Title")
-    principle_box = gr.Markdown("*Principle View*")
+    out["title"] = gr.Textbox(label="Title")
+    out["principle_box"] = gr.Markdown("*Principle View*")
 
 
 def generate():
+
+    inp = {}
+    out = {}
     with gr.Blocks() as demo:
         with gr.Row() as main_row:
             with gr.Column(scale=1) as left_col:
                 with gr.Group():
-                    create_data_loader()
+                    create_data_loader(inp)
 
             with gr.Column(scale=2) as right_col:
                 with gr.Group() as principle_group:
-                    create_principle_view()
+                    create_principle_view(out)
+
+        inp["load_btn"].click(load_data, inputs=[inp["datapath"]])
 
     return demo
