@@ -1,7 +1,15 @@
 import pathlib
 import json
+import pandas as pd
 
 import gradio as gr
+
+
+def load_json_file(path: str):
+    with open(path, "r") as f:
+        content = json.load(f)
+
+    return content
 
 
 def load_data(path: str):
@@ -19,14 +27,24 @@ def load_data(path: str):
     gr.Info(f"Loaded {len(result_files)} result files from path '{path}'")
 
     votes_file = results_dir / "041_votes_per_cluster.json"
+    votes = load_json_file(votes_file)
 
-    with open(votes_file, "r") as f:
-        votes = json.load(f)
+    principle_file = results_dir / "030_distilled_principles_per_cluster.json"
+    principles = load_json_file(principle_file)
 
-    votes_df = create_votes_df(votes)
+    print("Votes:", votes)
+
+    votes_df = pd.DataFrame(
+        [
+            {"principle": principle, **votes[str(id)]}
+            for id, principle in principles.items()
+        ]
+    )
 
     return gr.BarPlot(
         votes_df,
+        x="principle",
+        y="for",
         caption="agreement",
     )
 
