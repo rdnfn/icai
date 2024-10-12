@@ -63,7 +63,7 @@ def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
                     "comparison_id": comparison_id,
                     "principle_id": principle_id,
                     "principle": principle,
-                    "vote": vote,
+                    "vote": str(vote),
                     "weight": 1,
                     **comparison_data,
                 }

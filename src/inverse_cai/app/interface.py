@@ -7,7 +7,7 @@ from inverse_cai.app.loader import load_data
 def create_data_loader(inp: dict):
     with gr.Group():
         inp["datapath"] = gr.Textbox(
-            label="Data Path", value="exp/outputs/2024-10-08_18-24-23"
+            label="Data Path", value="exp/outputs/2024-10-12_15-43-25"
         )
         inp["load_btn"] = gr.Button("Load")
 
