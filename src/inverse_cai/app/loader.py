@@ -1,5 +1,6 @@
 import pathlib
 import json
+import ast
 import pandas as pd
 
 import gradio as gr
@@ -17,6 +18,62 @@ def load_json_file(path: str):
     return content
 
 
+def get_comparison_data(id: int):
+    return {
+        "prompt": "What color is the sky?",
+        "response_1": "blue",
+        "response_2": "red",
+    }
+
+
+def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
+    votes_per_comparison = pd.read_csv(results_dir / "040_votes_per_comparison.csv")
+    # rename column Unnamed: 0 to comparison_id
+    votes_per_comparison = votes_per_comparison.rename(
+        columns={"Unnamed: 0": "comparison_id"}
+    )
+    # set comparison_id as index
+    votes_per_comparison = votes_per_comparison.set_index("comparison_id")
+
+    print("votes_per_comparison", votes_per_comparison)
+    principles_by_id: dict = load_json_file(
+        results_dir / "030_distilled_principles_per_cluster.json",
+    )
+
+    print("principles_by_id", principles_by_id)
+
+    # list of dicts with votes per comparison, per principle
+    # including the prompt and responses
+    votes_by_comparison_and_principle = []
+
+    for comparison_id, values in votes_per_comparison.iterrows():
+
+        # get dict from pd.Series with string value of dict
+        vote_dict = ast.literal_eval(values["votes"])
+
+        comparison_data = get_comparison_data(comparison_id)
+
+        principles_by_id
+
+        # for each principle, add an entry including comparison data
+        for principle_id, vote in vote_dict.items():
+            principle = principles_by_id[str(principle_id)]
+            votes_by_comparison_and_principle.append(
+                {
+                    "comparison_id": comparison_id,
+                    "principle_id": principle_id,
+                    "principle": principle,
+                    "vote": vote,
+                    "weight": 1,
+                    **comparison_data,
+                }
+            )
+
+    print("votes", votes_by_comparison_and_principle)
+
+    return pd.DataFrame(votes_by_comparison_and_principle)
+
+
 def load_data(path: str):
     # check results dir inside the path
     results_dir = pathlib.Path(path) / "results"
@@ -27,107 +84,19 @@ def load_data(path: str):
     if not any(results_dir.iterdir()):
         raise FileNotFoundError(f"Results directory is empty in path '{path}'")
 
-    result_files = list(results_dir.iterdir())
+    gr.Info(f"Loading result files from path '{path}'")
 
-    gr.Info(f"Loaded {len(result_files)} result files from path '{path}'")
-
-    votes_file = results_dir / "041_votes_per_cluster.json"
-    votes = load_json_file(votes_file)
-
-    principle_file = results_dir / "030_distilled_principles_per_cluster.json"
-    principles = load_json_file(principle_file)
-
-    print("Votes:", votes)
-
-    votes_df = pd.DataFrame(
-        [
-            {"principle": principle, **votes[str(id)]}
-            for id, principle in principles.items()
-        ]
-    )
-
-    dummy_df = pd.DataFrame(
-        [
-            {"principle": "principle1", "value": 10, "type": "for"},
-            {"principle": "principle1", "value": 5, "type": "against"},
-            {"principle": "principle2", "value": 5, "type": "for"},
-            {"principle": "principle2", "value": 5, "type": "against"},
-            {"principle": "principle3", "value": 5, "type": "for"},
-            {"principle": "principle3", "value": 5, "type": "against"},
-        ]
-    )
-
-    dummy_df_with_data = pd.DataFrame(
-        [
-            {
-                "principle": "principle1",
-                "value": 10,
-                "type": "for",
-                "prompt": "What color is the sky?",
-                "response_1": "blue",
-                "response_2": "red",
-            },
-            {
-                "principle": "principle1",
-                "value": 5,
-                "type": "against",
-                "prompt": "What color is the sky?",
-                "response_1": "blue",
-                "response_2": "red",
-            },
-            {
-                "principle": "principle2",
-                "value": 5,
-                "type": "for",
-                "prompt": "What color is the sky?",
-                "response_1": "blue",
-                "response_2": "red",
-            },
-            {
-                "principle": "principle2",
-                "value": 5,
-                "type": "against",
-                "prompt": "What color is the sky?",
-                "response_1": "blue",
-                "response_2": "red",
-            },
-            {
-                "principle": "principle3",
-                "value": 5,
-                "type": "for",
-                "prompt": "What color is the sky?",
-                "response_1": "blue",
-                "response_2": "red",
-            },
-            {
-                "principle": "principle3",
-                "value": 5,
-                "type": "against",
-                "prompt": "What color is the sky?",
-                "response_1": "blue",
-                "response_2": "red",
-            },
-        ]
-    )
+    votes_df = create_votes_df(results_dir)
 
     table = gr.DataFrame(votes_df)
     fig = px.bar(
-        dummy_df_with_data,
-        x="value",
+        votes_df,
+        x="weight",
         y="principle",
-        color="type",
+        color="vote",
         orientation="h",
         hover_data=["prompt", "response_1", "response_2"],
-        hover_name="principle",
     )
     plot = gr.Plot(fig)
 
     return table, plot
-
-
-def create_votes_df(dict_votes: dict):
-
-    import pandas as pd
-
-    votes_df = pd.DataFrame(dict_votes)
-    return votes_df
