@@ -18,49 +18,41 @@ def load_json_file(path: str):
     return content
 
 
-def get_comparison_data(id: int):
-    return {
-        "prompt": "What color is the sky?",
-        "response_1": "blue",
-        "response_2": "red",
-    }
-
-
 def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
-    votes_per_comparison = pd.read_csv(results_dir / "040_votes_per_comparison.csv")
-    # rename column Unnamed: 0 to comparison_id
-    votes_per_comparison = votes_per_comparison.rename(
-        columns={"Unnamed: 0": "comparison_id"}
+    votes_per_comparison = pd.read_csv(
+        results_dir / "040_votes_per_comparison.csv", index_col="index"
     )
-    # set comparison_id as index
-    votes_per_comparison = votes_per_comparison.set_index("comparison_id")
-
-    print("votes_per_comparison", votes_per_comparison)
     principles_by_id: dict = load_json_file(
         results_dir / "030_distilled_principles_per_cluster.json",
     )
-
-    print("principles_by_id", principles_by_id)
 
     # list of dicts with votes per comparison, per principle
     # including the prompt and responses
     votes_by_comparison_and_principle = []
 
-    for comparison_id, values in votes_per_comparison.iterrows():
+    comparison_df = pd.read_csv(results_dir / "000_train_data.csv", index_col="index")
+
+    def get_comparison_data(id: int):
+        return {
+            # "prompt": comparison_data.loc[id, "prompt"],
+            "text_a": comparison_df.loc[id, "text_a"],
+            "text_b": comparison_df.loc[id, "text_b"],
+            "preferred_text": comparison_df.loc[id, "preferred_text"],
+        }
+
+    for comparison_idx, values in votes_per_comparison.iterrows():
 
         # get dict from pd.Series with string value of dict
         vote_dict = ast.literal_eval(values["votes"])
 
-        comparison_data = get_comparison_data(comparison_id)
-
-        principles_by_id
+        comparison_data = get_comparison_data(comparison_idx)
 
         # for each principle, add an entry including comparison data
         for principle_id, vote in vote_dict.items():
             principle = principles_by_id[str(principle_id)]
             votes_by_comparison_and_principle.append(
                 {
-                    "comparison_id": comparison_id,
+                    "comparison_id": comparison_idx,
                     "principle_id": principle_id,
                     "principle": principle,
                     "vote": str(vote),
@@ -68,8 +60,6 @@ def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
                     **comparison_data,
                 }
             )
-
-    print("votes", votes_by_comparison_and_principle)
 
     return pd.DataFrame(votes_by_comparison_and_principle)
 
@@ -88,15 +78,14 @@ def load_data(path: str):
 
     votes_df = create_votes_df(results_dir)
 
-    table = gr.DataFrame(votes_df)
     fig = px.bar(
         votes_df,
         x="weight",
         y="principle",
         color="vote",
         orientation="h",
-        hover_data=["prompt", "response_1", "response_2"],
+        hover_data=["text_a", "text_b", "preferred_text"],
     )
     plot = gr.Plot(fig)
 
-    return table, plot
+    return plot
