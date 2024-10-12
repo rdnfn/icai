@@ -65,7 +65,9 @@ def run(
         model_name=model_name,
         config=config,
     )
-    feedback["principles"].to_csv(save_path / "010_principles_per_comparison.csv")
+    feedback["principles"].to_csv(
+        save_path / "010_principles_per_comparison.csv", index=True, index_label="index"
+    )
 
     # flatten list of lists of principles into single list
     principles = [item for sublist in list(feedback["principles"]) for item in sublist]
@@ -102,7 +104,9 @@ def run(
             config=config,
         )
 
-        raw_votes.to_csv(save_path / "040_votes_per_comparison.csv")
+        raw_votes.to_csv(
+            save_path / "040_votes_per_comparison.csv", index=True, index_label="index"
+        )
         save_to_json(combined_votes, save_path / "041_votes_per_cluster.json")
 
         # visualise

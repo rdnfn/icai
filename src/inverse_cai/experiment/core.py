@@ -176,6 +176,7 @@ def run(cfg: DictConfig):
     dotenv.load_dotenv(cfg.secrets_path, verbose=True)
 
     data = setup_train_data(cfg)
+    data.to_csv(results_path / "000_train_data.csv", index=True, index_label="index")
     test_data = setup_test_data(cfg)
     assert_no_identical_rows(data, test_data)
 
