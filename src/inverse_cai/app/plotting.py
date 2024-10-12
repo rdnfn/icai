@@ -69,6 +69,31 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
 
     principles = votes_df["principle"].unique()
 
+    principles_by_agreement = sorted(
+        principles,
+        key=lambda x: votes_df[votes_df["principle"] == x]["vote"]
+        .value_counts()
+        .get("Agree", 0),
+    )
+
+    def get_acc(principle: str) -> int:
+        value_counts = votes_df[votes_df["principle"] == principle][
+            "vote"
+        ].value_counts()
+        try:
+            acc = value_counts.get("Agree", 0) / (
+                value_counts.get("Disagree", 0) + value_counts.get("Agree", 0)
+            )
+            # main sort by accuracy, then by agreement, then by disagreement (reversed)
+            return acc, value_counts.get("Agree", 0), -value_counts.get("Disagree", 0)
+        except ZeroDivisionError:
+            return 0, value_counts.get("Agree", 0), -value_counts.get("Disagree", 0)
+
+    principles_by_acc = sorted(
+        principles,
+        key=get_acc,
+    )
+
     fig = go.Figure()
 
     for _, datapoint in votes_df.iterrows():
@@ -141,6 +166,40 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
     fig.update_layout(
         annotations=annotations,
         height=20 * len(principles),
+    )
+
+    # sort by agreement
+    fig.update_yaxes(categoryorder="array", categoryarray=principles_by_agreement)
+
+    update_method = "relayout"  # "update"  # or "relayout"
+    options = [
+        ["Num agreed (desc.)", principles_by_agreement],
+        # ["Num agreed (asc.)", list(reversed(principles_by_agreement))],
+        ["Accuracy (desc.)", principles_by_acc],
+        # ["Accuracy (asc.)", list(reversed(principles_by_acc))],
+        # list(reversed(principles_by_agreement)),
+        # principles_by_acc,
+        # list(reversed(principles_by_acc)),
+    ]
+
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                buttons=[
+                    {
+                        "label": label,
+                        "method": update_method,
+                        "args": [
+                            {
+                                "yaxis.categoryorder": "array",
+                                "yaxis.categoryarray": option,
+                            }
+                        ],
+                    }
+                    for label, option in options
+                ],
+            )
+        ]
     )
 
     return fig
