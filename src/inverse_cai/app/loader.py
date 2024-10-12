@@ -7,6 +7,8 @@ import gradio as gr
 
 import plotly.express as px
 
+import inverse_cai.app.plotting as plotting
+
 df = px.data.tips()
 fig = px.bar(df, x="total_bill", y="day", orientation="h")
 
@@ -16,6 +18,17 @@ def load_json_file(path: str):
         content = json.load(f)
 
     return content
+
+
+def convert_vote_to_string(vote: int) -> str:
+    if vote == True:
+        return "Agree"
+    elif vote == False:
+        return "Disagree"
+    elif vote is None:
+        return "Not applicable"
+    else:
+        raise ValueError(f"Completely invalid vote value: {vote}")
 
 
 def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
@@ -55,7 +68,7 @@ def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
                     "comparison_id": comparison_idx,
                     "principle_id": principle_id,
                     "principle": principle,
-                    "vote": str(vote),
+                    "vote": convert_vote_to_string(vote),
                     "weight": 1,
                     **comparison_data,
                 }
@@ -78,14 +91,9 @@ def load_data(path: str):
 
     votes_df = create_votes_df(results_dir)
 
-    fig = px.bar(
-        votes_df,
-        x="weight",
-        y="principle",
-        color="vote",
-        orientation="h",
-        hover_data=["text_a", "text_b", "preferred_text"],
-    )
+    fig = plotting.generate_hbar_chart_original(votes_df)
+    fig = plotting.generate_hbar_chart(votes_df)
+
     plot = gr.Plot(fig)
 
     return plot
