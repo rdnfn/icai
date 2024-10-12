@@ -28,7 +28,7 @@ def generate():
             with gr.Column(scale=1, variant="panel") as left_col:
                 with gr.Group():
                     create_data_loader(inp)
-
+        with gr.Row() as main_row:
             with gr.Column(scale=2, variant="panel") as right_col:
                 create_principle_view(out)
 
