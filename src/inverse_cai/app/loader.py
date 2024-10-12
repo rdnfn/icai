@@ -91,7 +91,6 @@ def load_data(path: str):
 
     votes_df = create_votes_df(results_dir)
 
-    fig = plotting.generate_hbar_chart_original(votes_df)
     fig = plotting.generate_hbar_chart(votes_df)
 
     plot = gr.Plot(fig)
