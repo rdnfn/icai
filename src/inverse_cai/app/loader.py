@@ -4,6 +4,11 @@ import pandas as pd
 
 import gradio as gr
 
+import plotly.express as px
+
+df = px.data.tips()
+fig = px.bar(df, x="total_bill", y="day", orientation="h")
+
 
 def load_json_file(path: str):
     with open(path, "r") as f:
@@ -41,12 +46,83 @@ def load_data(path: str):
         ]
     )
 
-    return gr.BarPlot(
-        votes_df,
-        x="principle",
-        y="for",
-        caption="agreement",
+    dummy_df = pd.DataFrame(
+        [
+            {"principle": "principle1", "value": 10, "type": "for"},
+            {"principle": "principle1", "value": 5, "type": "against"},
+            {"principle": "principle2", "value": 5, "type": "for"},
+            {"principle": "principle2", "value": 5, "type": "against"},
+            {"principle": "principle3", "value": 5, "type": "for"},
+            {"principle": "principle3", "value": 5, "type": "against"},
+        ]
     )
+
+    dummy_df_with_data = pd.DataFrame(
+        [
+            {
+                "principle": "principle1",
+                "value": 10,
+                "type": "for",
+                "prompt": "What color is the sky?",
+                "response_1": "blue",
+                "response_2": "red",
+            },
+            {
+                "principle": "principle1",
+                "value": 5,
+                "type": "against",
+                "prompt": "What color is the sky?",
+                "response_1": "blue",
+                "response_2": "red",
+            },
+            {
+                "principle": "principle2",
+                "value": 5,
+                "type": "for",
+                "prompt": "What color is the sky?",
+                "response_1": "blue",
+                "response_2": "red",
+            },
+            {
+                "principle": "principle2",
+                "value": 5,
+                "type": "against",
+                "prompt": "What color is the sky?",
+                "response_1": "blue",
+                "response_2": "red",
+            },
+            {
+                "principle": "principle3",
+                "value": 5,
+                "type": "for",
+                "prompt": "What color is the sky?",
+                "response_1": "blue",
+                "response_2": "red",
+            },
+            {
+                "principle": "principle3",
+                "value": 5,
+                "type": "against",
+                "prompt": "What color is the sky?",
+                "response_1": "blue",
+                "response_2": "red",
+            },
+        ]
+    )
+
+    table = gr.DataFrame(votes_df)
+    fig = px.bar(
+        dummy_df_with_data,
+        x="value",
+        y="principle",
+        color="type",
+        orientation="h",
+        hover_data=["prompt", "response_1", "response_2"],
+        hover_name="principle",
+    )
+    plot = gr.Plot(fig)
+
+    return table, plot
 
 
 def create_votes_df(dict_votes: dict):
