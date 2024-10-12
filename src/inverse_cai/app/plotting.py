@@ -6,7 +6,9 @@ import pandas as pd
 # https://plotly.com/python/horizontal-bar-charts/
 
 PRINCIPLE_SHORT_LENGTH = 55
-FIG_PROPORTIONS = [0.5, 1]
+
+# this sets where the actual plot starts and ends (individual datapoints)
+FIG_PROPORTIONS = [0.25, 0.99]
 PRINCIPLE_END_Y = FIG_PROPORTIONS[0] - 0.01
 
 
@@ -133,7 +135,7 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
         barmode="stack",
         paper_bgcolor="rgb(248, 248, 255)",
         plot_bgcolor="rgb(248, 248, 255)",
-        margin=dict(l=120, r=10, t=140, b=80),
+        margin=dict(l=120, r=120, t=140, b=80),
         showlegend=False,
     )
 
@@ -200,6 +202,70 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                 ],
             )
         ]
+    )
+
+    # remove modebar
+    fig.update_layout(
+        modebar=dict(
+            bgcolor="rgba(0,0,0,0)",
+            color="rgba(0,0,0,0)",
+            activecolor="rgba(0,0,0,0)",
+            remove=[
+                "autoScale2d",
+                "autoscale",
+                "editInChartStudio",
+                "editinchartstudio",
+                "hoverCompareCartesian",
+                "hovercompare",
+                "lasso",
+                "lasso2d",
+                "orbitRotation",
+                "orbitrotation",
+                "pan",
+                "pan2d",
+                "pan3d",
+                "reset",
+                "resetCameraDefault3d",
+                "resetCameraLastSave3d",
+                "resetGeo",
+                "resetSankeyGroup",
+                "resetScale2d",
+                "resetViewMap",
+                "resetViewMapbox",
+                "resetViews",
+                "resetcameradefault",
+                "resetcameralastsave",
+                "resetsankeygroup",
+                "resetscale",
+                "resetview",
+                "resetviews",
+                "select",
+                "select2d",
+                "sendDataToCloud",
+                "senddatatocloud",
+                "tableRotation",
+                "tablerotation",
+                "toImage",
+                "toggleHover",
+                "toggleSpikelines",
+                "togglehover",
+                "togglespikelines",
+                "toimage",
+                "zoom",
+                "zoom2d",
+                "zoom3d",
+                "zoomIn2d",
+                "zoomInGeo",
+                "zoomInMap",
+                "zoomInMapbox",
+                "zoomOut2d",
+                "zoomOutGeo",
+                "zoomOutMap",
+                "zoomOutMapbox",
+                "zoomin",
+                "zoomout",
+            ],
+        )
     )
 
     return fig
