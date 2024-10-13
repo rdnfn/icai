@@ -10,13 +10,16 @@ FONT_FAMILY = '"Open Sans", verdana, arial, sans-serif'
 PRINCIPLE_SHORT_LENGTH = 55
 
 # this sets where the actual plot starts and ends (individual datapoints)
-FIG_PROPORTIONS_X = [0.25, 0.99]
-FIG_PROPORTIONS_Y = [0.01, 0.95]
+FIG_PROPORTIONS_X = [0.40, 0.99]
+FIG_PROPORTIONS_Y = [0.01, 0.91]
 SPACE_PER_NUM_COL = 0.04
 PRINCIPLE_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - 2 * SPACE_PER_NUM_COL
 AGREEMENT_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - SPACE_PER_NUM_COL
 ACC_END_Y = FIG_PROPORTIONS_X[0] - 0.01
-HEADING_HEIGHT_Y = 0.95
+HEADING_HEIGHT_Y = FIG_PROPORTIONS_Y[1]
+
+MENU_X = 0.3
+MENU_Y = 0.97
 
 LIGHT_GREEN = "#d9ead3"
 DARK_GREEN = "#38761d"
@@ -257,19 +260,14 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
             )
         )
 
-    fig.update_layout(
-        annotations=annotations,
-        height=20 * len(principles),
-    )
-
     # sort by agreement
     fig.update_yaxes(categoryorder="array", categoryarray=principles_by_agreement)
 
     update_method = "relayout"  # "update"  # or "relayout"
     options = [
-        ["Num agreed (desc.)", principles_by_agreement],
+        ["Agr. (desc.)", principles_by_agreement],
         # ["Num agreed (asc.)", list(reversed(principles_by_agreement))],
-        ["Accuracy (desc.)", principles_by_acc],
+        ["Acc. (desc.)", principles_by_acc],
         # ["Accuracy (asc.)", list(reversed(principles_by_acc))],
         # list(reversed(principles_by_agreement)),
         # principles_by_acc,
@@ -292,12 +290,32 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                     }
                     for label, option in options
                 ],
+                x=MENU_X,
+                xanchor="left",
+                y=MENU_Y,
+                yanchor="middle",
             )
         ]
     )
 
-    # update font
+    annotations.append(
+        dict(
+            xref="paper",
+            yref="paper",
+            x=MENU_X,
+            y=MENU_Y,
+            xanchor="right",
+            yanchor="middle",
+            text="Sort by:",
+            font=dict(size=14, color="rgb(67, 67, 67)"),
+            showarrow=False,
+            align="left",
+        )
+    )
+
     fig.update_layout(
+        annotations=annotations,
+        height=20 * len(principles),
         font_family=FONT_FAMILY,
     )
 
