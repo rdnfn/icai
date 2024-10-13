@@ -5,14 +5,17 @@ import pandas as pd
 # based on official plotly example
 # https://plotly.com/python/horizontal-bar-charts/
 
+FONT_FAMILY = '"Open Sans", verdana, arial, sans-serif'
+
 PRINCIPLE_SHORT_LENGTH = 55
 
 # this sets where the actual plot starts and ends (individual datapoints)
-FIG_PROPORTIONS = [0.25, 0.99]
+FIG_PROPORTIONS_X = [0.25, 0.99]
+FIG_PROPORTIONS_Y = [0.01, 0.95]
 SPACE_PER_NUM_COL = 0.04
-PRINCIPLE_END_Y = FIG_PROPORTIONS[0] - 0.01 - 2 * SPACE_PER_NUM_COL
-AGREEMENT_END_Y = FIG_PROPORTIONS[0] - 0.01 - SPACE_PER_NUM_COL
-ACC_END_Y = FIG_PROPORTIONS[0] - 0.01
+PRINCIPLE_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - 2 * SPACE_PER_NUM_COL
+AGREEMENT_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - SPACE_PER_NUM_COL
+ACC_END_Y = FIG_PROPORTIONS_X[0] - 0.01
 
 LIGHT_GREEN = "#d9ead3"
 DARK_GREEN = "#38761d"
@@ -145,19 +148,20 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
             showline=False,
             showticklabels=False,
             zeroline=False,
-            domain=FIG_PROPORTIONS,
+            domain=FIG_PROPORTIONS_X,
         ),
         yaxis=dict(
             showgrid=False,
             showline=False,
             showticklabels=False,
             zeroline=False,
+            domain=FIG_PROPORTIONS_Y,
         ),
         barmode="stack",
         paper_bgcolor=PAPER_BACKGROUND_COLOR,
         plot_bgcolor=PLOT_BACKGROUND_COLOR,
-        margin=dict(l=120, r=120, t=140, b=80),
         showlegend=False,
+        margin=dict(l=20, r=20, t=20, b=20),
     )
 
     annotations = []
@@ -177,40 +181,55 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                 y=principle,
                 xanchor="right",
                 text=principle_short,
-                font=dict(family="Arial", size=14, color="rgb(67, 67, 67)"),
+                font=dict(size=12, color="rgb(67, 67, 67)"),
                 showarrow=False,
                 align="right",
                 hovertext=principle,
             )
         )
-        # agreement num
-        annotations.append(
-            dict(
-                xref="paper",
-                yref="y",
-                x=AGREEMENT_END_Y,
-                y=principle,
-                xanchor="right",
-                text=f"{agreement_by_principle[principle]:.2f}",
-                font=dict(family="Arial", size=14, color="rgb(67, 67, 67)"),
-                showarrow=False,
-                align="right",
+        for start, value, label, hovertext in [
+            [
+                AGREEMENT_END_Y,
+                agreement_by_principle[principle],
+                "Agr.",
+                "Agreement: proportion of all votes that agree with original preferences",
+            ],
+            [
+                ACC_END_Y,
+                acc_by_principle[principle][0],
+                "Acc.",
+                "Accuracy: proportion of non-irrelevant votes ('agree' or 'disagree')<br>that agree with original preferences",
+            ],
+        ]:
+            annotations.append(
+                dict(
+                    xref="paper",
+                    yref="y",
+                    x=start,
+                    y=principle,
+                    xanchor="right",
+                    text=f"{value:.2f}",
+                    font=dict(size=14, color="rgb(67, 67, 67)"),
+                    showarrow=False,
+                    align="right",
+                )
             )
-        )
-        # accuracy
-        annotations.append(
-            dict(
-                xref="paper",
-                yref="y",
-                x=ACC_END_Y,
-                y=principle,
-                xanchor="right",
-                text=f"{acc_by_principle[principle][0]:.2f}",
-                font=dict(family="Arial", size=14, color="rgb(67, 67, 67)"),
-                showarrow=False,
-                align="right",
+            annotations.append(
+                dict(
+                    xref="paper",
+                    yref="paper",
+                    x=start - SPACE_PER_NUM_COL,
+                    y=0.95,
+                    xanchor="left",
+                    yanchor="bottom",
+                    text=label,
+                    font=dict(size=14, color="rgb(67, 67, 67)", style="italic"),
+                    showarrow=False,
+                    align="left",
+                    # rotate text
+                    hovertext=hovertext,
+                )
             )
-        )
 
     fig.update_layout(
         annotations=annotations,
@@ -249,6 +268,11 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                 ],
             )
         ]
+    )
+
+    # update font
+    fig.update_layout(
+        font_family=FONT_FAMILY,
     )
 
     # remove modebar
@@ -313,6 +337,10 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                 "zoomout",
             ],
         )
+    )
+
+    fig.update_layout(
+        margin=dict(l=20, r=20, t=20, b=20),
     )
 
     return fig
