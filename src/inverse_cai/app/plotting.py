@@ -16,6 +16,7 @@ SPACE_PER_NUM_COL = 0.04
 PRINCIPLE_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - 2 * SPACE_PER_NUM_COL
 AGREEMENT_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - SPACE_PER_NUM_COL
 ACC_END_Y = FIG_PROPORTIONS_X[0] - 0.01
+HEADING_HEIGHT_Y = 0.95
 
 LIGHT_GREEN = "#d9ead3"
 DARK_GREEN = "#38761d"
@@ -165,6 +166,7 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
     )
 
     annotations = []
+    headings_added = []
     # adding principle labels to y-axis
     for principle in principles:
         principle_short = (
@@ -214,22 +216,46 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                     align="right",
                 )
             )
-            annotations.append(
-                dict(
-                    xref="paper",
-                    yref="paper",
-                    x=start - SPACE_PER_NUM_COL,
-                    y=0.95,
-                    xanchor="left",
-                    yanchor="bottom",
-                    text=label,
-                    font=dict(size=14, color="rgb(67, 67, 67)", style="italic"),
-                    showarrow=False,
-                    align="left",
-                    # rotate text
-                    hovertext=hovertext,
+            if label not in headings_added:
+                headings_added.append(label)
+                annotations.append(
+                    dict(
+                        xref="paper",
+                        yref="paper",
+                        x=start - SPACE_PER_NUM_COL / 2,
+                        y=HEADING_HEIGHT_Y,
+                        xanchor="center",
+                        yanchor="bottom",
+                        text=f"<i>{label}</i>",
+                        font=dict(size=14, color="rgb(67, 67, 67)"),
+                        showarrow=False,
+                        align="left",
+                        hovertext=hovertext,
+                    )
                 )
+
+    # add principle and vote count headings
+    for start, label in [
+        [PRINCIPLE_END_Y / 2, "Principles"],
+        [
+            FIG_PROPORTIONS_X[0] + (FIG_PROPORTIONS_X[1] - FIG_PROPORTIONS_X[0]) / 2,
+            "Individual votes",
+        ],
+    ]:
+        annotations.append(
+            dict(
+                xref="paper",
+                yref="paper",
+                x=start - SPACE_PER_NUM_COL / 2,
+                y=HEADING_HEIGHT_Y,
+                xanchor="center",
+                yanchor="bottom",
+                text=f"<i>{label}</i>",
+                font=dict(size=14, color="rgb(67, 67, 67)"),
+                showarrow=False,
+                align="left",
             )
+        )
 
     fig.update_layout(
         annotations=annotations,
