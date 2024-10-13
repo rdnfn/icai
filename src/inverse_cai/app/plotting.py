@@ -9,7 +9,34 @@ PRINCIPLE_SHORT_LENGTH = 55
 
 # this sets where the actual plot starts and ends (individual datapoints)
 FIG_PROPORTIONS = [0.25, 0.99]
-PRINCIPLE_END_Y = FIG_PROPORTIONS[0] - 0.01
+SPACE_PER_NUM_COL = 0.04
+PRINCIPLE_END_Y = FIG_PROPORTIONS[0] - 0.01 - 2 * SPACE_PER_NUM_COL
+AGREEMENT_END_Y = FIG_PROPORTIONS[0] - 0.01 - SPACE_PER_NUM_COL
+ACC_END_Y = FIG_PROPORTIONS[0] - 0.01
+
+LIGHT_GREEN = "#d9ead3"
+DARK_GREEN = "#38761d"
+LIGHT_RED = "#f4cacb"
+DARK_RED = "#a61d00"
+LIGHTER_GREY = "#fafafa"
+LIGHT_GREY = "#e4e4e7"
+DARK_GREY = "rgba(192, 192, 192, 0.8)"
+VERY_DARK_GREY = "rgba(48, 48, 48, 0.8)"
+
+COLORS_DICT = {
+    "Agree": LIGHT_GREEN,
+    "Disagree": LIGHT_RED,
+    "Not applicable": DARK_GREY,
+}
+
+DARK_COLORS_DICT = {
+    "Agree": DARK_GREEN,
+    "Disagree": DARK_RED,
+    "Not applicable": VERY_DARK_GREY,
+}
+
+PAPER_BACKGROUND_COLOR = LIGHT_GREY
+PLOT_BACKGROUND_COLOR = LIGHT_GREY
 
 
 def generate_hbar_chart_original(votes_df: pd.DataFrame) -> go.Figure:
@@ -54,28 +81,19 @@ def get_string_with_breaks(
 
 def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
 
-    top_labels = [
-        "Agree",
-        "Disagree",
-        "Invalid",
-    ]
-
-    colors_dict = {
-        # pastel green
-        "Agree": "rgba(144, 238, 144, 0.5)",
-        # pastel red
-        "Disagree": "rgba(255, 99, 71, 0.5)",
-        # pastel grey
-        "Not applicable": "rgba(192, 192, 192, 0.8)",
-    }
-
     principles = votes_df["principle"].unique()
+
+    agreement_by_principle = {
+        principle: votes_df[votes_df["principle"] == principle]["vote"]
+        .value_counts()
+        .get("Agree", 0)
+        / len(votes_df[votes_df["principle"] == principle])
+        for principle in principles
+    }
 
     principles_by_agreement = sorted(
         principles,
-        key=lambda x: votes_df[votes_df["principle"] == x]["vote"]
-        .value_counts()
-        .get("Agree", 0),
+        key=lambda x: agreement_by_principle[x],
     )
 
     def get_acc(principle: str) -> int:
@@ -91,9 +109,11 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
         except ZeroDivisionError:
             return 0, value_counts.get("Agree", 0), -value_counts.get("Disagree", 0)
 
+    acc_by_principle = {principle: get_acc(principle) for principle in principles}
+
     principles_by_acc = sorted(
         principles,
-        key=get_acc,
+        key=lambda x: acc_by_principle[x],
     )
 
     fig = go.Figure()
@@ -110,11 +130,12 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                 y=[datapoint["principle"]],
                 orientation="h",
                 marker=dict(
-                    color=colors_dict[datapoint["vote"]],
-                    line=dict(color="rgb(248, 248, 249)", width=1),
+                    color=COLORS_DICT[datapoint["vote"]],
+                    line=dict(color="white", width=2),
                 ),
                 hoverinfo="text",
                 hovertext=f"<b>{datapoint['vote']}</b> <i>{get_string_with_breaks(datapoint['principle'])}</i><br><br><b>Selected</b><br>{get_string_with_breaks(selected_text)}<br><br><b>Rejected:</b><br>{get_string_with_breaks(rejected_text)}",
+                hoverlabel=dict(bordercolor=DARK_COLORS_DICT[datapoint["vote"]]),
             )
         )
 
@@ -133,8 +154,8 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
             zeroline=False,
         ),
         barmode="stack",
-        paper_bgcolor="rgb(248, 248, 255)",
-        plot_bgcolor="rgb(248, 248, 255)",
+        paper_bgcolor=PAPER_BACKGROUND_COLOR,
+        plot_bgcolor=PLOT_BACKGROUND_COLOR,
         margin=dict(l=120, r=120, t=140, b=80),
         showlegend=False,
     )
@@ -147,9 +168,7 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
             if len(principle) > 50
             else principle
         )
-        principle_rest = (
-            "... " + principle[PRINCIPLE_SHORT_LENGTH:] if len(principle) > 50 else None
-        )
+        # principle
         annotations.append(
             dict(
                 xref="paper",
@@ -162,6 +181,34 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                 showarrow=False,
                 align="right",
                 hovertext=principle,
+            )
+        )
+        # agreement num
+        annotations.append(
+            dict(
+                xref="paper",
+                yref="y",
+                x=AGREEMENT_END_Y,
+                y=principle,
+                xanchor="right",
+                text=f"{agreement_by_principle[principle]:.2f}",
+                font=dict(family="Arial", size=14, color="rgb(67, 67, 67)"),
+                showarrow=False,
+                align="right",
+            )
+        )
+        # accuracy
+        annotations.append(
+            dict(
+                xref="paper",
+                yref="y",
+                x=ACC_END_Y,
+                y=principle,
+                xanchor="right",
+                text=f"{acc_by_principle[principle][0]:.2f}",
+                font=dict(family="Arial", size=14, color="rgb(67, 67, 67)"),
+                showarrow=False,
+                align="right",
             )
         )
 
