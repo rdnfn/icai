@@ -7,8 +7,9 @@ import pandas as pd
 
 FONT_FAMILY = '"Open Sans", verdana, arial, sans-serif'
 
-PRINCIPLE_SHORT_LENGTH = 55
 
+### Layout and dimensions
+PRINCIPLE_SHORT_LENGTH = 55
 # this sets where the actual plot starts and ends (individual datapoints)
 FIG_PROPORTIONS_X = [0.40, 0.99]
 FIG_PROPORTIONS_Y = [0.01, 0.91]
@@ -17,10 +18,11 @@ PRINCIPLE_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - 2 * SPACE_PER_NUM_COL
 AGREEMENT_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - SPACE_PER_NUM_COL
 ACC_END_Y = FIG_PROPORTIONS_X[0] - 0.01
 HEADING_HEIGHT_Y = FIG_PROPORTIONS_Y[1]
-
 MENU_X = 0.3
 MENU_Y = 0.97
 
+
+### Colors
 LIGHT_GREEN = "#d9ead3"
 DARK_GREEN = "#38761d"
 LIGHT_RED = "#f4cacb"
@@ -29,19 +31,16 @@ LIGHTER_GREY = "#fafafa"
 LIGHT_GREY = "#e4e4e7"
 DARK_GREY = "rgba(192, 192, 192, 0.8)"
 VERY_DARK_GREY = "rgba(48, 48, 48, 0.8)"
-
 COLORS_DICT = {
     "Agree": LIGHT_GREEN,
     "Disagree": LIGHT_RED,
     "Not applicable": DARK_GREY,
 }
-
 DARK_COLORS_DICT = {
     "Agree": DARK_GREEN,
     "Disagree": DARK_RED,
     "Not applicable": VERY_DARK_GREY,
 }
-
 PAPER_BACKGROUND_COLOR = LIGHT_GREY
 PLOT_BACKGROUND_COLOR = LIGHT_GREY
 
@@ -238,11 +237,12 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                 )
 
     # add principle and vote count headings
-    for start, label in [
-        [PRINCIPLE_END_Y / 2, "Principles"],
+    for start, label, hovertext in [
+        [PRINCIPLE_END_Y / 2, "Principles", None],
         [
             FIG_PROPORTIONS_X[0] + (FIG_PROPORTIONS_X[1] - FIG_PROPORTIONS_X[0]) / 2,
-            "Individual votes",
+            "Reconstructed preferences",
+            "One row per principle, one column per preference",
         ],
     ]:
         annotations.append(
@@ -257,6 +257,7 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                 font=dict(size=14, color="rgb(67, 67, 67)"),
                 showarrow=False,
                 align="left",
+                hovertext=hovertext,
             )
         )
 
