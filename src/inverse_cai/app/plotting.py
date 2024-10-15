@@ -241,7 +241,7 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
         [PRINCIPLE_END_Y / 2, "Principles", None],
         [
             FIG_PROPORTIONS_X[0] + (FIG_PROPORTIONS_X[1] - FIG_PROPORTIONS_X[0]) / 2,
-            "Reconstructed preferences",
+            "Preference reconstruction results",
             "One row per principle, one column per preference",
         ],
     ]:
