@@ -29,8 +29,8 @@ DARK_GREY = "rgba(192, 192, 192, 0.8)"
 VERY_DARK_GREY = "rgba(48, 48, 48, 0.8)"
 # used for the background of reconstruction votes
 COLORS_DICT = {
-    "Agree": LIGHT_GREEN,
-    "Disagree": LIGHT_RED,
+    "Agree": "#93c37d",
+    "Disagree": "#c17c92",
     "Not applicable": DARK_GREY,
 }
 DARK_COLORS_DICT = {
@@ -38,8 +38,8 @@ DARK_COLORS_DICT = {
     "Disagree": DARK_RED,
     "Not applicable": VERY_DARK_GREY,
 }
-PAPER_BACKGROUND_COLOR = LIGHT_GREY
-PLOT_BACKGROUND_COLOR = LIGHT_GREY
+PAPER_BACKGROUND_COLOR = "white"  # LIGHT_GREY
+PLOT_BACKGROUND_COLOR = "white"  # LIGHT_GREY
 
 
 # Plotly config
