@@ -29,14 +29,14 @@ def create_data_loader(inp: dict, state: dict):
         ):
             with gr.Group():
                 # button to disable efficient
-                gr.Dropdown(
+                inp["efficient_mode_dropdown"] = gr.Dropdown(
                     label="🏃 Efficient mode",
                     info="Efficient mode makes the interface faster, but hides individual preference information",
                     choices=[True, False],
                     value=True,
                     interactive=True,
                 )
-                gr.Dropdown(
+                inp["pref_order_dropdown"] = gr.Dropdown(
                     label="📊 Order of reconstructed preferences",
                     choices=["By reconstruction success", "Original (random) order"],
                     value="By reconstruction success",

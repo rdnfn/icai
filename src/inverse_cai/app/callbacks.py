@@ -14,6 +14,8 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
     def load_data(
         path: str,
         prior_state_datapath: str,
+        efficient_mode: bool,
+        pref_order: str,
         filter_col: str,
         filter_val: str,
         filter_col_2: str,
@@ -59,12 +61,17 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 f"No data to display after filtering ({filter_col} = {filter_val}), {filter_col_2} = {filter_val_2}), please try other filters."
             )
 
-        fig = plotting.generate_hbar_chart(votes_df)
+        fig = plotting.generate_hbar_chart(
+            votes_df,
+            show_examples=not efficient_mode,
+            sort_examples_by_agreement=(
+                True if pref_order == "By reconstruction success" else False
+            ),
+        )
 
         plot = gr.Plot(fig)
 
         return (
-            gr.Accordion(visible=True),
             gr.Dropdown(
                 choices=[NONE_SELECTED_VALUE] + full_list_of_columns,
                 value=filter_col,
@@ -111,6 +118,8 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     load_data_inputs = [
         inp["datapath"],
         state["datapath"],
+        inp["efficient_mode_dropdown"],
+        inp["pref_order_dropdown"],
         inp["filter_col_dropdown"],
         inp["filter_value_dropdown"],
         inp["filter_col_dropdown_2"],
@@ -118,7 +127,6 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     ]
 
     load_data_outputs = [
-        inp["filter_accordion"],
         inp["filter_col_dropdown"],
         inp["filter_col_dropdown_2"],
         out["plot"],
@@ -134,11 +142,13 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         outputs=load_data_outputs,
     )
 
-    for filter_value_dropdown in [
+    for config_value_dropdown in [
+        inp["pref_order_dropdown"],
+        inp["efficient_mode_dropdown"],
         inp["filter_value_dropdown"],
         inp["filter_value_dropdown_2"],
     ]:
-        filter_value_dropdown.change(
+        config_value_dropdown.change(
             callbacks["load_data"],
             inputs=load_data_inputs,
             outputs=load_data_outputs,
