@@ -32,7 +32,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         if not any(results_dir.iterdir()):
             raise FileNotFoundError(f"Results directory is empty in path '{path}'")
 
-        gr.Info(f"Loading result files from path '{path}'")
+        gr.Info(f"Updating results (from path '{path}')")
 
         votes_df: pd.DataFrame = create_votes_df(results_dir)
 

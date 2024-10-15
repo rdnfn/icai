@@ -63,8 +63,6 @@ def generate_hbar_chart(
 
     principles = votes_df["principle"].unique()
 
-    gr.Info(f"Starting metric computation for {len(principles)} principles")
-
     def get_agreement(principle: str) -> float:
         principle_votes = votes_df[votes_df["principle"] == principle]
         value_counts = principle_votes["vote"].value_counts()
@@ -98,8 +96,6 @@ def generate_hbar_chart(
         principles,
         key=lambda x: acc_by_principle[x],
     )
-
-    gr.Info("Metric computation done")
 
     fig = go.Figure()
 
@@ -138,8 +134,6 @@ def generate_hbar_chart(
             **hover_args,
         )
     )
-
-    gr.Info("Finished adding individual datapoints as traces")
 
     fig.update_layout(
         xaxis=dict(
@@ -329,6 +323,6 @@ def generate_hbar_chart(
         )
     )
 
-    gr.Info("Plotting done")
+    gr.Info("Plot generated, will be displayed any moment now.")
 
     return fig
