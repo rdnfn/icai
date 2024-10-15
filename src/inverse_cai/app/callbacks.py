@@ -16,12 +16,16 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         prior_state_datapath: str,
         filter_col: str,
         filter_val: str,
+        filter_col_2: str,
+        filter_val_2: str,
     ):
         new_path = True if path != prior_state_datapath else False
 
         if new_path:
             filter_col = NONE_SELECTED_VALUE
             filter_val = NONE_SELECTED_VALUE
+            filter_col_2 = NONE_SELECTED_VALUE
+            filter_val_2 = NONE_SELECTED_VALUE
 
         # check results dir inside the path
         results_dir = pathlib.Path(path) / "results"
@@ -36,13 +40,15 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
         votes_df: pd.DataFrame = create_votes_df(results_dir)
 
-        if filter_col != NONE_SELECTED_VALUE:
-            if filter_val == NONE_SELECTED_VALUE:
-                gr.Warning(
-                    f"Filter value is not selected, but filter column '{filter_col}' is."
-                )
-            else:
-                votes_df = votes_df[votes_df[filter_col] == filter_val]
+        for col, val in [(filter_col, filter_val), (filter_col_2, filter_val_2)]:
+            if col != NONE_SELECTED_VALUE:
+                if val == NONE_SELECTED_VALUE:
+                    gr.Warning(
+                        f"Filter value is not selected, but filter column '{col}' is."
+                    )
+                else:
+                    gr.Info(f"Filter: only showing data where '{col}' = '{val}'")
+                    votes_df = votes_df[votes_df[col] == val]
 
         fig = plotting.generate_hbar_chart(votes_df)
 
@@ -53,6 +59,11 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             gr.Dropdown(
                 choices=[filter_col] + votes_df.columns.to_list(),
                 value=filter_col,
+                interactive=True,
+            ),
+            gr.Dropdown(
+                choices=[filter_col_2] + votes_df.columns.to_list(),
+                value=filter_col_2,
                 interactive=True,
             ),
             plot,
@@ -87,42 +98,50 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
 def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None:
 
+    load_data_inputs = [
+        inp["datapath"],
+        state["datapath"],
+        inp["filter_col_dropdown"],
+        inp["filter_value_dropdown"],
+        inp["filter_col_dropdown_2"],
+        inp["filter_value_dropdown_2"],
+    ]
+
+    load_data_outputs = [
+        inp["filter_accordion"],
+        inp["filter_col_dropdown"],
+        inp["filter_col_dropdown_2"],
+        out["plot"],
+        state["df"],
+        state["datapath"],
+    ]
+
+    # reload data when load button is clicked or view config is changed
     inp["load_btn"].click(
         callbacks["load_data"],
-        inputs=[
-            inp["datapath"],
-            state["datapath"],
-            inp["filter_col_dropdown"],
-            inp["filter_value_dropdown"],
-        ],
-        outputs=[
-            inp["filter_accordion"],
-            inp["filter_col_dropdown"],
-            out["plot"],
-            state["df"],
-            state["datapath"],
-        ],
+        inputs=load_data_inputs,
+        outputs=load_data_outputs,
     )
 
+    for filter_value_dropdown in [
+        inp["filter_value_dropdown"],
+        inp["filter_value_dropdown_2"],
+    ]:
+        filter_value_dropdown.change(
+            callbacks["load_data"],
+            inputs=load_data_inputs,
+            outputs=load_data_outputs,
+        )
+
+    # update filter value dropdowns when
+    # corresponding filter column dropdown is changed
     inp["filter_col_dropdown"].change(
         callbacks["set_filter_val_dropdown"],
         inputs=[inp["filter_col_dropdown"], state["df"]],
         outputs=[inp["filter_value_dropdown"]],
     )
-
-    inp["filter_value_dropdown"].input(
-        callbacks["load_data"],
-        inputs=[
-            inp["datapath"],
-            state["datapath"],
-            inp["filter_col_dropdown"],
-            inp["filter_value_dropdown"],
-        ],
-        outputs=[
-            inp["filter_accordion"],
-            inp["filter_col_dropdown"],
-            out["plot"],
-            state["df"],
-            state["datapath"],
-        ],
+    inp["filter_col_dropdown_2"].change(
+        callbacks["set_filter_val_dropdown"],
+        inputs=[inp["filter_col_dropdown_2"], state["df"]],
+        outputs=[inp["filter_value_dropdown_2"]],
     )
