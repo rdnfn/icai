@@ -2,47 +2,27 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
+from inverse_cai.app.constants import (
+    PRINCIPLE_SHORT_LENGTH,
+    FIG_PROPORTIONS_X,
+    FIG_PROPORTIONS_Y,
+    SPACE_PER_NUM_COL,
+    PRINCIPLE_END_Y,
+    AGREEMENT_END_Y,
+    ACC_END_Y,
+    HEADING_HEIGHT_Y,
+    MENU_X,
+    MENU_Y,
+    FONT_FAMILY,
+    COLORS_DICT,
+    DARK_COLORS_DICT,
+    PAPER_BACKGROUND_COLOR,
+    PLOT_BACKGROUND_COLOR,
+    PLOTLY_MODEBAR_POSSIBLE_VALUES,
+)
+
 # based on official plotly example
 # https://plotly.com/python/horizontal-bar-charts/
-
-FONT_FAMILY = '"Open Sans", verdana, arial, sans-serif'
-
-
-### Layout and dimensions
-PRINCIPLE_SHORT_LENGTH = 55
-# this sets where the actual plot starts and ends (individual datapoints)
-FIG_PROPORTIONS_X = [0.40, 0.99]
-FIG_PROPORTIONS_Y = [0.01, 0.91]
-SPACE_PER_NUM_COL = 0.04
-PRINCIPLE_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - 2 * SPACE_PER_NUM_COL
-AGREEMENT_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - SPACE_PER_NUM_COL
-ACC_END_Y = FIG_PROPORTIONS_X[0] - 0.01
-HEADING_HEIGHT_Y = FIG_PROPORTIONS_Y[1]
-MENU_X = 0.3
-MENU_Y = 0.97
-
-
-### Colors
-LIGHT_GREEN = "#d9ead3"
-DARK_GREEN = "#38761d"
-LIGHT_RED = "#f4cacb"
-DARK_RED = "#a61d00"
-LIGHTER_GREY = "#fafafa"
-LIGHT_GREY = "#e4e4e7"
-DARK_GREY = "rgba(192, 192, 192, 0.8)"
-VERY_DARK_GREY = "rgba(48, 48, 48, 0.8)"
-COLORS_DICT = {
-    "Agree": LIGHT_GREEN,
-    "Disagree": LIGHT_RED,
-    "Not applicable": DARK_GREY,
-}
-DARK_COLORS_DICT = {
-    "Agree": DARK_GREEN,
-    "Disagree": DARK_RED,
-    "Not applicable": VERY_DARK_GREY,
-}
-PAPER_BACKGROUND_COLOR = LIGHT_GREY
-PLOT_BACKGROUND_COLOR = LIGHT_GREY
 
 
 def generate_hbar_chart_original(votes_df: pd.DataFrame) -> go.Figure:
@@ -326,66 +306,8 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
             bgcolor="rgba(0,0,0,0)",
             color="rgba(0,0,0,0)",
             activecolor="rgba(0,0,0,0)",
-            remove=[
-                "autoScale2d",
-                "autoscale",
-                "editInChartStudio",
-                "editinchartstudio",
-                "hoverCompareCartesian",
-                "hovercompare",
-                "lasso",
-                "lasso2d",
-                "orbitRotation",
-                "orbitrotation",
-                "pan",
-                "pan2d",
-                "pan3d",
-                "reset",
-                "resetCameraDefault3d",
-                "resetCameraLastSave3d",
-                "resetGeo",
-                "resetSankeyGroup",
-                "resetScale2d",
-                "resetViewMap",
-                "resetViewMapbox",
-                "resetViews",
-                "resetcameradefault",
-                "resetcameralastsave",
-                "resetsankeygroup",
-                "resetscale",
-                "resetview",
-                "resetviews",
-                "select",
-                "select2d",
-                "sendDataToCloud",
-                "senddatatocloud",
-                "tableRotation",
-                "tablerotation",
-                "toImage",
-                "toggleHover",
-                "toggleSpikelines",
-                "togglehover",
-                "togglespikelines",
-                "toimage",
-                "zoom",
-                "zoom2d",
-                "zoom3d",
-                "zoomIn2d",
-                "zoomInGeo",
-                "zoomInMap",
-                "zoomInMapbox",
-                "zoomOut2d",
-                "zoomOutGeo",
-                "zoomOutMap",
-                "zoomOutMapbox",
-                "zoomin",
-                "zoomout",
-            ],
+            remove=PLOTLY_MODEBAR_POSSIBLE_VALUES,
         )
-    )
-
-    fig.update_layout(
-        margin=dict(l=20, r=20, t=20, b=20),
     )
 
     return fig
