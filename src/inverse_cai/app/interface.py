@@ -44,7 +44,7 @@ def create_data_loader(inp: dict, state: dict):
                 )
         with gr.Column(scale=3):
             inp["filter_accordion"] = gr.Accordion(
-                label="🎚️ First filter", open=False, visible=True
+                label="🎚️ Filter 1", open=False, visible=True
             )
             with inp["filter_accordion"]:
                 inp["filter_col_dropdown"] = gr.Dropdown(
@@ -62,7 +62,7 @@ def create_data_loader(inp: dict, state: dict):
                     interactive=False,
                 )
             inp["filter_accordion_2"] = gr.Accordion(
-                label="🎚️ Second filter", open=False, visible=True
+                label="🎚️ Filter 2", open=False, visible=True
             )
             with inp["filter_accordion_2"]:
                 inp["filter_col_dropdown_2"] = gr.Dropdown(
