@@ -25,20 +25,6 @@ from inverse_cai.app.constants import (
 # https://plotly.com/python/horizontal-bar-charts/
 
 
-def generate_hbar_chart_original(votes_df: pd.DataFrame) -> go.Figure:
-
-    fig = px.bar(
-        votes_df,
-        x="weight",
-        y="principle",
-        color="vote",
-        orientation="h",
-        hover_data=["text_a", "text_b", "preferred_text"],
-    )
-
-    return fig
-
-
 def get_string_with_breaks(
     text: str, line_length: int = 50, max_lines: int = 20
 ) -> str:
