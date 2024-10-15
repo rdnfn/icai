@@ -41,6 +41,8 @@ DARK_COLORS_DICT = {
 PAPER_BACKGROUND_COLOR = "white"  # LIGHT_GREY
 PLOT_BACKGROUND_COLOR = "white"  # LIGHT_GREY
 
+NONE_SELECTED_VALUE = "(None selected)"
+
 
 # Plotly config
 # values to be removed from the modebar]

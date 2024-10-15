@@ -46,12 +46,15 @@ def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
     comparison_df = pd.read_csv(results_dir / "000_train_data.csv", index_col="index")
 
     def get_comparison_data(id: int):
-        return {
+        data = {
             # "prompt": comparison_data.loc[id, "prompt"],
             "text_a": comparison_df.loc[id, "text_a"],
             "text_b": comparison_df.loc[id, "text_b"],
             "preferred_text": comparison_df.loc[id, "preferred_text"],
         }
+        # add additional columns
+        data.update({col: comparison_df.loc[id, col] for col in comparison_df.columns})
+        return data
 
     for comparison_idx, values in votes_per_comparison.iterrows():
 
@@ -74,25 +77,9 @@ def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
                 }
             )
 
+    dfs = {
+        "votes": pd.DataFrame(votes_by_comparison_and_principle),
+        "comparisons": comparison_df,
+    }
+
     return pd.DataFrame(votes_by_comparison_and_principle)
-
-
-def load_data(path: str):
-    # check results dir inside the path
-    results_dir = pathlib.Path(path) / "results"
-    if not results_dir.exists():
-        raise FileNotFoundError(f"Results directory not found in path '{path}'")
-
-    # check if the results dir is empty
-    if not any(results_dir.iterdir()):
-        raise FileNotFoundError(f"Results directory is empty in path '{path}'")
-
-    gr.Info(f"Loading result files from path '{path}'")
-
-    votes_df = create_votes_df(results_dir)
-
-    fig = plotting.generate_hbar_chart(votes_df)
-
-    plot = gr.Plot(fig)
-
-    return plot
