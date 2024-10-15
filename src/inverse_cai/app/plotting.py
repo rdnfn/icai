@@ -1,3 +1,6 @@
+"""Plotting functions for the Inverse CAI app."""
+
+import gradio as gr
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
@@ -51,16 +54,24 @@ def get_string_with_breaks(
     return full_text
 
 
-def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
+def generate_hbar_chart(
+    votes_df: pd.DataFrame,
+    efficiency_mode: bool = True,
+    show_examples: bool = False,
+    sort_examples_by_agreement: bool = True,
+) -> go.Figure:
 
     principles = votes_df["principle"].unique()
 
+    gr.Info(f"Starting metric computation for {len(principles)} principles")
+
+    def get_agreement(principle: str) -> float:
+        principle_votes = votes_df[votes_df["principle"] == principle]
+        value_counts = principle_votes["vote"].value_counts()
+        return value_counts.get("Agree", 0) / len(principle_votes)
+
     agreement_by_principle = {
-        principle: votes_df[votes_df["principle"] == principle]["vote"]
-        .value_counts()
-        .get("Agree", 0)
-        / len(votes_df[votes_df["principle"] == principle])
-        for principle in principles
+        principle: get_agreement(principle) for principle in principles
     }
 
     principles_by_agreement = sorted(
@@ -88,28 +99,47 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
         key=lambda x: acc_by_principle[x],
     )
 
+    gr.Info("Metric computation done")
+
     fig = go.Figure()
 
-    for _, datapoint in votes_df.iterrows():
-        pref_text = datapoint["preferred_text"]
-        selected_text = datapoint[pref_text]
-        rejected_text = (
-            datapoint["text_a"] if pref_text == "text_b" else datapoint["text_b"]
+    if sort_examples_by_agreement:
+        votes_df = votes_df.sort_values(by=["principle", "vote"], axis=0)
+
+    if show_examples:
+        votes_df["selected_text"] = votes_df.apply(
+            lambda x: x[x["preferred_text"]], axis=1
         )
-        fig.add_trace(
-            go.Bar(
-                x=[datapoint["weight"]],
-                y=[datapoint["principle"]],
-                orientation="h",
-                marker=dict(
-                    color=COLORS_DICT[datapoint["vote"]],
-                    line=dict(color="white", width=2),
-                ),
-                hoverinfo="text",
-                hovertext=f"<b>{datapoint['vote']}</b> <i>{get_string_with_breaks(datapoint['principle'])}</i><br><br><b>Selected</b><br>{get_string_with_breaks(selected_text)}<br><br><b>Rejected:</b><br>{get_string_with_breaks(rejected_text)}",
-                hoverlabel=dict(bordercolor=DARK_COLORS_DICT[datapoint["vote"]]),
-            )
+        votes_df["rejected_text"] = votes_df.apply(
+            lambda x: (x["text_a"] if x["preferred_text"] == "text_b" else x["text_b"]),
+            axis=1,
         )
+        votes_df["hovertext"] = votes_df.apply(
+            lambda x: f"<b>{x['vote']}</b> <i>{get_string_with_breaks(x['principle'])}</i><br><br><b>Selected</b><br>{get_string_with_breaks(x['selected_text'])}<br><br><b>Rejected:</b><br>{get_string_with_breaks(x['rejected_text'])}",
+            axis=1,
+        )
+        hover_args = {
+            "hoverinfo": "text",
+            "hovertext": votes_df["hovertext"],
+        }
+    else:
+        hover_args = {"hoverinfo": "text", "hovertext": None}
+
+    fig.add_trace(
+        go.Bar(
+            x=votes_df["weight"],
+            y=votes_df["principle"],
+            orientation="h",
+            marker=dict(
+                color=votes_df["vote"].apply(lambda x: COLORS_DICT[x]),
+                # line=dict(color="black", width=2),
+                cornerradius=10,
+            ),
+            **hover_args,
+        )
+    )
+
+    gr.Info("Finished adding individual datapoints as traces")
 
     fig.update_layout(
         xaxis=dict(
@@ -157,6 +187,8 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                 hovertext=principle,
             )
         )
+
+        # add agreement and accuracy values in own columns
         for start, value, label, hovertext in [
             [
                 AGREEMENT_END_Y,
@@ -184,6 +216,7 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
                     align="right",
                 )
             )
+            # value
             if label not in headings_added:
                 headings_added.append(label)
                 annotations.append(
@@ -295,5 +328,7 @@ def generate_hbar_chart(votes_df: pd.DataFrame) -> go.Figure:
             remove=PLOTLY_MODEBAR_POSSIBLE_VALUES,
         )
     )
+
+    gr.Info("Plotting done")
 
     return fig
