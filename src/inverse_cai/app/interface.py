@@ -8,6 +8,7 @@ from inverse_cai.app.constants import NONE_SELECTED_VALUE
 def create_data_loader(inp: dict, state: dict):
     state["datapath"] = gr.State(value="")
     state["df"] = gr.State(value=pd.DataFrame())
+    state["unfiltered_df"] = gr.State(value=pd.DataFrame())
     with gr.Row(variant="panel"):
         with gr.Column(scale=3, variant="compact", min_width="100px"):
             gr.HTML(

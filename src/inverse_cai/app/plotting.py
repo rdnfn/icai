@@ -62,6 +62,7 @@ def generate_hbar_chart(
 ) -> go.Figure:
 
     principles = votes_df["principle"].unique()
+    num_pairs = len(votes_df["comparison_id"].unique())
 
     def get_agreement(principle: str) -> float:
         principle_votes = votes_df[votes_df["principle"] == principle]
@@ -234,7 +235,7 @@ def generate_hbar_chart(
         [PRINCIPLE_END_Y / 2, "Principles", None],
         [
             FIG_PROPORTIONS_X[0] + (FIG_PROPORTIONS_X[1] - FIG_PROPORTIONS_X[0]) / 2,
-            "Preference reconstruction results",
+            f"Preference reconstruction results ({num_pairs} comparisons)",
             "One row per principle, one column per preference",
         ],
     ]:

@@ -40,6 +40,10 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
         votes_df: pd.DataFrame = create_votes_df(results_dir)
 
+        unfiltered_df = votes_df.copy(deep=True)
+
+        full_list_of_columns = votes_df.columns.to_list()
+
         for col, val in [(filter_col, filter_val), (filter_col_2, filter_val_2)]:
             if col != NONE_SELECTED_VALUE:
                 if val == NONE_SELECTED_VALUE:
@@ -50,6 +54,11 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                     gr.Info(f"Filter: only showing data where '{col}' = '{val}'")
                     votes_df = votes_df[votes_df[col] == val]
 
+        if len(votes_df) == 0:
+            raise gr.Error(
+                f"No data to display after filtering ({filter_col} = {filter_val}), {filter_col_2} = {filter_val_2}), please try other filters."
+            )
+
         fig = plotting.generate_hbar_chart(votes_df)
 
         plot = gr.Plot(fig)
@@ -57,17 +66,18 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         return (
             gr.Accordion(visible=True),
             gr.Dropdown(
-                choices=[filter_col] + votes_df.columns.to_list(),
+                choices=[NONE_SELECTED_VALUE] + full_list_of_columns,
                 value=filter_col,
                 interactive=True,
             ),
             gr.Dropdown(
-                choices=[filter_col_2] + votes_df.columns.to_list(),
+                choices=[NONE_SELECTED_VALUE] + full_list_of_columns,
                 value=filter_col_2,
                 interactive=True,
             ),
             plot,
             votes_df,
+            unfiltered_df,
             path,
         )
 
@@ -113,6 +123,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         inp["filter_col_dropdown_2"],
         out["plot"],
         state["df"],
+        state["unfiltered_df"],
         state["datapath"],
     ]
 
@@ -137,11 +148,11 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     # corresponding filter column dropdown is changed
     inp["filter_col_dropdown"].change(
         callbacks["set_filter_val_dropdown"],
-        inputs=[inp["filter_col_dropdown"], state["df"]],
+        inputs=[inp["filter_col_dropdown"], state["unfiltered_df"]],
         outputs=[inp["filter_value_dropdown"]],
     )
     inp["filter_col_dropdown_2"].change(
         callbacks["set_filter_val_dropdown"],
-        inputs=[inp["filter_col_dropdown_2"], state["df"]],
+        inputs=[inp["filter_col_dropdown_2"], state["unfiltered_df"]],
         outputs=[inp["filter_value_dropdown_2"]],
     )
