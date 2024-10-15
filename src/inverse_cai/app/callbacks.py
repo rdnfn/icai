@@ -110,7 +110,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         outputs=[inp["filter_value_dropdown"]],
     )
 
-    inp["filter_value_dropdown"].change(
+    inp["filter_value_dropdown"].input(
         callbacks["load_data"],
         inputs=[
             inp["datapath"],
