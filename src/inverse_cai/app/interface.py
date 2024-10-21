@@ -3,12 +3,14 @@ import pandas as pd
 
 from inverse_cai.app.callbacks import generate_callbacks, attach_callbacks
 from inverse_cai.app.constants import NONE_SELECTED_VALUE
+from inverse_cai.app.builtin_datasets import BUILTIN_DATASETS
 
 
 def create_data_loader(inp: dict, state: dict):
     state["datapath"] = gr.State(value="")
     state["df"] = gr.State(value=pd.DataFrame())
     state["unfiltered_df"] = gr.State(value=pd.DataFrame())
+    state["dataset_name"] = gr.State(value="")
     with gr.Row(variant="panel"):
         with gr.Column(scale=3, variant="compact", min_width="100px"):
             gr.HTML(
@@ -16,15 +18,15 @@ def create_data_loader(inp: dict, state: dict):
             )
         with gr.Column(scale=3, variant="panel"):
             with gr.Accordion("Load built-in results"):
-                # title
-                gr.Button("🏟️ Chatbot Arena")
-                gr.Button("💎 PRISM")
+                inp["dataset_btns"] = {}
+                for dataset in BUILTIN_DATASETS:
+                    inp["dataset_btns"][dataset.name] = gr.Button(dataset.name)
 
         with gr.Column(scale=3, variant="panel"):
             with gr.Accordion("Load custom results"):
                 with gr.Group():
                     inp["datapath"] = gr.Textbox(
-                        label="💾 Path to custom experimental results",
+                        label="💾 Path",
                         value="exp/outputs/2024-10-12_15-58-26",
                     )
                     inp["load_btn"] = gr.Button("Load")
@@ -34,7 +36,7 @@ def create_data_loader(inp: dict, state: dict):
         with gr.Column(
             scale=3,
         ):
-            gr.Markdown("To be implemented")
+            inp["simple_config_dropdown"] = gr.Dropdown(label="🔧 Config")
         with gr.Column(
             scale=3,
         ):

@@ -7,6 +7,12 @@ import pathlib
 from inverse_cai.app.loader import create_votes_df
 import inverse_cai.app.plotting as plotting
 from inverse_cai.app.constants import NONE_SELECTED_VALUE
+from inverse_cai.app.builtin_datasets import (
+    get_config_from_name,
+    get_dataset_from_name,
+    BuiltinDataset,
+    Config,
+)
 
 
 def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
@@ -88,6 +94,44 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             path,
         )
 
+    def update_advanced_config_and_load_data(
+        path: str,
+        prior_state_datapath: str,
+        selected_adv_config: str,
+        dataset_name: str,
+    ):
+        new_path = True if path != prior_state_datapath else False
+
+        # load dataset specific setup
+        dataset_name = dataset_name
+        dataset_config: BuiltinDataset = get_dataset_from_name(dataset_name)
+
+        # load selected advanced config
+        if new_path:
+            selected_adv_config = dataset_config.options[0].name
+        adv_config: Config = get_config_from_name(
+            selected_adv_config, dataset_config.options
+        )
+
+        return (
+            *load_data(
+                path,
+                prior_state_datapath,
+                adv_config.efficent_mode,
+                adv_config.pref_order,
+                adv_config.filter_col,
+                adv_config.filter_value,
+                adv_config.filter_col_2,
+                adv_config.filter_value_2,
+            ),
+            gr.Dropdown(
+                choices=[config.name for config in dataset_config.options],
+                value=selected_adv_config,
+                interactive=True,
+            ),
+            dataset_name,
+        )
+
     def set_filter_val_dropdown(column: str, votes_df: pd.DataFrame):
         if NONE_SELECTED_VALUE in votes_df.columns:
             raise gr.Error(
@@ -110,6 +154,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
     return {
         "load_data": load_data,
         "set_filter_val_dropdown": set_filter_val_dropdown,
+        "update_advanced_config_and_load_data": update_advanced_config_and_load_data,
     }
 
 
@@ -153,6 +198,31 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
             inputs=load_data_inputs,
             outputs=load_data_outputs,
         )
+
+    # load dataset when one of dataset buttons is clicked
+    update_load_data_inputs = [
+        inp["datapath"],
+        state["datapath"],
+        inp["simple_config_dropdown"],
+    ]
+
+    update_load_data_outputs = load_data_outputs + [
+        inp["simple_config_dropdown"],
+        state["dataset_name"],
+    ]
+
+    for dataset_button in inp["dataset_btns"].values():
+        dataset_button.click(
+            callbacks["update_advanced_config_and_load_data"],
+            inputs=update_load_data_inputs + [dataset_button],
+            outputs=update_load_data_outputs,
+        )
+
+    inp["simple_config_dropdown"].change(
+        callbacks["update_advanced_config_and_load_data"],
+        inputs=update_load_data_inputs + [state["dataset_name"]],
+        outputs=update_load_data_outputs,
+    )
 
     # update filter value dropdowns when
     # corresponding filter column dropdown is changed
