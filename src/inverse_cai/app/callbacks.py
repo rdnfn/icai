@@ -26,10 +26,11 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         filter_val: str,
         filter_col_2: str,
         filter_val_2: str,
+        reset_filters_if_new: bool = True,
     ):
         new_path = True if path != prior_state_datapath else False
 
-        if new_path:
+        if new_path and reset_filters_if_new:
             filter_col = NONE_SELECTED_VALUE
             filter_val = NONE_SELECTED_VALUE
             filter_col_2 = NONE_SELECTED_VALUE
@@ -124,19 +125,6 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             selected_adv_config, dataset_config.options
         )
 
-        # print all dropdowns
-
-        print(
-            "Selected col 1:",
-            inp["filter_col_dropdown"],
-            "Selected val 1:",
-            inp["filter_value_dropdown"],
-            "Selected col 2:",
-            inp["filter_col_dropdown_2"],
-            "Selected val 2:",
-            inp["filter_value_dropdown_2"],
-        )
-
         return {
             inp["simple_config_dropdown_placeholder"]: gr.Text(
                 visible=not simple_config_avail
@@ -164,6 +152,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 adv_config.filter_value,
                 adv_config.filter_col_2,
                 adv_config.filter_value_2,
+                reset_filters_if_new=False,
             ),
             inp["filter_value_dropdown"]: gr.Dropdown(
                 choices=[adv_config.filter_value],
@@ -239,7 +228,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         inp["filter_value_dropdown"],
         inp["filter_value_dropdown_2"],
     ]:
-        config_value_dropdown.change(
+        config_value_dropdown.input(
             callbacks["load_data"],
             inputs=load_data_inputs,
             outputs=load_data_outputs,
