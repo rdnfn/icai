@@ -77,45 +77,86 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
         plot = gr.Plot(fig)
 
-        return (
-            gr.Dropdown(
+        return {
+            inp["filter_col_dropdown"]: gr.Dropdown(
                 choices=[NONE_SELECTED_VALUE] + full_list_of_columns,
                 value=filter_col,
                 interactive=True,
             ),
-            gr.Dropdown(
+            inp["filter_col_dropdown_2"]: gr.Dropdown(
                 choices=[NONE_SELECTED_VALUE] + full_list_of_columns,
                 value=filter_col_2,
                 interactive=True,
             ),
-            plot,
-            votes_df,
-            unfiltered_df,
-            path,
-        )
+            out["plot"]: plot,
+            state["df"]: votes_df,
+            state["unfiltered_df"]: unfiltered_df,
+            state["datapath"]: path,
+        }
 
     def update_advanced_config_and_load_data(
-        path: str,
         prior_state_datapath: str,
         selected_adv_config: str,
         dataset_name: str,
     ):
-        new_path = True if path != prior_state_datapath else False
-
         # load dataset specific setup
-        dataset_name = dataset_name
         dataset_config: BuiltinDataset = get_dataset_from_name(dataset_name)
+
+        new_path = True if dataset_config.path != prior_state_datapath else False
+
+        if not dataset_config.options:
+            simple_config_avail = False
+        else:
+            simple_config_avail = True
 
         # load selected advanced config
         if new_path:
-            selected_adv_config = dataset_config.options[0].name
+            if dataset_config.options:
+                selected_adv_config = (
+                    dataset_config.options[0].name
+                    if dataset_config.options
+                    else NONE_SELECTED_VALUE
+                )
+            else:
+                selected_adv_config = NONE_SELECTED_VALUE
+
         adv_config: Config = get_config_from_name(
             selected_adv_config, dataset_config.options
         )
 
-        return (
-            *load_data(
-                path,
+        # print all dropdowns
+
+        print(
+            "Selected col 1:",
+            inp["filter_col_dropdown"],
+            "Selected val 1:",
+            inp["filter_value_dropdown"],
+            "Selected col 2:",
+            inp["filter_col_dropdown_2"],
+            "Selected val 2:",
+            inp["filter_value_dropdown_2"],
+        )
+
+        return {
+            inp["simple_config_dropdown_placeholder"]: gr.Text(
+                visible=not simple_config_avail
+            ),
+            inp["simple_config_dropdown"]: gr.Dropdown(
+                choices=(
+                    [config.name for config in dataset_config.options]
+                    + [NONE_SELECTED_VALUE]
+                    if dataset_config.options
+                    else [NONE_SELECTED_VALUE]
+                ),
+                value=selected_adv_config,
+                interactive=True,
+                visible=simple_config_avail,
+            ),
+            inp["datapath"]: dataset_config.path,
+            state["datapath"]: dataset_config.path,
+            state["dataset_name"]: dataset_name,
+            **load_data(
+                dataset_config.path,
                 prior_state_datapath,
                 adv_config.efficent_mode,
                 adv_config.pref_order,
@@ -124,13 +165,17 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 adv_config.filter_col_2,
                 adv_config.filter_value_2,
             ),
-            gr.Dropdown(
-                choices=[config.name for config in dataset_config.options],
-                value=selected_adv_config,
+            inp["filter_value_dropdown"]: gr.Dropdown(
+                choices=[adv_config.filter_value],
+                value=adv_config.filter_value,
                 interactive=True,
             ),
-            dataset_name,
-        )
+            inp["filter_value_dropdown_2"]: gr.Dropdown(
+                choices=[adv_config.filter_value_2],
+                value=adv_config.filter_value_2,
+                interactive=True,
+            ),
+        }
 
     def set_filter_val_dropdown(column: str, votes_df: pd.DataFrame):
         if NONE_SELECTED_VALUE in votes_df.columns:
@@ -178,6 +223,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         state["df"],
         state["unfiltered_df"],
         state["datapath"],
+        inp["datapath"],
     ]
 
     # reload data when load button is clicked or view config is changed
@@ -201,14 +247,16 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
 
     # load dataset when one of dataset buttons is clicked
     update_load_data_inputs = [
-        inp["datapath"],
         state["datapath"],
         inp["simple_config_dropdown"],
     ]
 
     update_load_data_outputs = load_data_outputs + [
         inp["simple_config_dropdown"],
+        inp["simple_config_dropdown_placeholder"],
         state["dataset_name"],
+        inp["filter_value_dropdown"],
+        inp["filter_value_dropdown_2"],
     ]
 
     for dataset_button in inp["dataset_btns"].values():
@@ -218,7 +266,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
             outputs=update_load_data_outputs,
         )
 
-    inp["simple_config_dropdown"].change(
+    inp["simple_config_dropdown"].input(
         callbacks["update_advanced_config_and_load_data"],
         inputs=update_load_data_inputs + [state["dataset_name"]],
         outputs=update_load_data_outputs,
@@ -226,12 +274,12 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
 
     # update filter value dropdowns when
     # corresponding filter column dropdown is changed
-    inp["filter_col_dropdown"].change(
+    inp["filter_col_dropdown"].input(
         callbacks["set_filter_val_dropdown"],
         inputs=[inp["filter_col_dropdown"], state["unfiltered_df"]],
         outputs=[inp["filter_value_dropdown"]],
     )
-    inp["filter_col_dropdown_2"].change(
+    inp["filter_col_dropdown_2"].input(
         callbacks["set_filter_val_dropdown"],
         inputs=[inp["filter_col_dropdown_2"], state["unfiltered_df"]],
         outputs=[inp["filter_value_dropdown_2"]],

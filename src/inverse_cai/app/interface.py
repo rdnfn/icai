@@ -36,7 +36,12 @@ def create_data_loader(inp: dict, state: dict):
         with gr.Column(
             scale=3,
         ):
-            inp["simple_config_dropdown"] = gr.Dropdown(label="🔧 Config")
+            inp["simple_config_dropdown_placeholder"] = gr.Markdown(
+                "*No simple dataset configuration available. Load different dataset or use advanced config.*"
+            )
+            inp["simple_config_dropdown"] = gr.Dropdown(
+                label="🔧 Config", visible=False
+            )
         with gr.Column(
             scale=3,
         ):

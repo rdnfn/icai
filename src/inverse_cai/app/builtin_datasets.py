@@ -1,6 +1,7 @@
 """Module with configurations for built-in datasets."""
 
 from dataclasses import dataclass
+import gradio as gr
 
 from inverse_cai.app.constants import NONE_SELECTED_VALUE
 
@@ -34,14 +35,21 @@ SYNTHETIC = BuiltinDataset(
     name="🧪 Synthetic",
     path="exp/outputs/2024-10-12_15-58-26",
     description="Synthetic dataset generated according to three different rules.",
+    options=None,
+)
+
+CHATBOT_ARENA = BuiltinDataset(
+    name="🏟️ Chatbot Arena",
+    path="exp/outputs/2024-10-14_19-07-20",
+    description="Synthetic dataset generated according to three different rules.",
     options=[
         Config(
-            name="rule1",
+            name="Rules that explain why GPT-4-1106-preview wins",
+            filter_col="winner_model",
+            filter_value="gpt-4-1106-preview",
         ),
     ],
 )
-
-CHATBOT_ARENA = BuiltinDataset(name="🏟️ Chatbot Arena")
 
 PRISM = BuiltinDataset(name="💎 PRISM")
 
@@ -52,6 +60,9 @@ BUILTIN_DATASETS = [SYNTHETIC, CHATBOT_ARENA, PRISM]
 # utility functions
 def get_config_from_name(name: str, config_options: list) -> Config:
     """Get a configuration from its name."""
+    if name == NONE_SELECTED_VALUE or name is None:  # default config
+        return Config(name=name)
+
     for config in config_options:
         if config.name == name:
             return config
@@ -63,6 +74,7 @@ def get_dataset_from_name(name: str) -> BuiltinDataset:
     """Get a dataset from its name."""
     for dataset in BUILTIN_DATASETS:
         if dataset.name == name:
+            gr.Info(f"Loading dataset '{name}'")
             return dataset
 
     raise ValueError(f"Dataset with name '{name}' not found.")
