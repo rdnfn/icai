@@ -14,11 +14,16 @@ def create_data_loader(inp: dict, state: dict):
             gr.HTML(
                 '<img src="https://github.com/rdnfn/icai/blob/34065605749f42a33ab2fc0be3305e96840e9412/docs/img/00_logo_v0_wide.png?raw=true" alt="Logo" width="350">'
             )
-        with gr.Column(scale=6):
-            with gr.Row():
+        with gr.Column(scale=6, variant="panel"):
+            with gr.Tab("Pre-defined datasets"):
+                # title
+                gr.Button("🏟️ Chatbot Arena")
+                gr.Button("💎 PRISM")
+            with gr.Tab("Custom dataset"):
                 with gr.Group():
                     inp["datapath"] = gr.Textbox(
-                        label="💾 Data Path", value="exp/outputs/2024-10-12_15-58-26"
+                        label="💾 Path to custom experimental results",
+                        value="exp/outputs/2024-10-12_15-58-26",
                     )
                     inp["load_btn"] = gr.Button("Load")
 
