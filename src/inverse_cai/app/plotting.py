@@ -12,6 +12,8 @@ from inverse_cai.app.constants import (
     SPACE_PER_NUM_COL,
     PRINCIPLE_END_Y,
     AGREEMENT_END_Y,
+    RELEVANCE_END_Y,
+    PERF_END_Y,
     ACC_END_Y,
     HEADING_HEIGHT_Y,
     MENU_X,
@@ -96,6 +98,34 @@ def generate_hbar_chart(
     principles_by_acc = sorted(
         principles,
         key=lambda x: acc_by_principle[x],
+    )
+
+    def get_relevance(principle: str) -> float:
+        principle_votes = votes_df[votes_df["principle"] == principle]
+        value_counts = principle_votes["vote"].value_counts()
+        return (value_counts.get("Agree", 0) + value_counts.get("Disagree", 0)) / len(
+            principle_votes
+        )
+
+    relevance_by_principle = {
+        principle: get_relevance(principle) for principle in principles
+    }
+
+    principles_by_relevance = sorted(
+        principles,
+        key=lambda x: relevance_by_principle[x],
+    )
+
+    def get_perf(principle: str) -> float:
+        acc = acc_by_principle[principle][0]
+        relevance = relevance_by_principle[principle]
+        return (acc - 0.5) * relevance
+
+    perf_by_principle = {principle: get_perf(principle) for principle in principles}
+
+    principles_by_perf = sorted(
+        principles,
+        key=lambda x: perf_by_principle[x],
     )
 
     fig = go.Figure()
@@ -197,6 +227,18 @@ def generate_hbar_chart(
                 "Acc.",
                 "Accuracy: proportion of non-irrelevant votes ('agree' or 'disagree')<br>that agree with original preferences",
             ],
+            [
+                RELEVANCE_END_Y,
+                relevance_by_principle[principle],
+                "Rel.",
+                "Relevance: proportion of all votes that are not 'not applicable'",
+            ],
+            [
+                PERF_END_Y,
+                perf_by_principle[principle],
+                "Perf.",
+                "Performance: relevance * (accuracy - 0.5)",
+            ],
         ]:
             annotations.append(
                 dict(
@@ -261,12 +303,9 @@ def generate_hbar_chart(
     update_method = "relayout"  # "update"  # or "relayout"
     options = [
         ["Agr. (desc.)", principles_by_agreement],
-        # ["Num agreed (asc.)", list(reversed(principles_by_agreement))],
         ["Acc. (desc.)", principles_by_acc],
-        # ["Accuracy (asc.)", list(reversed(principles_by_acc))],
-        # list(reversed(principles_by_agreement)),
-        # principles_by_acc,
-        # list(reversed(principles_by_acc)),
+        ["Relevance (desc.)", principles_by_relevance],
+        ["Performance (desc.)", principles_by_perf],
     ]
 
     fig.update_layout(
