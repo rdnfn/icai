@@ -14,12 +14,14 @@ def create_data_loader(inp: dict, state: dict):
             gr.HTML(
                 '<img src="https://github.com/rdnfn/icai/blob/34065605749f42a33ab2fc0be3305e96840e9412/docs/img/00_logo_v0_wide.png?raw=true" alt="Logo" width="350">'
             )
-        with gr.Column(scale=6, variant="panel"):
-            with gr.Tab("Pre-defined datasets"):
+        with gr.Column(scale=3, variant="panel"):
+            with gr.Accordion("Load built-in results"):
                 # title
                 gr.Button("🏟️ Chatbot Arena")
                 gr.Button("💎 PRISM")
-            with gr.Tab("Custom dataset"):
+
+        with gr.Column(scale=3, variant="panel"):
+            with gr.Accordion("Load custom results"):
                 with gr.Group():
                     inp["datapath"] = gr.Textbox(
                         label="💾 Path to custom experimental results",
@@ -27,63 +29,71 @@ def create_data_loader(inp: dict, state: dict):
                     )
                     inp["load_btn"] = gr.Button("Load")
 
-    inp["detailed_config"] = gr.Row(visible=True, variant="panel")
-    with inp["detailed_config"]:
+    inp["config"] = gr.Row(visible=True, variant="panel")
+    with inp["config"]:
         with gr.Column(
             scale=3,
         ):
-            with gr.Group():
-                # button to disable efficient
-                inp["efficient_mode_dropdown"] = gr.Dropdown(
-                    label="🏃 Efficient mode",
-                    info="Efficient mode makes the interface faster, but hides individual preference information",
-                    choices=[True, False],
-                    value=True,
-                    interactive=True,
-                )
-                inp["pref_order_dropdown"] = gr.Dropdown(
-                    label="📊 Order of reconstructed preferences",
-                    choices=["By reconstruction success", "Original (random) order"],
-                    value="By reconstruction success",
-                    interactive=True,
-                )
-        with gr.Column(scale=3):
-            inp["filter_accordion"] = gr.Accordion(
-                label="🎚️ Filter 1", open=False, visible=True
-            )
-            with inp["filter_accordion"]:
-                inp["filter_col_dropdown"] = gr.Dropdown(
-                    label="Filter by column",
-                    choices=[NONE_SELECTED_VALUE],
-                    value=NONE_SELECTED_VALUE,
-                    interactive=False,
-                )
-                # add equal sign between filter_dropdown and filter_text
+            gr.Markdown("To be implemented")
+        with gr.Column(
+            scale=3,
+        ):
+            with gr.Accordion(label="⚙️ Advanced config", open=True, visible=True):
+                with gr.Group():
+                    # button to disable efficient
+                    inp["efficient_mode_dropdown"] = gr.Dropdown(
+                        label="🏃 Efficient mode",
+                        info="Efficient mode makes the interface faster, but hides individual preference information",
+                        choices=[True, False],
+                        value=True,
+                        interactive=True,
+                    )
+                    inp["pref_order_dropdown"] = gr.Dropdown(
+                        label="📊 Order of reconstructed preferences",
+                        choices=[
+                            "By reconstruction success",
+                            "Original (random) order",
+                        ],
+                        value="By reconstruction success",
+                        interactive=True,
+                    )
 
-                inp["filter_value_dropdown"] = gr.Dropdown(
-                    label="equal to",
-                    choices=[NONE_SELECTED_VALUE],
-                    value=NONE_SELECTED_VALUE,
-                    interactive=False,
+                inp["filter_accordion"] = gr.Accordion(
+                    label="🎚️ Filter 1", open=False, visible=True
                 )
-            inp["filter_accordion_2"] = gr.Accordion(
-                label="🎚️ Filter 2", open=False, visible=True
-            )
-            with inp["filter_accordion_2"]:
-                inp["filter_col_dropdown_2"] = gr.Dropdown(
-                    label="Filter by column",
-                    choices=[NONE_SELECTED_VALUE],
-                    value=NONE_SELECTED_VALUE,
-                    interactive=False,
-                )
-                # add equal sign between filter_dropdown and filter_text
+                with inp["filter_accordion"]:
+                    inp["filter_col_dropdown"] = gr.Dropdown(
+                        label="Filter by column",
+                        choices=[NONE_SELECTED_VALUE],
+                        value=NONE_SELECTED_VALUE,
+                        interactive=False,
+                    )
+                    # add equal sign between filter_dropdown and filter_text
 
-                inp["filter_value_dropdown_2"] = gr.Dropdown(
-                    label="equal to",
-                    choices=[NONE_SELECTED_VALUE],
-                    value=NONE_SELECTED_VALUE,
-                    interactive=False,
+                    inp["filter_value_dropdown"] = gr.Dropdown(
+                        label="equal to",
+                        choices=[NONE_SELECTED_VALUE],
+                        value=NONE_SELECTED_VALUE,
+                        interactive=False,
+                    )
+                inp["filter_accordion_2"] = gr.Accordion(
+                    label="🎚️ Filter 2", open=False, visible=True
                 )
+                with inp["filter_accordion_2"]:
+                    inp["filter_col_dropdown_2"] = gr.Dropdown(
+                        label="Filter by column",
+                        choices=[NONE_SELECTED_VALUE],
+                        value=NONE_SELECTED_VALUE,
+                        interactive=False,
+                    )
+                    # add equal sign between filter_dropdown and filter_text
+
+                    inp["filter_value_dropdown_2"] = gr.Dropdown(
+                        label="equal to",
+                        choices=[NONE_SELECTED_VALUE],
+                        value=NONE_SELECTED_VALUE,
+                        interactive=False,
+                    )
 
 
 def create_principle_view(out: dict):
