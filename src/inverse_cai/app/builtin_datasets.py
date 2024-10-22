@@ -41,28 +41,28 @@ SYNTHETIC = BuiltinDataset(
 CHATBOT_ARENA = BuiltinDataset(
     name="🏟️ Chatbot Arena",
     path="exp/outputs/2024-10-14_19-07-20",
-    description="Synthetic dataset generated according to three different rules.",
+    description="LMSYS Chatbot Arena data.",
     options=[
         Config(
-            name="Rules that explain why GPT-4-1106-preview wins (against all other models)",
+            name="GPT-4-1106-preview winning (against all other models)",
             filter_col="winner_model",
             filter_value="gpt-4-1106-preview",
         ),
         Config(
-            name="Rules that explain how GPT-4-1106-preview is better than GPT-4-gpt-4-0314",
+            name="GPT-4-1106-preview winning against GPT-4-0314",
             filter_col="winner_model",
             filter_value="gpt-4-1106-preview",
             filter_col_2="loser_model",
             filter_value_2="gpt-4-0314",
         ),
         Config(
-            name="Rules that explain how GPT-4-1106-preview regresses from GPT-4-0314",
+            name="GPT-4-1106-preview losing to GPT-4-0314",
             filter_col="loser_model",
             filter_value="gpt-4-1106-preview",
             filter_col_2="winner_model",
             filter_value_2="gpt-4-0314",
         ),
-        Config("All rules"),
+        Config("Entire dataset"),
     ],
 )
 

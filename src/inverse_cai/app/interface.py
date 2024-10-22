@@ -40,12 +40,14 @@ def create_data_loader(inp: dict, state: dict):
                 "*No simple dataset configuration available. Load different dataset or use advanced config.*"
             )
             inp["simple_config_dropdown"] = gr.Dropdown(
-                label="🔧 Config", visible=False
+                label="🔧 Feedback subset to show",
+                info='Show principles\' performance reconstructing (and explaining) the selected feedback subset. *For example, if the rule "Select the more concise response" reconstructs GPT-4 wins well, this indicates GPT-4 may be more concise than other models in this dataset.*',
+                visible=False,
             )
         with gr.Column(
             scale=3,
         ):
-            with gr.Accordion(label="⚙️ Advanced config", open=True, visible=True):
+            with gr.Accordion(label="⚙️ Advanced config", open=False, visible=True):
                 with gr.Group():
                     # button to disable efficient
                     inp["efficient_mode_dropdown"] = gr.Dropdown(
@@ -115,7 +117,14 @@ def generate():
     inp = {}
     state = {}
     out = {}
-    with gr.Blocks() as demo:
+
+    theme = gr.themes.Ocean().set(
+        button_secondary_background_fill="*neutral_200",
+        button_secondary_background_fill_dark="*primary_700",
+        button_secondary_background_fill_hover="*neutral_100",
+        button_secondary_background_fill_hover_dark="*neutral_600",
+    )
+    with gr.Blocks(theme=theme) as demo:
         create_data_loader(inp, state)
 
         with gr.Row() as main_row:
