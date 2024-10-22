@@ -62,7 +62,6 @@ CHATBOT_ARENA = BuiltinDataset(
             filter_col_2="winner_model",
             filter_value_2="gpt-4-0314",
         ),
-        Config("Entire dataset"),
     ],
 )
 
@@ -70,6 +69,13 @@ PRISM = BuiltinDataset(name="💎 PRISM")
 
 # List of all built-in datasets
 BUILTIN_DATASETS = [SYNTHETIC, CHATBOT_ARENA, PRISM]
+
+# make sure entire dataset is an option for all built-in datasets
+for dataset in BUILTIN_DATASETS:
+    if dataset.options is not None:
+        dataset.options = dataset.options + [Config("Entire dataset")]
+    else:
+        dataset.options = [Config("Entire dataset")]
 
 
 # utility functions

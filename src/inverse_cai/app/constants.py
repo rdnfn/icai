@@ -1,16 +1,14 @@
 """Constants for the app."""
 
 ### Layout and dimensions
-PRINCIPLE_SHORT_LENGTH = 55  # length of principle shown before cutting off
+PRINCIPLE_SHORT_LENGTH = 75  # length of principle shown before cutting off
 # this sets where the actual plot starts and ends (individual datapoints)
-FIG_PROPORTIONS_X = [0.40, 0.99]
+FIG_PROPORTIONS_X = [0.60, 0.99]
 FIG_PROPORTIONS_Y = [0.01, 0.91]
 SPACE_PER_NUM_COL = 0.04
-PRINCIPLE_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - 4 * SPACE_PER_NUM_COL
-AGREEMENT_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - 3 * SPACE_PER_NUM_COL
-RELEVANCE_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - 2 * SPACE_PER_NUM_COL
-PERF_END_Y = FIG_PROPORTIONS_X[0] - 0.01 - 1 * SPACE_PER_NUM_COL
-ACC_END_Y = FIG_PROPORTIONS_X[0] - 0.01
+NON_FIG_LEN = FIG_PROPORTIONS_X[0]
+PRINCIPLE_END_X = NON_FIG_LEN * 0.75
+METRICS_START_X = PRINCIPLE_END_X + 0.01
 HEADING_HEIGHT_Y = FIG_PROPORTIONS_Y[1]
 MENU_X = 0.3
 MENU_Y = 0.97

@@ -5,22 +5,19 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
+import inverse_cai.app.metrics
 from inverse_cai.app.constants import (
     PRINCIPLE_SHORT_LENGTH,
     FIG_PROPORTIONS_X,
     FIG_PROPORTIONS_Y,
     SPACE_PER_NUM_COL,
-    PRINCIPLE_END_Y,
-    AGREEMENT_END_Y,
-    RELEVANCE_END_Y,
-    PERF_END_Y,
-    ACC_END_Y,
+    PRINCIPLE_END_X,
+    METRICS_START_X,
     HEADING_HEIGHT_Y,
     MENU_X,
     MENU_Y,
     FONT_FAMILY,
     COLORS_DICT,
-    DARK_COLORS_DICT,
     PAPER_BACKGROUND_COLOR,
     PLOT_BACKGROUND_COLOR,
     PLOTLY_MODEBAR_POSSIBLE_VALUES,
@@ -58,75 +55,14 @@ def get_string_with_breaks(
 
 def generate_hbar_chart(
     votes_df: pd.DataFrame,
-    efficiency_mode: bool = True,
     show_examples: bool = False,
+    shown_metric_names: list = ["perf", "acc", "relevance"],
+    default_ordering_metric="perf",
     sort_examples_by_agreement: bool = True,
 ) -> go.Figure:
 
-    principles = votes_df["principle"].unique()
-    num_pairs = len(votes_df["comparison_id"].unique())
-
-    def get_agreement(principle: str) -> float:
-        principle_votes = votes_df[votes_df["principle"] == principle]
-        value_counts = principle_votes["vote"].value_counts()
-        return value_counts.get("Agree", 0) / len(principle_votes)
-
-    agreement_by_principle = {
-        principle: get_agreement(principle) for principle in principles
-    }
-
-    principles_by_agreement = sorted(
-        principles,
-        key=lambda x: agreement_by_principle[x],
-    )
-
-    def get_acc(principle: str) -> int:
-        value_counts = votes_df[votes_df["principle"] == principle][
-            "vote"
-        ].value_counts()
-        try:
-            acc = value_counts.get("Agree", 0) / (
-                value_counts.get("Disagree", 0) + value_counts.get("Agree", 0)
-            )
-            # main sort by accuracy, then by agreement, then by disagreement (reversed)
-            return acc, value_counts.get("Agree", 0), -value_counts.get("Disagree", 0)
-        except ZeroDivisionError:
-            return 0, value_counts.get("Agree", 0), -value_counts.get("Disagree", 0)
-
-    acc_by_principle = {principle: get_acc(principle) for principle in principles}
-
-    principles_by_acc = sorted(
-        principles,
-        key=lambda x: acc_by_principle[x],
-    )
-
-    def get_relevance(principle: str) -> float:
-        principle_votes = votes_df[votes_df["principle"] == principle]
-        value_counts = principle_votes["vote"].value_counts()
-        return (value_counts.get("Agree", 0) + value_counts.get("Disagree", 0)) / len(
-            principle_votes
-        )
-
-    relevance_by_principle = {
-        principle: get_relevance(principle) for principle in principles
-    }
-
-    principles_by_relevance = sorted(
-        principles,
-        key=lambda x: relevance_by_principle[x],
-    )
-
-    def get_perf(principle: str) -> float:
-        acc = acc_by_principle[principle][0]
-        relevance = relevance_by_principle[principle]
-        return (acc - 0.5) * relevance
-
-    perf_by_principle = {principle: get_perf(principle) for principle in principles}
-
-    principles_by_perf = sorted(
-        principles,
-        key=lambda x: perf_by_principle[x],
-    )
+    metrics: dict = inverse_cai.app.metrics.compute_metrics(votes_df)
+    principles = metrics["principles"]
 
     fig = go.Figure()
 
@@ -194,7 +130,7 @@ def generate_hbar_chart(
     for principle in principles:
         principle_short = (
             principle[:PRINCIPLE_SHORT_LENGTH] + "..."
-            if len(principle) > 50
+            if len(principle) > PRINCIPLE_SHORT_LENGTH
             else principle
         )
         # principle
@@ -202,7 +138,7 @@ def generate_hbar_chart(
             dict(
                 xref="paper",
                 yref="y",
-                x=PRINCIPLE_END_Y,
+                x=PRINCIPLE_END_X,
                 y=principle,
                 xanchor="right",
                 text=principle_short,
@@ -214,32 +150,18 @@ def generate_hbar_chart(
         )
 
         # add agreement and accuracy values in own columns
-        for start, value, label, hovertext in [
-            [
-                AGREEMENT_END_Y,
-                agreement_by_principle[principle],
-                "Agr.",
-                "Agreement: proportion of all votes that agree with original preferences",
-            ],
-            [
-                ACC_END_Y,
-                acc_by_principle[principle][0],
-                "Acc.",
-                "Accuracy: proportion of non-irrelevant votes ('agree' or 'disagree')<br>that agree with original preferences",
-            ],
-            [
-                RELEVANCE_END_Y,
-                relevance_by_principle[principle],
-                "Rel.",
-                "Relevance: proportion of all votes that are not 'not applicable'",
-            ],
-            [
-                PERF_END_Y,
-                perf_by_principle[principle],
-                "Perf.",
-                "Performance: relevance * (accuracy - 0.5)",
-            ],
-        ]:
+        for (
+            start,
+            value,
+            label,
+            hovertext,
+        ) in inverse_cai.app.metrics.get_metric_cols_by_principle(
+            principle,
+            metrics,
+            shown_metric_names,
+            METRICS_START_X,
+            FIG_PROPORTIONS_X[0] - METRICS_START_X - 0.01,
+        ):
             annotations.append(
                 dict(
                     xref="paper",
@@ -274,10 +196,10 @@ def generate_hbar_chart(
 
     # add principle and vote count headings
     for start, label, hovertext in [
-        [PRINCIPLE_END_Y / 2, "Principles", None],
+        [PRINCIPLE_END_X / 2, "Principles", None],
         [
             FIG_PROPORTIONS_X[0] + (FIG_PROPORTIONS_X[1] - FIG_PROPORTIONS_X[0]) / 2,
-            f"Preference reconstruction results ({num_pairs} comparisons)",
+            f"Preference reconstruction results ({metrics['num_pairs']} comparisons)",
             "One row per principle, one column per preference",
         ],
     ]:
@@ -298,15 +220,15 @@ def generate_hbar_chart(
         )
 
     # sort by agreement
-    fig.update_yaxes(categoryorder="array", categoryarray=principles_by_agreement)
+    fig.update_yaxes(
+        categoryorder="array",
+        categoryarray=metrics["metrics"][default_ordering_metric]["principle_order"],
+    )
 
     update_method = "relayout"  # "update"  # or "relayout"
-    options = [
-        ["Agr. (desc.)", principles_by_agreement],
-        ["Acc. (desc.)", principles_by_acc],
-        ["Relevance (desc.)", principles_by_relevance],
-        ["Performance (desc.)", principles_by_perf],
-    ]
+    options = inverse_cai.app.metrics.get_ordering_options(
+        metrics, shown_metric_names, initial=default_ordering_metric
+    )
 
     fig.update_layout(
         updatemenus=[

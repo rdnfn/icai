@@ -12,10 +12,27 @@ def create_data_loader(inp: dict, state: dict):
     state["unfiltered_df"] = gr.State(value=pd.DataFrame())
     state["dataset_name"] = gr.State(value="")
     with gr.Row(variant="panel"):
-        with gr.Column(scale=3, variant="compact", min_width="100px"):
+        with gr.Column(scale=2, variant="compact", min_width="300px"):
             gr.HTML(
-                '<img src="https://github.com/rdnfn/icai/blob/34065605749f42a33ab2fc0be3305e96840e9412/docs/img/00_logo_v0_wide.png?raw=true" alt="Logo" width="350">'
+                '<img src="https://github.com/rdnfn/icai/blob/34065605749f42a33ab2fc0be3305e96840e9412/docs/img/00_logo_v0_wide.png?raw=true" alt="Logo" width="300">'
             )
+        link_button_variant = "secondary"
+        link_button_size = "lg"
+        with gr.Column(scale=3):
+            gr.Button(
+                "📖 Paper",
+                link="https://arxiv.org/abs/2406.06560",
+                variant=link_button_variant,
+                size=link_button_size,
+            )
+        with gr.Column(scale=3):
+            gr.Button(
+                "📦 GitHub",
+                link="https://github.com/rdnfn/icai",
+                variant=link_button_variant,
+                size=link_button_size,
+            )
+    with gr.Row(variant="panel"):
         with gr.Column(scale=3, variant="panel"):
             with gr.Accordion("Load built-in results"):
                 inp["dataset_btns"] = {}
@@ -41,13 +58,16 @@ def create_data_loader(inp: dict, state: dict):
             )
             inp["simple_config_dropdown"] = gr.Dropdown(
                 label="🔧 Feedback subset to show",
-                info='Show principles\' performance reconstructing (and explaining) the selected feedback subset. *For example, if the rule "Select the more concise response" reconstructs GPT-4 wins well, this indicates GPT-4 may be more concise than other models in this dataset.*',
+                info='Show principles\' performance reconstructing ("explaining") the selected feedback subset. *Example interpretation: If the principle "Select the more concise response" reconstructs GPT-4 wins well, GPT-4 may be more concise than other models in this dataset.*',
                 visible=False,
             )
         with gr.Column(
             scale=3,
         ):
             with gr.Accordion(label="⚙️ Advanced config", open=False, visible=True):
+                gr.Markdown(
+                    "Advanced configuration options that enable filtering the dataset and changing other visibility settings. If available, settings to the left of this menu will automatically set these advanced options. Set advanced options here manually to override."
+                )
                 with gr.Group():
                     # button to disable efficient
                     inp["efficient_mode_dropdown"] = gr.Dropdown(
@@ -123,6 +143,7 @@ def generate():
         button_secondary_background_fill_dark="*primary_700",
         button_secondary_background_fill_hover="*neutral_100",
         button_secondary_background_fill_hover_dark="*neutral_600",
+        block_info_text_color="*neutral_600",
     )
     with gr.Blocks(theme=theme) as demo:
         create_data_loader(inp, state)
