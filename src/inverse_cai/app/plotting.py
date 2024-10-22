@@ -9,18 +9,16 @@ import inverse_cai.app.metrics
 from inverse_cai.app.constants import (
     PRINCIPLE_SHORT_LENGTH,
     FIG_PROPORTIONS_X,
-    FIG_PROPORTIONS_Y,
     SPACE_PER_NUM_COL,
     PRINCIPLE_END_X,
     METRICS_START_X,
-    HEADING_HEIGHT_Y,
     MENU_X,
-    MENU_Y,
     FONT_FAMILY,
     COLORS_DICT,
     PAPER_BACKGROUND_COLOR,
     PLOT_BACKGROUND_COLOR,
     PLOTLY_MODEBAR_POSSIBLE_VALUES,
+    get_fig_proportions_y,
 )
 
 # based on official plotly example
@@ -63,6 +61,10 @@ def generate_hbar_chart(
 
     metrics: dict = inverse_cai.app.metrics.compute_metrics(votes_df)
     principles = metrics["principles"]
+
+    FIG_PROPORTIONS_Y = get_fig_proportions_y(len(principles))
+    HEADING_HEIGHT_Y = FIG_PROPORTIONS_Y[1]
+    MENU_Y = 1 - (1 - HEADING_HEIGHT_Y) / 3
 
     fig = go.Figure()
 
@@ -271,7 +273,7 @@ def generate_hbar_chart(
 
     fig.update_layout(
         annotations=annotations,
-        height=20 * len(principles),
+        height=20 * len(principles) + 50,
         font_family=FONT_FAMILY,
     )
 

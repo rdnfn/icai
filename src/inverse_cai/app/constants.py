@@ -4,12 +4,30 @@
 PRINCIPLE_SHORT_LENGTH = 75  # length of principle shown before cutting off
 # this sets where the actual plot starts and ends (individual datapoints)
 FIG_PROPORTIONS_X = [0.60, 0.99]
-FIG_PROPORTIONS_Y = [0.01, 0.91]
+
+FIG_HEIGHT_PER_PRINCIPLE = 10  # height of each principle in px
+FIG_HEIGHT_HEADER = 50
+FIG_HEIGHT_BOTTOM = 10
+
+
+def get_fig_proportions_y(num_principles):
+    total_height_px = (
+        num_principles * FIG_HEIGHT_PER_PRINCIPLE
+        + FIG_HEIGHT_HEADER
+        + FIG_HEIGHT_BOTTOM
+    )
+
+    return [
+        FIG_HEIGHT_BOTTOM / total_height_px,
+        (FIG_HEIGHT_BOTTOM + FIG_HEIGHT_PER_PRINCIPLE * num_principles)
+        / total_height_px,
+    ]
+
+
 SPACE_PER_NUM_COL = 0.04
 NON_FIG_LEN = FIG_PROPORTIONS_X[0]
 PRINCIPLE_END_X = NON_FIG_LEN * 0.75
 METRICS_START_X = PRINCIPLE_END_X + 0.01
-HEADING_HEIGHT_Y = FIG_PROPORTIONS_Y[1]
 MENU_X = 0.3
 MENU_Y = 0.97
 
