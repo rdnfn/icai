@@ -2,7 +2,7 @@ import gradio as gr
 import pandas as pd
 
 from inverse_cai.app.callbacks import generate_callbacks, attach_callbacks
-from inverse_cai.app.constants import NONE_SELECTED_VALUE
+from inverse_cai.app.constants import NONE_SELECTED_VALUE, VERSION
 from inverse_cai.app.builtin_datasets import BUILTIN_DATASETS
 
 
@@ -18,14 +18,15 @@ def create_data_loader(inp: dict, state: dict):
             )
         link_button_variant = "secondary"
         link_button_size = "lg"
-        with gr.Column(scale=3):
+        with gr.Column(scale=4):
+            pass
+        with gr.Column(scale=1):
             gr.Button(
                 "📖 Paper",
                 link="https://arxiv.org/abs/2406.06560",
                 variant=link_button_variant,
                 size=link_button_size,
             )
-        with gr.Column(scale=3):
             gr.Button(
                 "📦 GitHub",
                 link="https://github.com/rdnfn/icai",
@@ -38,7 +39,6 @@ def create_data_loader(inp: dict, state: dict):
                 inp["dataset_btns"] = {}
                 for dataset in BUILTIN_DATASETS:
                     inp["dataset_btns"][dataset.name] = gr.Button(dataset.name)
-
         with gr.Column(scale=3, variant="panel"):
             with gr.Accordion("Load custom results"):
                 with gr.Group():
@@ -54,7 +54,8 @@ def create_data_loader(inp: dict, state: dict):
             scale=3,
         ):
             inp["simple_config_dropdown_placeholder"] = gr.Markdown(
-                "*No simple dataset configuration available. Load different dataset or use advanced config.*"
+                "*No simple dataset configuration available. Load different dataset or use advanced config.*",
+                container=True,
             )
             inp["simple_config_dropdown"] = gr.Dropdown(
                 label="🔧 Feedback subset to show",
@@ -151,6 +152,9 @@ def generate():
         with gr.Row() as main_row:
             with gr.Column(scale=2, variant="panel") as right_col:
                 create_principle_view(out)
+
+        with gr.Row():
+            gr.HTML(f"<center>Inverse Constitutional AI (ICAI) App v{VERSION}</center>")
 
         callbacks = generate_callbacks(inp, state, out)
         attach_callbacks(inp, state, out, callbacks)
