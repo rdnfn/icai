@@ -107,8 +107,6 @@ def get_metric_cols_by_principle(
     num_cols = len(metric_names)
     metric_col_width = metrics_cols_width / num_cols
 
-    print(f"metric_col_width: {metric_col_width}")
-    print(f"metrics_cols_start_y: {metrics_cols_start_y}")
     metric_col_options = {
         "agreement": {
             "short": "Agr.",
