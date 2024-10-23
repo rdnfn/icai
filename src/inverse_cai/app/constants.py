@@ -1,5 +1,10 @@
 """Constants for the app."""
 
+# App/package version
+import importlib.metadata
+
+VERSION = importlib.metadata.version("inverse_cai")
+
 ### Layout and dimensions
 PRINCIPLE_SHORT_LENGTH = 75  # length of principle shown before cutting off
 # this sets where the actual plot starts and ends (individual datapoints)
