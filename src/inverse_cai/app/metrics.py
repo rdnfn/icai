@@ -29,6 +29,10 @@ def get_perf(value_counts: pd.Series) -> float:
     return (acc - 0.5) * relevance * 2
 
 
+def get_num_votes(value_counts: pd.Series) -> int:
+    return value_counts.sum()
+
+
 def compute_metrics(votes_df: pd.DataFrame) -> dict:
 
     # votes_df is a pd.DataFrame with one row
@@ -39,6 +43,7 @@ def compute_metrics(votes_df: pd.DataFrame) -> dict:
         "acc": get_acc,
         "relevance": get_relevance,
         "perf": get_perf,
+        "num_votes": get_num_votes,
     }
 
     principles = votes_df["principle"].unique()
