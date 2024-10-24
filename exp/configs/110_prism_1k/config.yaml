@@ -1,0 +1,12 @@
+data_path: "./data/processed/prism/prism_rand1k_incl_metadata_v2.csv"
+data_len: 1000
+alg_model: "openai/gpt-4o-mini-2024-07-18"
+s1_num_principles_per_instance: 2
+s2_num_clusters: 160
+s3_max_principles: 5
+annotator:
+  is_single_annotator: true
+  base_constitutional_annotator_configs:
+    - data/annotator_configs/chatgpt_fn_constitutional_base_neutral_v1
+  other_annotator_configs:
+    - data/annotator_configs/chatgpt_fn_noinstruction
