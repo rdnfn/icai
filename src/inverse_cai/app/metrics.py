@@ -3,97 +3,73 @@
 import pandas as pd
 
 
+def get_agreement(value_counts: pd.Series) -> float:
+    return value_counts.get("Agree", 0) / value_counts.sum()
+
+
+def get_acc(value_counts: pd.Series) -> float:
+    try:
+        acc = value_counts.get("Agree", 0) / (
+            value_counts.get("Disagree", 0) + value_counts.get("Agree", 0)
+        )
+        return acc
+    except ZeroDivisionError:
+        return 0
+
+
+def get_relevance(value_counts: pd.Series) -> float:
+    return (
+        value_counts.get("Agree", 0) + value_counts.get("Disagree", 0)
+    ) / value_counts.sum()
+
+
+def get_perf(value_counts: pd.Series) -> float:
+    acc = get_acc(value_counts)
+    relevance = get_relevance(value_counts)
+    return (acc - 0.5) * relevance * 2
+
+
 def compute_metrics(votes_df: pd.DataFrame) -> dict:
+
+    # votes_df is a pd.DataFrame with one row
+    # per vote, and columns "comparison_id", "principle", "vote"
+
+    metric_fn = {
+        "agreement": get_agreement,
+        "acc": get_acc,
+        "relevance": get_relevance,
+        "perf": get_perf,
+    }
 
     principles = votes_df["principle"].unique()
     num_pairs = len(votes_df["comparison_id"].unique())
 
-    def get_agreement(principle: str) -> float:
+    metrics = {}
+
+    for principle in principles:
         principle_votes = votes_df[votes_df["principle"] == principle]
         value_counts = principle_votes["vote"].value_counts()
-        return value_counts.get("Agree", 0) / len(principle_votes)
 
-    agreement_by_principle = {
-        principle: get_agreement(principle) for principle in principles
-    }
+        for metric in metric_fn.keys():
+            if metric not in metrics:
+                metrics[metric] = {}
+            if "by_principle" not in metrics[metric]:
+                metrics[metric]["by_principle"] = {}
+            metrics[metric]["by_principle"][principle] = metric_fn[metric](value_counts)
 
-    principles_by_agreement = sorted(
-        principles,
-        key=lambda x: agreement_by_principle[x],
-    )
-
-    def get_acc(principle: str) -> int:
-        value_counts = votes_df[votes_df["principle"] == principle][
-            "vote"
-        ].value_counts()
-        try:
-            acc = value_counts.get("Agree", 0) / (
-                value_counts.get("Disagree", 0) + value_counts.get("Agree", 0)
-            )
-            # main sort by accuracy, then by agreement, then by disagreement (reversed)
-            return acc, value_counts.get("Agree", 0), -value_counts.get("Disagree", 0)
-        except ZeroDivisionError:
-            return 0, value_counts.get("Agree", 0), -value_counts.get("Disagree", 0)
-
-    acc_by_principle = {principle: get_acc(principle) for principle in principles}
-
-    principles_by_acc = sorted(
-        principles,
-        key=lambda x: acc_by_principle[x],
-    )
-
-    def get_relevance(principle: str) -> float:
-        principle_votes = votes_df[votes_df["principle"] == principle]
-        value_counts = principle_votes["vote"].value_counts()
-        return (value_counts.get("Agree", 0) + value_counts.get("Disagree", 0)) / len(
-            principle_votes
+    for metric in metrics.keys():
+        metrics[metric]["principle_order"] = sorted(
+            principles,
+            key=lambda x: (
+                metrics[metric]["by_principle"][x],
+                metrics["relevance"]["by_principle"][x],
+            ),
         )
-
-    relevance_by_principle = {
-        principle: get_relevance(principle) for principle in principles
-    }
-
-    principles_by_relevance = sorted(
-        principles,
-        key=lambda x: relevance_by_principle[x],
-    )
-
-    def get_perf(principle: str) -> float:
-        acc = acc_by_principle[principle][0]
-        relevance = relevance_by_principle[principle]
-        return (acc - 0.5) * relevance * 2
-
-    perf_by_principle = {principle: get_perf(principle) for principle in principles}
-
-    principles_by_perf = sorted(
-        principles,
-        key=lambda x: perf_by_principle[x],
-    )
 
     return {
         "principles": principles,
         "num_pairs": num_pairs,
-        "metrics": {
-            "agreement": {
-                "by_principle": agreement_by_principle,
-                "principle_order": principles_by_agreement,
-            },
-            "acc": {
-                "by_principle": {
-                    principle: acc_by_principle[principle][0]
-                    for principle in principles
-                },  # because multiple secondary sort values
-                "principle_order": principles_by_acc,
-            },
-            "relevance": {
-                "by_principle": relevance_by_principle,
-                "principle_order": principles_by_relevance,
-            },
-            "perf": {
-                "by_principle": perf_by_principle,
-                "principle_order": principles_by_perf,
-            },
-        },
+        "metrics": metrics,
     }
 
 
