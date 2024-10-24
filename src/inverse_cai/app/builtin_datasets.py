@@ -40,7 +40,7 @@ SYNTHETIC = BuiltinDataset(
 
 CHATBOT_ARENA = BuiltinDataset(
     name="🏟️ Chatbot Arena",
-    path="exp/outputs/2024-10-14_19-07-20",
+    path="exp/outputs/chatbot_arena_v1",
     description="LMSYS Chatbot Arena data.",
     options=[
         Config(
@@ -65,7 +65,18 @@ CHATBOT_ARENA = BuiltinDataset(
     ],
 )
 
-PRISM = BuiltinDataset(name="💎 PRISM")
+PRISM = BuiltinDataset(
+    name="💎 PRISM",
+    path="exp/outputs/prism_1k_v1",
+    description="PRISM dataset.",
+    options=[
+        Config(
+            name="GPT-4-1106-preview winning (against all other models)",
+            filter_col="chosen_model",
+            filter_value="gpt-4-1106-preview",
+        ),
+    ],
+)
 
 # List of all built-in datasets
 BUILTIN_DATASETS = [SYNTHETIC, CHATBOT_ARENA, PRISM]
