@@ -59,8 +59,10 @@ def generate_hbar_chart(
     sort_examples_by_agreement: bool = True,
 ) -> go.Figure:
 
+    gr.Info("Computing metrics...")
     metrics: dict = inverse_cai.app.metrics.compute_metrics(votes_df)
     principles = metrics["principles"]
+    gr.Info("Metrics computed.")
 
     FIG_PROPORTIONS_Y = get_fig_proportions_y(len(principles))
     HEADING_HEIGHT_Y = FIG_PROPORTIONS_Y[1]
@@ -87,23 +89,61 @@ def generate_hbar_chart(
             "hoverinfo": "text",
             "hovertext": votes_df["hovertext"],
         }
-    else:
-        hover_args = {"hoverinfo": "text", "hovertext": None}
-
-    fig.add_trace(
-        go.Bar(
-            x=votes_df["weight"],
-            y=votes_df["principle"],
-            orientation="h",
-            marker=dict(
-                color=votes_df["vote"].apply(lambda x: COLORS_DICT[x]),
-                # line=dict(color="black", width=2),
-                cornerradius=10,
-            ),
-            **hover_args,
+        fig.add_trace(
+            go.Bar(
+                x=votes_df["weight"],
+                y=votes_df["principle"],
+                orientation="h",
+                marker=dict(
+                    color=votes_df["vote"].apply(lambda x: COLORS_DICT[x]),
+                    # line=dict(color="black", width=2),
+                    cornerradius=10,
+                ),
+                **hover_args,
+            )
         )
-    )
+    else:
+        vote_dict = {
+            "agreed": [],
+            "disagreed": [],
+            "not_applicable": [],
+            "num_votes": [],
+        }
 
+        color_name_dict = {
+            "agreed": "Agree",
+            "disagreed": "Disagree",
+            "not_applicable": "Not applicable",
+        }
+
+        for principle in principles:
+            for vote_type in vote_dict.keys():
+                vote_dict[vote_type].append(
+                    metrics["metrics"][vote_type]["by_principle"][principle]
+                )
+
+        for vote_type, vote_list in vote_dict.items():
+            if vote_type != "num_votes":
+                color_name = color_name_dict[vote_type]
+                fig.add_trace(
+                    go.Bar(
+                        x=vote_list,
+                        y=principles,
+                        orientation="h",
+                        marker=dict(
+                            color=COLORS_DICT[color_name],
+                            # line=dict(color="black", width=2),
+                            cornerradius=10,
+                        ),
+                        hoverinfo="text",
+                        hovertext=[
+                            f"{color_name}: {value} ({(value/sum_val)*100:.1f}%)"
+                            for value, sum_val in zip(vote_list, vote_dict["num_votes"])
+                        ],
+                    )
+                )
+
+    # set up general layout configurations
     fig.update_layout(
         xaxis=dict(
             showgrid=False,
@@ -124,6 +164,8 @@ def generate_hbar_chart(
         plot_bgcolor=PLOT_BACKGROUND_COLOR,
         showlegend=False,
         margin=dict(l=20, r=20, t=20, b=20),
+        height=20 * len(principles) + 50,
+        font_family=FONT_FAMILY,
     )
 
     annotations = []
@@ -227,11 +269,11 @@ def generate_hbar_chart(
         categoryarray=metrics["metrics"][default_ordering_metric]["principle_order"],
     )
 
+    # add sorting menu
     update_method = "relayout"  # "update"  # or "relayout"
     options = inverse_cai.app.metrics.get_ordering_options(
         metrics, shown_metric_names, initial=default_ordering_metric
     )
-
     fig.update_layout(
         updatemenus=[
             dict(
@@ -273,11 +315,9 @@ def generate_hbar_chart(
 
     fig.update_layout(
         annotations=annotations,
-        height=20 * len(principles) + 50,
-        font_family=FONT_FAMILY,
     )
 
-    # remove modebar
+    # remove/hide modebar
     fig.update_layout(
         modebar=dict(
             bgcolor="rgba(0,0,0,0)",

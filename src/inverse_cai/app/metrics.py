@@ -33,6 +33,18 @@ def get_num_votes(value_counts: pd.Series) -> int:
     return value_counts.sum()
 
 
+def get_agreed(value_counts: pd.Series) -> int:
+    return value_counts.get("Agree", 0)
+
+
+def get_disagreed(value_counts: pd.Series) -> int:
+    return value_counts.get("Disagree", 0)
+
+
+def get_not_applicable(value_counts: pd.Series) -> int:
+    return value_counts.get("Not applicable", 0)
+
+
 def compute_metrics(votes_df: pd.DataFrame) -> dict:
 
     # votes_df is a pd.DataFrame with one row
@@ -44,6 +56,9 @@ def compute_metrics(votes_df: pd.DataFrame) -> dict:
         "relevance": get_relevance,
         "perf": get_perf,
         "num_votes": get_num_votes,
+        "agreed": get_agreed,
+        "disagreed": get_disagreed,
+        "not_applicable": get_not_applicable,
     }
 
     principles = votes_df["principle"].unique()
