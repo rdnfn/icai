@@ -120,6 +120,10 @@ def get_metric_cols_by_principle(
             "short": "Perf.",
             "descr": "Performance: relevance * (accuracy - 0.5) * 2",
         },
+        "(perf all)": {
+            "short": "(all)",
+            "descr": "Performance on all datapoints.",
+        },
     }
 
     return [

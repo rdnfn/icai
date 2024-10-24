@@ -9,7 +9,6 @@ import inverse_cai.app.metrics
 from inverse_cai.app.constants import (
     PRINCIPLE_SHORT_LENGTH,
     FIG_PROPORTIONS_X,
-    SPACE_PER_NUM_COL,
     PRINCIPLE_END_X,
     METRICS_START_X,
     MENU_X,
@@ -53,26 +52,38 @@ def get_string_with_breaks(
 
 def generate_hbar_chart(
     votes_df: pd.DataFrame,
+    unfiltered_df: pd.DataFrame,
     show_examples: bool = False,
-    shown_metric_names: list = ["perf", "acc", "relevance"],
+    shown_metric_names: list = ["perf", "(perf all)", "acc", "relevance"],
     default_ordering_metric="perf",
     sort_examples_by_agreement: bool = True,
 ) -> go.Figure:
 
     gr.Info("Computing metrics...")
     metrics: dict = inverse_cai.app.metrics.compute_metrics(votes_df)
+
+    # add metrics for entire dataset
+    full_metrics: dict = inverse_cai.app.metrics.compute_metrics(unfiltered_df)
+    full_metrics["metrics"] = {
+        f"({key} all)": value for key, value in full_metrics["metrics"].items()
+    }
+    metrics["metrics"].update(full_metrics["metrics"])
     principles = metrics["principles"]
     gr.Info("Metrics computed.")
 
     FIG_PROPORTIONS_Y = get_fig_proportions_y(len(principles))
+
     HEADING_HEIGHT_Y = FIG_PROPORTIONS_Y[1]
     MENU_Y = 1 - (1 - HEADING_HEIGHT_Y) / 3
+    SPACE_ALL_NUM_COL = FIG_PROPORTIONS_X[0] - METRICS_START_X - 0.01
+    SPACE_PER_NUM_COL = SPACE_ALL_NUM_COL / len(shown_metric_names)
 
     fig = go.Figure()
 
     if sort_examples_by_agreement:
         votes_df = votes_df.sort_values(by=["principle", "vote"], axis=0)
 
+    # bar plots for each principle
     if show_examples:
         votes_df["selected_text"] = votes_df.apply(
             lambda x: x[x["preferred_text"]], axis=1
@@ -193,7 +204,7 @@ def generate_hbar_chart(
             )
         )
 
-        # add agreement and accuracy values in own columns
+        # add metric values in own columns
         for (
             start,
             value,

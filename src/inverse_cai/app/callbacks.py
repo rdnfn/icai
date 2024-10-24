@@ -70,6 +70,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
         fig = plotting.generate_hbar_chart(
             votes_df,
+            unfiltered_df=unfiltered_df,
             show_examples=not efficient_mode,
             sort_examples_by_agreement=(
                 True if pref_order == "By reconstruction success" else False
