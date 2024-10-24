@@ -32,54 +32,51 @@ def convert_vote_to_string(vote: int) -> str:
 
 
 def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
+
+    # load relevant data from experiment logs
     votes_per_comparison = pd.read_csv(
         results_dir / "040_votes_per_comparison.csv", index_col="index"
     )
     principles_by_id: dict = load_json_file(
         results_dir / "030_distilled_principles_per_cluster.json",
     )
-
-    # list of dicts with votes per comparison, per principle
-    # including the prompt and responses
-    votes_by_comparison_and_principle = []
-
     comparison_df = pd.read_csv(results_dir / "000_train_data.csv", index_col="index")
 
-    def get_comparison_data(id: int):
-        data = {
-            # "prompt": comparison_data.loc[id, "prompt"],
-            "text_a": comparison_df.loc[id, "text_a"],
-            "text_b": comparison_df.loc[id, "text_b"],
-            "preferred_text": comparison_df.loc[id, "preferred_text"],
-        }
-        # add additional columns
-        data.update({col: comparison_df.loc[id, col] for col in comparison_df.columns})
-        return data
+    # merge original comparison data with votes per comparison
+    full_df = comparison_df.merge(
+        votes_per_comparison, left_index=True, right_index=True
+    )
+    full_df["comparison_id"] = full_df.index
 
-    for comparison_idx, values in votes_per_comparison.iterrows():
+    def get_voting_data_columns(row):
+        # votes are saved as dict with principle_id as key
+        # and True, False, or None as value
+        vote_dict = ast.literal_eval(row["votes"])
+        vote_principle_ids = list(vote_dict.keys())
+        vote_principles = [principles_by_id[str(id)] for id in vote_principle_ids]
+        vote_values = list(vote_dict.values())
 
-        # get dict from pd.Series with string value of dict
-        vote_dict = ast.literal_eval(values["votes"])
+        return vote_principle_ids, vote_principles, vote_values
 
-        comparison_data = get_comparison_data(comparison_idx)
+    (
+        full_df["principle_id"],
+        full_df["principle"],
+        full_df["vote"],
+    ) = zip(*full_df.apply(get_voting_data_columns, axis=1))
 
-        # for each principle, add an entry including comparison data
-        for principle_id, vote in vote_dict.items():
-            principle = principles_by_id[str(principle_id)]
-            votes_by_comparison_and_principle.append(
-                {
-                    "comparison_id": comparison_idx,
-                    "principle_id": principle_id,
-                    "principle": principle,
-                    "vote": convert_vote_to_string(vote),
-                    "weight": 1,
-                    **comparison_data,
-                }
-            )
+    # explode into multiple rows
+    # such that each row contains one principle and vote
+    # (rather than one principle and a dict of multiple votes)
+    full_df = full_df.explode(["principle_id", "principle", "vote"])
+    full_df = full_df.reset_index(drop=True)
 
-    dfs = {
-        "votes": pd.DataFrame(votes_by_comparison_and_principle),
-        "comparisons": comparison_df,
-    }
+    # sanity check: make sure our length is correct
+    assert len(full_df) == len(comparison_df) * len(principles_by_id)
 
-    return pd.DataFrame(votes_by_comparison_and_principle)
+    # convert votes from True/False/None to strings
+    full_df["vote"] = full_df["vote"].apply(convert_vote_to_string)
+
+    # add a weight column
+    full_df["weight"] = 1
+
+    return full_df
