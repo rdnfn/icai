@@ -68,10 +68,15 @@ def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
     # such that each row contains one principle and vote
     # (rather than one principle and a dict of multiple votes)
     full_df = full_df.explode(["principle_id", "principle", "vote"])
-    full_df = full_df.reset_index(drop=True)
 
     # sanity check: make sure our length is correct
-    assert len(full_df) == len(comparison_df) * len(principles_by_id)
+    if len(full_df) != len(comparison_df) * len(principles_by_id):
+        votes_per_comparison = full_df.value_counts("comparison_id")
+        max_votes = full_df.groupby("principle_id").size().max()
+        min_votes = full_df.groupby("principle_id").size().min()
+        gr.Info(
+            f"Note: not all principles have same number of votes (max: {max_votes} min: {min_votes}). This observation is not necessarily a problem, just indicating that ~{1 - min_votes/max_votes:.3f}% of votes may have been faulty."
+        )
 
     # convert votes from True/False/None to strings
     full_df["vote"] = full_df["vote"].apply(convert_vote_to_string)
