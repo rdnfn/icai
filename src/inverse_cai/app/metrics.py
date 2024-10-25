@@ -45,7 +45,7 @@ def get_not_applicable(value_counts: pd.Series) -> int:
     return value_counts.get("Not applicable", 0)
 
 
-def compute_metrics(votes_df: pd.DataFrame) -> dict:
+def compute_metrics(votes_df: pd.DataFrame, baseline_metrics: dict = None) -> dict:
 
     # votes_df is a pd.DataFrame with one row
     # per vote, and columns "comparison_id", "principle", "vote"
@@ -76,6 +76,22 @@ def compute_metrics(votes_df: pd.DataFrame) -> dict:
             if "by_principle" not in metrics[metric]:
                 metrics[metric]["by_principle"] = {}
             metrics[metric]["by_principle"][principle] = metric_fn[metric](value_counts)
+
+        if baseline_metrics is not None:
+            for metric in metric_fn.keys():
+                if metric + "_diff" not in metrics:
+                    metrics[metric + "_diff"] = {"by_principle": {}}
+                if metric + "_base" not in metrics:
+                    metrics[metric + "_base"] = {"by_principle": {}}
+
+                metrics[metric + "_diff"]["by_principle"][principle] = (
+                    metrics[metric]["by_principle"][principle]
+                    - baseline_metrics["metrics"][metric]["by_principle"][principle]
+                )
+
+                metrics[metric + "_base"]["by_principle"][principle] = baseline_metrics[
+                    "metrics"
+                ][metric]["by_principle"][principle]
 
     for metric in metrics.keys():
         metrics[metric]["principle_order"] = sorted(
@@ -120,9 +136,13 @@ def get_metric_cols_by_principle(
             "short": "Perf.",
             "descr": "Performance: relevance * (accuracy - 0.5) * 2",
         },
-        "(perf all)": {
+        "perf_base": {
             "short": "(all)",
             "descr": "Performance on all datapoints.",
+        },
+        "perf_diff": {
+            "short": "(diff)",
+            "descr": "Absolute performance difference to votes on entire dataset.",
         },
     }
 
@@ -153,6 +173,14 @@ def get_ordering_options(
             metrics["metrics"]["relevance"]["principle_order"],
         ],
         "perf": ["Performance (desc.)", metrics["metrics"]["perf"]["principle_order"]],
+        "perf_base": [
+            "Performance on full dataset (desc.)",
+            metrics["metrics"]["perf_base"]["principle_order"],
+        ],
+        "perf_diff": [
+            "Performance difference (desc.)",
+            metrics["metrics"]["perf_diff"]["principle_order"],
+        ],
     }
 
     if initial not in order_options.keys():

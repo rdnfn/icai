@@ -54,20 +54,22 @@ def generate_hbar_chart(
     votes_df: pd.DataFrame,
     unfiltered_df: pd.DataFrame,
     show_examples: bool = False,
-    shown_metric_names: list = ["perf", "(perf all)", "acc", "relevance"],
+    shown_metric_names: list = [
+        "perf",
+        "perf_base",
+        "perf_diff",
+        "acc",
+        "relevance",
+    ],
     default_ordering_metric="perf",
     sort_examples_by_agreement: bool = True,
 ) -> go.Figure:
 
     gr.Info("Computing metrics...")
-    metrics: dict = inverse_cai.app.metrics.compute_metrics(votes_df)
-
-    # add metrics for entire dataset
     full_metrics: dict = inverse_cai.app.metrics.compute_metrics(unfiltered_df)
-    full_metrics["metrics"] = {
-        f"({key} all)": value for key, value in full_metrics["metrics"].items()
-    }
-    metrics["metrics"].update(full_metrics["metrics"])
+    metrics: dict = inverse_cai.app.metrics.compute_metrics(
+        votes_df, baseline_metrics=full_metrics
+    )
     principles = metrics["principles"]
     gr.Info("Metrics computed.")
 

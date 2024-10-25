@@ -6,7 +6,7 @@ import importlib.metadata
 VERSION = importlib.metadata.version("inverse_cai")
 
 ### Layout and dimensions
-PRINCIPLE_SHORT_LENGTH = 75  # length of principle shown before cutting off
+PRINCIPLE_SHORT_LENGTH = 70  # length of principle shown before cutting off
 # this sets where the actual plot starts and ends (individual datapoints)
 FIG_PROPORTIONS_X = [0.60, 0.99]
 
@@ -30,7 +30,7 @@ def get_fig_proportions_y(num_principles):
 
 
 NON_FIG_LEN = FIG_PROPORTIONS_X[0]
-PRINCIPLE_END_X = NON_FIG_LEN * 0.70
+PRINCIPLE_END_X = NON_FIG_LEN * 0.65
 METRICS_START_X = PRINCIPLE_END_X + 0.01
 MENU_X = 0.3
 MENU_Y = 0.97
