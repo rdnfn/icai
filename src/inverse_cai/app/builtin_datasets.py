@@ -21,7 +21,7 @@ class Config:
     """Class to represent a configuration."""
 
     name: str
-    efficent_mode: bool = True
+    show_individual_prefs: bool = False
     pref_order: str = "By reconstruction success"
     filter_col: str = NONE_SELECTED_VALUE
     filter_value: str = NONE_SELECTED_VALUE

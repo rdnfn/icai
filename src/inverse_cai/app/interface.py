@@ -76,11 +76,11 @@ def create_data_loader(inp: dict, state: dict):
                 )
                 with gr.Group():
                     # button to disable efficient
-                    inp["efficient_mode_dropdown"] = gr.Dropdown(
-                        label="🏃 Efficient mode",
-                        info="Efficient mode makes the interface faster, but hides individual preference information",
-                        choices=[True, False],
-                        value=True,
+                    inp["show_individual_prefs_dropdown"] = gr.Dropdown(
+                        label="🗂️ Show individual preferences (slow)",
+                        info="Whether to show individual preference examples. May slow down the app.",
+                        choices=[False, True],
+                        value=False,
                         interactive=True,
                     )
                     inp["pref_order_dropdown"] = gr.Dropdown(

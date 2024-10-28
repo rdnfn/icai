@@ -20,7 +20,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
     def load_data(
         path: str,
         prior_state_datapath: str,
-        efficient_mode: bool,
+        show_individual_prefs: bool,
         pref_order: str,
         filter_col: str,
         filter_val: str,
@@ -71,7 +71,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         fig = plotting.generate_hbar_chart(
             votes_df,
             unfiltered_df=unfiltered_df,
-            show_examples=not efficient_mode,
+            show_examples=show_individual_prefs,
             sort_examples_by_agreement=(
                 True if pref_order == "By reconstruction success" else False
             ),
@@ -147,7 +147,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             **load_data(
                 dataset_config.path,
                 prior_state_datapath,
-                adv_config.efficent_mode,
+                adv_config.show_individual_prefs,
                 adv_config.pref_order,
                 adv_config.filter_col,
                 adv_config.filter_value,
@@ -198,7 +198,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     load_data_inputs = [
         inp["datapath"],
         state["datapath"],
-        inp["efficient_mode_dropdown"],
+        inp["show_individual_prefs_dropdown"],
         inp["pref_order_dropdown"],
         inp["filter_col_dropdown"],
         inp["filter_value_dropdown"],
@@ -225,7 +225,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
 
     for config_value_dropdown in [
         inp["pref_order_dropdown"],
-        inp["efficient_mode_dropdown"],
+        inp["show_individual_prefs_dropdown"],
         inp["filter_value_dropdown"],
         inp["filter_value_dropdown_2"],
     ]:
