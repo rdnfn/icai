@@ -39,9 +39,6 @@ def get_string_with_breaks(
     text = text.replace("\n", " <br> ")
     lines = text.split(" ")
 
-    print(text)
-    print(lines)
-
     full_text = ""
     current_line = ""
     lines_so_far = 0
