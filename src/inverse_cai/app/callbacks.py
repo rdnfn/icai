@@ -3,6 +3,7 @@
 import gradio as gr
 import pandas as pd
 import pathlib
+from loguru import logger
 
 from inverse_cai.app.loader import create_votes_df
 import inverse_cai.app.plotting as plotting
@@ -45,7 +46,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         if not any(results_dir.iterdir()):
             raise FileNotFoundError(f"Results directory is empty in path '{path}'")
 
-        gr.Info(f"Updating results (from path '{path}')")
+        gr.Info(f"Updating results (from path '{path}')", duration=3)
 
         votes_df: pd.DataFrame = create_votes_df(results_dir)
 
@@ -60,7 +61,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                         f"Filter value is not selected, but filter column '{col}' is."
                     )
                 else:
-                    gr.Info(f"Filter: only showing data where '{col}' = '{val}'")
+                    logger.debug(f"Filter: only showing data where '{col}' = '{val}'")
                     votes_df = votes_df[votes_df[col] == val]
 
         if len(votes_df) == 0:

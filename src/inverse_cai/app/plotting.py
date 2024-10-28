@@ -4,6 +4,7 @@ import gradio as gr
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+from loguru import logger
 
 import inverse_cai.app.metrics
 from inverse_cai.app.constants import (
@@ -106,13 +107,13 @@ def generate_hbar_chart(
     sort_examples_by_agreement: bool = True,
 ) -> go.Figure:
 
-    gr.Info("Computing metrics...")
+    logger.debug("Computing metrics...")
     full_metrics: dict = inverse_cai.app.metrics.compute_metrics(unfiltered_df)
     metrics: dict = inverse_cai.app.metrics.compute_metrics(
         votes_df, baseline_metrics=full_metrics
     )
     principles = metrics["principles"]
-    gr.Info("Metrics computed.")
+    logger.debug("Metrics computed.")
 
     FIG_PROPORTIONS_Y = get_fig_proportions_y(len(principles))
 
@@ -390,6 +391,6 @@ def generate_hbar_chart(
         )
     )
 
-    gr.Info("Plot generated, will be displayed any moment now.")
+    gr.Info("Plotting complete, uploading to interface.", duration=3)
 
     return fig

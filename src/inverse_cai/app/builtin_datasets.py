@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import gradio as gr
+from loguru import logger
 
 from inverse_cai.app.constants import NONE_SELECTED_VALUE
 
@@ -112,7 +113,7 @@ def get_dataset_from_name(name: str) -> BuiltinDataset:
     """Get a dataset from its name."""
     for dataset in BUILTIN_DATASETS:
         if dataset.name == name:
-            gr.Info(f"Loading dataset '{name}'")
+            logger.info(f"Loading dataset '{name}'", duration=5)
             return dataset
 
     raise ValueError(f"Dataset with name '{name}' not found.")

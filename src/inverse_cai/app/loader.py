@@ -2,6 +2,7 @@ import pathlib
 import json
 import ast
 import pandas as pd
+from loguru import logger
 
 import gradio as gr
 
@@ -74,7 +75,7 @@ def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
         votes_per_comparison = full_df.value_counts("comparison_id")
         max_votes = full_df.groupby("principle_id").size().max()
         min_votes = full_df.groupby("principle_id").size().min()
-        gr.Info(
+        logger.info(
             f"Note: not all principles have same number of votes (max: {max_votes} min: {min_votes}). This observation is not necessarily a problem, just indicating that ~{1 - min_votes/max_votes:.3f}% of votes may have been faulty."
         )
 
