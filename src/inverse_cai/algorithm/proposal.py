@@ -1,4 +1,5 @@
 import ast
+from joblib import Parallel, delayed
 import pandas as pd
 import tqdm
 from loguru import logger
@@ -57,7 +58,7 @@ def generate_principles_from_feedback(
     # initialize the principles column
     feedback["principles"] = None
 
-    for index, row in tqdm.tqdm(feedback.iterrows(), total=len(feedback)):
+    def process_row(index, row, num_principles_per_ranking, model_name, config):
         principles = generate_principles_from_single_ranking(
             preferred_text=get_preferred_text(row),
             rejected_text=get_rejected_text(row),
@@ -65,7 +66,16 @@ def generate_principles_from_feedback(
             model_name=model_name,
             config=config,
         )
-        # note that principles here is a list of strings
+        return index, principles
+
+    # parallelize the process
+    results = Parallel(n_jobs=config.parallel_workers)(
+        delayed(process_row)(index, row, num_principles_per_ranking, model_name, config)
+        for index, row in tqdm.tqdm(feedback.iterrows(), total=feedback.shape[0])
+    )
+
+    # update the feedback DataFrame
+    for index, principles in results:
         feedback.at[index, "principles"] = principles
 
     return feedback

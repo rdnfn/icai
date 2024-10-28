@@ -52,6 +52,9 @@ class ExpConfig:
 
     # General config
     secrets_path: str = "./secrets.toml"  # Path to the secrets file
+    parallel_workers: int = (
+        -1
+    )  # Number of parallel workers to use, -1 for all avaliable
 
     # logging config via wandb
     wandb_project: Optional[str] = None

@@ -3,7 +3,7 @@ import tqdm
 import random
 import pandas as pd
 from loguru import logger
-from langchain_core.messages import HumanMessage, SystemMessage
+from joblib import Parallel, delayed
 
 import inverse_cai as icai
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
@@ -81,19 +81,29 @@ def run_pass_to_get_votes_for_principles(
     """
 
     feedback_df = feedback_df.copy()
-
     feedback_df["votes"] = None
-    votes = []
 
-    for index, row in tqdm.tqdm(feedback_df.iterrows(), total=len(feedback_df)):
+    # Function to process each row
+    def process_row(index, row, summaries, model_name, config):
+        preferred = get_preferred_text(row)
+        rejected = get_rejected_text(row)
         vote = get_preference_vote_for_single_text(
-            preferred_sample=get_preferred_text(row),
-            rejected_sample=get_rejected_text(row),
+            preferred_sample=preferred,
+            rejected_sample=rejected,
             summaries=summaries,
             model_name=model_name,
             config=config,
         )
-        votes.append(vote)
+        return index, vote
+
+    # Parallel processing of rows
+    results = Parallel(n_jobs=config.parallel_workers)(
+        delayed(process_row)(index, row, summaries, model_name, config)
+        for index, row in tqdm.tqdm(feedback_df.iterrows(), total=feedback_df.shape[0])
+    )
+
+    # Updating DataFrame with results
+    for index, vote in results:
         feedback_df.at[index, "votes"] = vote
 
     raw_votes = feedback_df["votes"]
