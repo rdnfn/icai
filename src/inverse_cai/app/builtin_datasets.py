@@ -78,8 +78,14 @@ PRISM = BuiltinDataset(
     ],
 )
 
+ALPACA_EVAL = BuiltinDataset(
+    name="🦙 AlpacaEval",
+    path="exp/outputs/alpacaeval_v1",
+    description="AlpacaEval cross-annotated dataset of 648 pairwise comparisons. Each comparison is rated by 4 human annotators. We use the majority vote as the ground truth, breaking ties randomly.",
+)
+
 # List of all built-in datasets
-BUILTIN_DATASETS = [SYNTHETIC, CHATBOT_ARENA, PRISM]
+BUILTIN_DATASETS = [SYNTHETIC, CHATBOT_ARENA, PRISM, ALPACA_EVAL]
 
 # make sure entire dataset is an option for all built-in datasets
 for dataset in BUILTIN_DATASETS:
