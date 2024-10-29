@@ -5,6 +5,7 @@ from inverse_cai.app.callbacks import generate_callbacks, attach_callbacks
 from inverse_cai.app.constants import NONE_SELECTED_VALUE, VERSION
 from inverse_cai.app.builtin_datasets import BUILTIN_DATASETS
 from inverse_cai.app.info_texts import METHOD_INFO_TEXT, METHOD_INFO_HEADING
+from inverse_cai.app.metrics import METRIC_COL_OPTIONS
 
 
 def create_data_loader(inp: dict, state: dict):
@@ -90,6 +91,20 @@ def create_data_loader(inp: dict, state: dict):
                             "Original (random) order",
                         ],
                         value="By reconstruction success",
+                        interactive=True,
+                    )
+                    metric_choices = [
+                        (
+                            f"{metric['name']}",
+                            key,
+                        )
+                        for key, metric in METRIC_COL_OPTIONS.items()
+                    ]
+                    inp["metrics_dropdown"] = gr.Dropdown(
+                        multiselect=True,
+                        label="📈 Metrics to show",
+                        choices=metric_choices,
+                        value=["perf", "relevance", "acc"],
                         interactive=True,
                     )
 

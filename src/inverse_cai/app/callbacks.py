@@ -27,6 +27,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         filter_val: str,
         filter_col_2: str,
         filter_val_2: str,
+        metrics: list[str],
         reset_filters_if_new: bool = True,
     ):
         new_path = True if path != prior_state_datapath else False
@@ -76,6 +77,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             sort_examples_by_agreement=(
                 True if pref_order == "By reconstruction success" else False
             ),
+            shown_metric_names=metrics,
         )
 
         plot = gr.Plot(fig)
@@ -154,6 +156,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 adv_config.filter_value,
                 adv_config.filter_col_2,
                 adv_config.filter_value_2,
+                metrics=adv_config.metrics,
                 reset_filters_if_new=False,
             ),
             inp["filter_value_dropdown"]: gr.Dropdown(
@@ -172,6 +175,10 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             ),
             inp["pref_order_dropdown"]: gr.Dropdown(
                 value=adv_config.pref_order,
+                interactive=True,
+            ),
+            inp["metrics_dropdown"]: gr.Dropdown(
+                value=adv_config.metrics,
                 interactive=True,
             ),
         }
@@ -213,6 +220,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         inp["filter_value_dropdown"],
         inp["filter_col_dropdown_2"],
         inp["filter_value_dropdown_2"],
+        inp["metrics_dropdown"],
     ]
 
     load_data_outputs = [
@@ -237,6 +245,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         inp["show_individual_prefs_dropdown"],
         inp["filter_value_dropdown"],
         inp["filter_value_dropdown_2"],
+        inp["metrics_dropdown"],
     ]:
         config_value_dropdown.input(
             callbacks["load_data"],
@@ -258,6 +267,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         inp["filter_value_dropdown_2"],
         inp["show_individual_prefs_dropdown"],
         inp["pref_order_dropdown"],
+        inp["metrics_dropdown"],
     ]
 
     for dataset_button in inp["dataset_btns"].values():

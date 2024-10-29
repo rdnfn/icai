@@ -1,6 +1,6 @@
 """Module with configurations for built-in datasets."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import gradio as gr
 from loguru import logger
 
@@ -28,6 +28,7 @@ class Config:
     filter_value: str = NONE_SELECTED_VALUE
     filter_col_2: str = NONE_SELECTED_VALUE
     filter_value_2: str = NONE_SELECTED_VALUE
+    metrics: list = field(default_factory=lambda: ["perf", "relevance", "acc"])
 
 
 # Builtin datasets

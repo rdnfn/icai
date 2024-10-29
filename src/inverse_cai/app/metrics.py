@@ -109,6 +109,40 @@ def compute_metrics(votes_df: pd.DataFrame, baseline_metrics: dict = None) -> di
     }
 
 
+METRIC_COL_OPTIONS = {
+    "agreement": {
+        "name": "Agreement",
+        "short": "Agr.",
+        "descr": "Agreement: proportion of all votes that agree with original preferences",
+    },
+    "acc": {
+        "name": "Accuracy",
+        "short": "Acc.",
+        "descr": "Accuracy: proportion of non-irrelevant votes ('agree' or 'disagree')<br>that agree with original preferences",
+    },
+    "relevance": {
+        "name": "Relevance",
+        "short": "Rel.",
+        "descr": "Relevance: proportion of all votes that are not 'not applicable'",
+    },
+    "perf": {
+        "name": "Performance",
+        "short": "Perf.",
+        "descr": "Performance: relevance * (accuracy - 0.5) * 2",
+    },
+    "perf_base": {
+        "name": "Performance on full dataset",
+        "short": "(all)",
+        "descr": "Performance on all datapoints (not just selected subset)",
+    },
+    "perf_diff": {
+        "name": "Performance difference (full vs subset)",
+        "short": "(diff)",
+        "descr": "Absolute performance difference to votes on entire dataset",
+    },
+}
+
+
 def get_metric_cols_by_principle(
     principle: str,
     metrics: dict,
@@ -119,39 +153,12 @@ def get_metric_cols_by_principle(
     num_cols = len(metric_names)
     metric_col_width = metrics_cols_width / num_cols
 
-    metric_col_options = {
-        "agreement": {
-            "short": "Agr.",
-            "descr": "Agreement: proportion of all votes that agree with original preferences",
-        },
-        "acc": {
-            "short": "Acc.",
-            "descr": "Accuracy: proportion of non-irrelevant votes ('agree' or 'disagree')<br>that agree with original preferences",
-        },
-        "relevance": {
-            "short": "Rel.",
-            "descr": "Relevance: proportion of all votes that are not 'not applicable'",
-        },
-        "perf": {
-            "short": "Perf.",
-            "descr": "Performance: relevance * (accuracy - 0.5) * 2",
-        },
-        "perf_base": {
-            "short": "(all)",
-            "descr": "Performance on all datapoints.",
-        },
-        "perf_diff": {
-            "short": "(diff)",
-            "descr": "Absolute performance difference to votes on entire dataset.",
-        },
-    }
-
     return [
         [
             metrics_cols_start_y + (i + 1) * metric_col_width,
             metrics["metrics"][metric_name]["by_principle"][principle],
-            metric_col_options[metric_name]["short"],
-            metric_col_options[metric_name]["descr"],
+            METRIC_COL_OPTIONS[metric_name]["short"],
+            METRIC_COL_OPTIONS[metric_name]["descr"],
         ]
         for i, metric_name in enumerate(metric_names)
     ]
