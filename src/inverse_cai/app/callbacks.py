@@ -166,6 +166,14 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 value=adv_config.filter_value_2,
                 interactive=True,
             ),
+            inp["show_individual_prefs_dropdown"]: gr.Dropdown(
+                value=adv_config.show_individual_prefs,
+                interactive=True,
+            ),
+            inp["pref_order_dropdown"]: gr.Dropdown(
+                value=adv_config.pref_order,
+                interactive=True,
+            ),
         }
 
     def set_filter_val_dropdown(column: str, votes_df: pd.DataFrame):
@@ -248,6 +256,8 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         state["dataset_name"],
         inp["filter_value_dropdown"],
         inp["filter_value_dropdown_2"],
+        inp["show_individual_prefs_dropdown"],
+        inp["pref_order_dropdown"],
     ]
 
     for dataset_button in inp["dataset_btns"].values():
