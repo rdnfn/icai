@@ -1,1 +1,1 @@
-.
+inverse_cai @ git+https://github.com/rdnfn/icai@hf_spaces
