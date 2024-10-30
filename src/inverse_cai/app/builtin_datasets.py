@@ -77,6 +77,30 @@ PRISM = BuiltinDataset(
             filter_col="chosen_model",
             filter_value="gpt-4-1106-preview",
         ),
+        Config(
+            name="Location (by birth region): Americas",
+            filter_col="location_birth_region",
+            filter_value="Americas",
+            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+        ),
+        Config(
+            name="Location (by birth region): Europe",
+            filter_col="location_birth_region",
+            filter_value="Europe",
+            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+        ),
+        Config(
+            name="English proficiency: intermediate",
+            filter_col="english_proficiency",
+            filter_value="Intermediate",
+            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+        ),
+        Config(
+            name="English proficiency: native speaker",
+            filter_col="english_proficiency",
+            filter_value="Native speaker",
+            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+        ),
     ],
 )
 
