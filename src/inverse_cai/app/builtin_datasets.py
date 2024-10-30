@@ -5,6 +5,11 @@ import gradio as gr
 from loguru import logger
 
 from inverse_cai.app.constants import NONE_SELECTED_VALUE
+from inverse_cai.app.data_loader import load_icai_data, DATA_DIR
+
+load_icai_data()
+
+DATA_DIR = DATA_DIR / "icai-data"
 
 
 @dataclass
@@ -35,14 +40,14 @@ class Config:
 
 SYNTHETIC = BuiltinDataset(
     name="🧪 Synthetic",
-    path="exp/outputs/2024-10-12_15-58-26",
+    path=DATA_DIR / "synthetic_v1",
     description="Synthetic dataset generated according to three different rules.",
     options=None,
 )
 
 CHATBOT_ARENA = BuiltinDataset(
     name="🏟️ Chatbot Arena",
-    path="exp/outputs/chatbot_arena_v1",
+    path=DATA_DIR / "chatbot_arena_v1",
     description="LMSYS Chatbot Arena data.",
     options=[
         Config(
@@ -69,7 +74,7 @@ CHATBOT_ARENA = BuiltinDataset(
 
 PRISM = BuiltinDataset(
     name="💎 PRISM",
-    path="exp/outputs/prism_1k_v1",
+    path=DATA_DIR / "prism_1k_v1",
     description="PRISM dataset.",
     options=[
         Config(
@@ -77,12 +82,36 @@ PRISM = BuiltinDataset(
             filter_col="chosen_model",
             filter_value="gpt-4-1106-preview",
         ),
+        Config(
+            name="Location (by birth region): Americas",
+            filter_col="location_birth_region",
+            filter_value="Americas",
+            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+        ),
+        Config(
+            name="Location (by birth region): Europe",
+            filter_col="location_birth_region",
+            filter_value="Europe",
+            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+        ),
+        Config(
+            name="English proficiency: intermediate",
+            filter_col="english_proficiency",
+            filter_value="Intermediate",
+            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+        ),
+        Config(
+            name="English proficiency: native speaker",
+            filter_col="english_proficiency",
+            filter_value="Native speaker",
+            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+        ),
     ],
 )
 
 ALPACA_EVAL = BuiltinDataset(
     name="🦙 AlpacaEval",
-    path="exp/outputs/alpacaeval_v1",
+    path=DATA_DIR / "alpacaeval_v1",
     description="AlpacaEval cross-annotated dataset of 648 pairwise comparisons. Each comparison is rated by 4 human annotators. We use the majority vote as the ground truth, breaking ties randomly.",
 )
 
