@@ -52,7 +52,7 @@ icai-app = "inverse_cai.app.main:run"
 [tool.pytest.ini_options]
 pythonpath = "."
 testpaths = ["src"]
-python_files = ["test_*.py"]
+python_files = ["*_test.py"]
 
 [tool.black]
 line-length = 88
