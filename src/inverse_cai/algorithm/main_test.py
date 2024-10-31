@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 import pandas as pd
-import pathlib
 from inverse_cai.experiment.config import ExpConfig
 from inverse_cai.algorithm.main import run
 
@@ -188,9 +187,18 @@ def test_run_skip_voting(
 
 
 @patch("inverse_cai.models.get_model")
-def test_run_integration(mock_get_model, mock_feedback_df, mock_config, mock_save_path):
+@patch("inverse_cai.algorithm.voting.random.choice")  # Add mock for random.choice
+def test_run_integration(
+    mock_random_choice, mock_get_model, mock_feedback_df, mock_config, mock_save_path
+):
     # Setup mock model with different responses for different calls
     mock_model = Mock()
+
+    # Set random.choice to return False only when choosing between booleans
+    def random_choice_side_effect(seq):
+        return seq[0]
+
+    mock_random_choice.side_effect = random_choice_side_effect
 
     def side_effect(messages):
         message_text = str(messages)
