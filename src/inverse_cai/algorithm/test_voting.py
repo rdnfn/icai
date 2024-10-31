@@ -7,6 +7,7 @@ from unittest.mock import patch, MagicMock
 from inverse_cai.algorithm.voting import (
     get_preference_vote_for_single_text,
     clean_vote_json,
+    parse_individual_pref_vote,
 )
 from inverse_cai.experiment.core import ExpConfig
 
@@ -38,6 +39,7 @@ def test_get_preference_vote_for_single_text_flipped(
 def test_get_preference_vote_for_single_text_not_flipped(
     mock_random_choice, mock_get_model
 ):
+    """Test preference voting when the order of samples is not flipped."""
     mock_random_choice.return_value = False
     mock_model = MagicMock()
     mock_model.invoke.return_value.content = '{0: "A", 1: "B"}'
@@ -58,6 +60,7 @@ def test_get_preference_vote_for_single_text_not_flipped(
 def test_get_preference_vote_for_single_text_invalid_vote(
     mock_random_choice, mock_get_model
 ):
+    """Test preference voting when an invalid vote is returned by model."""
     mock_random_choice.return_value = False
     mock_model = MagicMock()
     mock_model.invoke.return_value.content = '{"0": "C", "1": "None"}'
@@ -74,6 +77,7 @@ def test_get_preference_vote_for_single_text_invalid_vote(
 
 @patch("inverse_cai.algorithm.voting.icai.models.get_model")
 def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
+    """Test preference voting when invalid JSON is returned."""
     mock_model = MagicMock()
     mock_model.invoke.return_value.content = "invalid_json"
     mock_get_model.return_value = mock_model
@@ -92,6 +96,7 @@ def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
 
 @patch("inverse_cai.algorithm.voting.icai.models.get_model")
 def test_get_preference_vote_for_single_text_all_keys_present(mock_get_model):
+    """Test that all summary keys are present in the preference voting result."""
     mock_model = MagicMock()
     mock_model.invoke.return_value.content = '{"0": "A", "1": "B", "2": "A"}'
     mock_get_model.return_value = mock_model
@@ -110,6 +115,7 @@ def test_get_preference_vote_for_single_text_all_keys_present(mock_get_model):
 
 
 def test_clean_vote_json():
+    """Test cleaning and formatting of vote JSON strings."""
     vote_json = '{"1": "true", "2": "false", "3": "null", "4": "A", "5": "B"}'
     summaries = {1: "sum1", 2: "sum2", 3: "sum3", 4: "sum4", 5: "sum5"}
 
@@ -142,7 +148,6 @@ def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model):
 
 def test_parse_individual_pref_vote():
     """Test parsing of individual preference votes from JSON responses."""
-    from .voting import parse_individual_pref_vote
 
     # Test valid JSON votes
     assert parse_individual_pref_vote('{"1": "A", "2": "B"}', 2) == {
