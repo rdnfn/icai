@@ -1,4 +1,3 @@
-
 # Inverse Constitutional AI
 
 Repository containing code for the paper "Inverse Constitutional AI: Compressing Preferences into Principles" ([pdf](https://arxiv.org/abs/2406.06560)). The figure below provides an overview of the *Inverse Constitutional AI* (ICAI) problem we introduce: starting from a set of pairwise preference feedback, we derive a set of natural language principles (a *constitution*) that explain the preference data.
@@ -108,10 +107,10 @@ icai-exp -cd ./exp/configs/001_synthetic_orthogonal
 
 ### Running test cases
 
-To run the test cases for the code, use the following command:
+Tests are included as part of the package. Run them using:
 
-```
-pytest ./tests
+```bash
+pytest ./src
 ```
 
 ### Simplest way to run experiment script
