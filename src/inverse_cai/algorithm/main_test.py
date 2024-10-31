@@ -10,10 +10,9 @@ from inverse_cai.algorithm.main import run
 def mock_feedback_df():
     return pd.DataFrame(
         {
-            "preferred_text": ["text1", "text2"],
-            "rejected_text": ["text3", "text4"],
-            "winner_model": ["model1", "model2"],
-            "loser_model": ["model3", "model4"],
+            "text_a": ["text1", "text2"],
+            "text_b": ["text3", "text4"],
+            "preferred_text": ["text_a", "text_b"],
         }
     )
 
@@ -186,3 +185,65 @@ def test_run_skip_voting(
     assert result["combined_votes"] is None
     assert result["filtered_plinciples"] is None
     assert len(result["final_principles"]) == 2  # Should match max_principles
+
+
+@patch("inverse_cai.models.get_model")
+def test_run_integration(mock_get_model, mock_feedback_df, mock_config, mock_save_path):
+    # Setup mock model with different responses for different calls
+    mock_model = Mock()
+
+    def side_effect(messages):
+        message_text = str(messages)
+        if "Given the data above, why do you think" in message_text:
+            # For principle generation
+            return Mock(
+                content='{"principles": ["Select response that is more concise", "Select response that is more accurate"]}'
+            )
+        elif "check for each rule below" in message_text:
+            # For voting
+            return Mock(content='{"0": "A", "1": "B"}')
+        else:
+            # For summaries
+            return Mock(content='{"summary": "Select response that is more effective"}')
+
+    mock_model.invoke.side_effect = side_effect
+    mock_get_model.return_value = mock_model
+
+    # Disable parallel processing for the test
+    mock_config.parallel_workers = 1  # Force sequential processing
+
+    # Run the function with minimal mocking
+    result = run(
+        feedback=mock_feedback_df,
+        save_path=mock_save_path,
+        num_principles_generated_per_ranking=2,
+        num_clusters=2,
+        random_clusters=False,
+        skip_voting=False,
+        require_majority_true=True,
+        require_majority_relevant=False,
+        require_majority_valid=True,
+        require_minimum_relevance=0.1,
+        order_by="for_minus_against",
+        max_principles=5,
+        ratio_of_max_principles_to_cluster_again=1.5,
+        model_name="test-model",
+        config=mock_config,
+    )
+
+    # Verify the basic structure of the result
+    assert isinstance(result, dict)
+    assert "feedback" in result
+    assert "clusters" in result
+    assert "summaries" in result
+    assert "combined_votes" in result
+    assert "filtered_plinciples" in result
+    assert "final_principles" in result
+    assert "constitution" in result
+
+    # Verify that the model was called
+    assert mock_model.invoke.call_count > 0
+
+    # Verify the constitution format
+    assert isinstance(result["constitution"], str)
+    assert result["constitution"].startswith("1. ")
