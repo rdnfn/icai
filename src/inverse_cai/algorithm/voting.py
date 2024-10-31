@@ -17,7 +17,7 @@ def get_votes_for_principles(
     summaries: dict,
     config: ExpConfig,
     model_name: str,
-) -> tuple[pd.Series, dict]:
+) -> tuple[pd.DataFrame, dict]:
     """Get votes for principles.
 
     Distributed over multiple passes if necessary."""
