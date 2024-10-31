@@ -48,3 +48,8 @@ build-backend = "hatchling.build"
 [project.scripts]
 icai-exp = "inverse_cai.experiment.core:run"
 icai-app = "inverse_cai.app.main:run"
+
+[tool.pytest.ini_options]
+pythonpath = "."
+testpaths = ["src"]
+python_files = ["test_*.py"]
