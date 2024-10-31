@@ -1,5 +1,0 @@
-1. Select the response that uses simpler, less engaging language.
-2. Select the response that contains incorrect or nonsensical logic.
-3. Select the response that lacks detailed achievements.
-4. Select the response that lists key takeaways clearly and concisely
-5. Select the response that maintains consistency in classification.

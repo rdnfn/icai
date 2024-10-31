@@ -1,5 +1,0 @@
-1. Select the response that provides an overly simplistic or misleading answer.
-2. Select the response that lacks depth in analysis.
-3. Select the response that contains incorrect or nonsensical logic.
-4. Select the response that lists all entities in the text.
-5. Select the response that ends abruptly without a conclusion.
