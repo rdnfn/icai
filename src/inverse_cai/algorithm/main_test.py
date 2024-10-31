@@ -12,7 +12,7 @@ def mock_feedback_df():
         {
             "text_a": ["text1", "text2"],
             "text_b": ["text3", "text4"],
-            "preferred_text": ["text_a", "text_b"],
+            "preferred_text": ["text_a", "text_a"],
         }
     )
 
