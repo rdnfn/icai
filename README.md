@@ -5,7 +5,7 @@ colorFrom: yellow
 colorTo: blue
 sdk: gradio
 sdk_version: "5.0.2"
-app_file: src/inverse_cai/app/main.py
+app_file: main.py
 pinned: false
 ---
 
