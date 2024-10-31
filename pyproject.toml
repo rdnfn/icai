@@ -1,5 +1,5 @@
 [project]
-name = "inverse_cai"
+name = "inverse-cai"
 version = "0.1.0"
 authors = [
   { name="rdnfn", email="hi@arduin.io" },
@@ -33,6 +33,12 @@ dependencies = [
   "ipywidgets", # IProgress in jupyter notebooks
   "gradio",
   "plotly",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest >=6.0",
+    "black",
 ]
 
 [build-system]
