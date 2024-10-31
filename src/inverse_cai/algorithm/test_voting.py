@@ -1,8 +1,8 @@
-import random
-import pytest
+"""
+Tests for the voting module.
+"""
+
 from unittest.mock import patch, MagicMock
-import pandas as pd
-from loguru import logger
 
 from inverse_cai.algorithm.voting import (
     get_preference_vote_for_single_text,
@@ -16,10 +16,11 @@ from inverse_cai.experiment.core import ExpConfig
 def test_get_preference_vote_for_single_text_flipped(
     mock_random_choice, mock_get_model
 ):
+    """Test preference voting when the order of samples is flipped."""
     # outputs are always flipped
     mock_random_choice.return_value = True
     mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{"1": "A", "2": "B"}'
+    mock_model.invoke.return_value.content = '{0: "A", 1: "B"}'
     mock_get_model.return_value = mock_model
 
     result = get_preference_vote_for_single_text(
@@ -39,7 +40,7 @@ def test_get_preference_vote_for_single_text_not_flipped(
 ):
     mock_random_choice.return_value = False
     mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{"1": "A", "2": "B"}'
+    mock_model.invoke.return_value.content = '{0: "A", 1: "B"}'
     mock_get_model.return_value = mock_model
 
     result = get_preference_vote_for_single_text(
@@ -55,11 +56,11 @@ def test_get_preference_vote_for_single_text_not_flipped(
 @patch("inverse_cai.algorithm.voting.icai.models.get_model")
 @patch("inverse_cai.algorithm.voting.random.choice")
 def test_get_preference_vote_for_single_text_invalid_vote(
-    mock_random_choice, mock_get_model, caplog
+    mock_random_choice, mock_get_model
 ):
     mock_random_choice.return_value = False
     mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{"1": "C", "2": "None"}'
+    mock_model.invoke.return_value.content = '{"0": "C", "1": "None"}'
     mock_get_model.return_value = mock_model
 
     return_val = get_preference_vote_for_single_text(
@@ -72,7 +73,7 @@ def test_get_preference_vote_for_single_text_invalid_vote(
 
 
 @patch("inverse_cai.algorithm.voting.icai.models.get_model")
-def test_get_preference_vote_for_single_text_invalid_json(mock_get_model, caplog):
+def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
     mock_model = MagicMock()
     mock_model.invoke.return_value.content = "invalid_json"
     mock_get_model.return_value = mock_model
@@ -92,7 +93,7 @@ def test_get_preference_vote_for_single_text_invalid_json(mock_get_model, caplog
 @patch("inverse_cai.algorithm.voting.icai.models.get_model")
 def test_get_preference_vote_for_single_text_all_keys_present(mock_get_model):
     mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{"1": "A", "2": "B", "3": "A"}'
+    mock_model.invoke.return_value.content = '{"0": "A", "1": "B", "2": "A"}'
     mock_get_model.return_value = mock_model
 
     summaries = {1: "suma", 2: "sumb", 3: "sumc"}
@@ -112,7 +113,7 @@ def test_clean_vote_json():
     vote_json = '{"1": "true", "2": "false", "3": "null", "4": "A", "5": "B"}'
     summaries = {1: "sum1", 2: "sum2", 3: "sum3", 4: "sum4", 5: "sum5"}
 
-    cleaned_json = clean_vote_json(vote_json, summaries)
+    cleaned_json = clean_vote_json(vote_json, len(summaries))
     expected_json = '{1:True,2:False,3:None,4:"A",5:"B"}'
 
     assert (
@@ -121,72 +122,10 @@ def test_clean_vote_json():
 
 
 @patch("inverse_cai.algorithm.voting.icai.models.get_model")
-def test_get_consistency_vote_for_single_text_valid(mock_get_model):
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{"0": "True", "1": "invalid"}'
-    mock_get_model.return_value = mock_model
-
-    result = get_consistency_vote_for_single_text(
-        "preferred_sample",
-        "rejected_sample",
-        {0: "principle0", 1: "principle1"},
-        config=ExpConfig(),
-    )
-
-    assert result[0] in [
-        True,
-        False,
-        None,
-    ], "Expected vote for principle 0 to be one of [True, False, None]"
-    assert result[1] == "invalid", "Expected vote for principle 1 to be 'invalid'"
-
-
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
-def test_get_consistency_vote_for_single_text_invalid_json(mock_get_model, caplog):
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = "invalid_json_format"
-    mock_get_model.return_value = mock_model
-
-    summaries = {0: "principle0", 1: "principle1"}
-    result = get_consistency_vote_for_single_text(
-        "preferred_sample",
-        "rejected_sample",
-        summaries,
-        config=ExpConfig(),
-    )
-
-    for key in summaries.keys():
-        assert (
-            result[key] == "invalid"
-        ), f"Expected vote for principle {key} to be marked as 'invalid' due to invalid JSON"
-
-
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
-def test_get_consistency_vote_for_single_text_all_keys_present(mock_get_model):
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = (
-        '{"0": "valid", "1": "invalid", "2": "valid"}'
-    )
-    mock_get_model.return_value = mock_model
-
-    summaries = {0: "principle0", 1: "principle1", 2: "principle2"}
-    result = get_consistency_vote_for_single_text(
-        "preferred_sample",
-        "rejected_sample",
-        summaries,
-        config=ExpConfig(),
-    )
-
-    assert set(result.keys()) == set(
-        summaries.keys()
-    ), "Not all keys from summaries are present in the result"
-
-
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
-def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model, caplog):
+def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model):
     """Test to ensure unexpected vote values are counted as invalid in preference voting."""
     mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{"1": "Z", "2": "Y"}'  # Unexpected values
+    mock_model.invoke.return_value.content = '{"0": "Z", "1": "Y"}'  # Unexpected values
     mock_get_model.return_value = mock_model
 
     result = get_preference_vote_for_single_text(
@@ -201,22 +140,42 @@ def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model, c
     ), "Expected all votes to be counted as invalid due to unexpected values"
 
 
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
-def test_get_consistency_vote_for_single_text_unexpected_values(mock_get_model, caplog):
-    """Test to ensure unexpected vote values are counted as invalid in consistency voting."""
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = (
-        '{"0": "maybe", "1": "perhaps"}'  # Unexpected values
-    )
-    mock_get_model.return_value = mock_model
+def test_parse_individual_pref_vote():
+    """Test parsing of individual preference votes from JSON responses."""
+    from .voting import parse_individual_pref_vote
 
-    result = get_consistency_vote_for_single_text(
-        "preferred_sample",
-        "rejected_sample",
-        {0: "principle0", 1: "principle1"},
-        config=ExpConfig(),
-    )
+    # Test valid JSON votes
+    assert parse_individual_pref_vote('{"1": "A", "2": "B"}', 2) == {
+        1: "A",
+        2: "B",
+    }, "Should correctly parse A/B votes"
 
-    assert all(
-        value == "invalid" for value in result.values()
-    ), "Expected all votes to be marked as 'invalid' due to unexpected values"
+    # Test invalid JSON format
+    assert parse_individual_pref_vote("invalid_json", 2) == {
+        0: "invalid",
+        1: "invalid",
+    }, "Should mark invalid JSON as invalid votes"
+
+    # Test missing keys
+    assert parse_individual_pref_vote('{"1": "A"}', 2) == {
+        1: "A",
+    }, "Should parse partial votes"
+
+    # Test invalid vote values
+    assert parse_individual_pref_vote('{"1": "C", "2": "D"}', 2) == {
+        1: "invalid",
+        2: "invalid",
+    }, "Should mark invalid vote values as 'invalid'"
+
+    # Test with None values
+    assert parse_individual_pref_vote('{"1": "foo", "2": "A"}', 2) == {
+        1: "invalid",
+        2: "A",
+    }, "Should handle null values"
+
+    # Test with different summary lengths
+    assert parse_individual_pref_vote('{"1": "A", "2": "B", "3": "A"}', 3) == {
+        1: "A",
+        2: "B",
+        3: "A",
+    }, "Should handle different numbers of summaries"
