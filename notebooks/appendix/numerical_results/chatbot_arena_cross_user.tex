@@ -1,0 +1,15 @@
+\begin{table}[H]
+\centering
+\caption{Results for cross-user experiments on Chatbot Arena data. Averaged over 6~random seeds.}
+\label{tab:chatbot_arena_cross_user_num_ersults}
+\begin{tabularx}{\textwidth}{lllrrrr}
+\toprule
+\textbf{Dataset} & \textbf{Model} & \textbf{Annotator} & \textbf{Mean} & \textbf{Std} & \textbf{Min} & \textbf{Max} \\
+\midrule
+\multirow[t]{2}{*}{Annotations User A} & \multirow[t]{2}{*}{GPT-4o} & User A constitution & \textbf{93.06\%} & \textbf{3.40} & \textbf{91.67\%} & \textbf{100.00\%} \\
+ &  & User B constitution & 83.33\% & 5.27 & 75.00\% & 91.67\% \\
+\multirow[t]{2}{*}{Annotations User B} & \multirow[t]{2}{*}{GPT-4o} & User A constitution & 79.63\% & 10.92 & 66.67\% & 88.89\% \\
+ &  & User B constitution & \textbf{94.44\%} & \textbf{6.09} & \textbf{88.89\%} & \textbf{100.00\%} \\
+\bottomrule
+\end{tabularx}
+\end{table}

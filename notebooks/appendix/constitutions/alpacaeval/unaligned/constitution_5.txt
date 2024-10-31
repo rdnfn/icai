@@ -1,0 +1,5 @@
+1. Select the response that changes the meaning slightly.
+2. Select the response that uses more technical language.
+3. Select the response that maintains the original order of entities.
+4. Select the response that lacks specific examples or details.
+5. Select the response that uses fewer abstract concepts.

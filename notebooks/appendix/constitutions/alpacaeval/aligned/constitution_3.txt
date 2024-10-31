@@ -1,0 +1,5 @@
+1. Select the response that provides a clear and definitive answer.
+2. Select the response that is positive and reassuring.
+3. Select the response that uses more specific theme wording.
+4. Select the response that avoids unnecessary and incorrect logic in methods.
+5. Select the response that provides more practical examples.

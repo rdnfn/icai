@@ -1,0 +1,5 @@
+1. Select the response that is overly general and vague.
+2. Select the response that has unclear or misleading explanations.
+3. Select the response that ends abruptly without a conclusion.
+4. Select the response that contains a typo or grammatical error.
+5. Select the response that lacks material variety.

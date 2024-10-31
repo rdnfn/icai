@@ -1,0 +1,5 @@
+1. Select the response that has syntax or semantic errors.
+2. Select the response that avoids redundancy.
+3. Select the response that provides outdated or incorrect information.
+4. Select the response that uses more technical language.
+5. Select the response that uses an incorrect or unrelated word
