@@ -66,12 +66,14 @@ def filter_according_to_votes(
             key=lambda x: combined_votes[x]["for"],
             reverse=True,
         )
-    if order_by == "for_minus_against":
+    elif order_by == "for_minus_against":
         principle_keys_to_keep = sorted(
             principle_keys_to_keep,
             key=lambda x: combined_votes[x]["for"] - combined_votes[x]["against"],
             reverse=True,
         )
+    else:
+        raise ValueError(f"Invalid order_by parameter: {order_by}")
 
     if max_principles:
         principle_keys_to_keep = principle_keys_to_keep[:max_principles]
