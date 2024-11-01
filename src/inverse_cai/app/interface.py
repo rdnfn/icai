@@ -14,27 +14,32 @@ def create_data_loader(inp: dict, state: dict):
     state["unfiltered_df"] = gr.State(value=pd.DataFrame())
     state["dataset_name"] = gr.State(value="")
     with gr.Row(variant="panel"):
-        with gr.Column(scale=2, variant="compact", min_width="300px"):
+        with gr.Column(scale=4, variant="default", min_width="300px"):
             gr.HTML(
-                '<img src="https://github.com/rdnfn/icai/blob/34065605749f42a33ab2fc0be3305e96840e9412/docs/img/00_logo_v0_wide.png?raw=true" alt="Logo" width="300">'
+                '<img src="https://github.com/rdnfn/icai/blob/34065605749f42a33ab2fc0be3305e96840e9412/docs/img/00_logo_v0_wide.png?raw=true" alt="Logo" width="320">'
             )
         link_button_variant = "secondary"
         link_button_size = "lg"
-        with gr.Column(scale=4):
-            pass
+        # gr.Column(scale=1)
+        # with gr.Column(scale=1):
         with gr.Column(scale=1):
-            gr.Button(
-                "📖 Paper",
-                link="https://arxiv.org/abs/2406.06560",
-                variant=link_button_variant,
-                size=link_button_size,
-            )
-            gr.Button(
-                "📦 GitHub",
-                link="https://github.com/rdnfn/icai",
-                variant=link_button_variant,
-                size=link_button_size,
-            )
+            with gr.Group():
+                gr.Markdown(
+                    f"**Research Preview** – ICAI App v{VERSION}",
+                    container=True,
+                )
+                gr.Button(
+                    "📖 Paper",
+                    link="https://arxiv.org/abs/2406.06560",
+                    variant=link_button_variant,
+                    size=link_button_size,
+                )
+                gr.Button(
+                    "📦 GitHub",
+                    link="https://github.com/rdnfn/icai",
+                    variant=link_button_variant,
+                    size=link_button_size,
+                )
     with gr.Row(variant="panel"):
         with gr.Column(scale=3):
             with gr.Accordion("Select dataset to analyze"):
