@@ -13,10 +13,12 @@ demo = interface.generate()
 def run():
     if USERNAME and PASSWORD:
         auth = (USERNAME, PASSWORD)
+        auth_message = "Welcome to the ICAI App demo!"
     else:
         auth = None
+        auth_message = None
 
-    demo.launch(auth=auth)
+    demo.launch(auth=auth, auth_message=auth_message)
 
 
 if __name__ == "__main__":
