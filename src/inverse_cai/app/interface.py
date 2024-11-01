@@ -4,7 +4,7 @@ import pandas as pd
 from inverse_cai.app.callbacks import generate_callbacks, attach_callbacks
 from inverse_cai.app.constants import NONE_SELECTED_VALUE, VERSION
 from inverse_cai.app.builtin_datasets import BUILTIN_DATASETS
-from inverse_cai.app.info_texts import METHOD_INFO_TEXT, METHOD_INFO_HEADING
+from inverse_cai.app.info_texts import METHOD_INFO_TEXT, METHOD_INFO_HEADING, TLDR_TEXT
 from inverse_cai.app.metrics import METRIC_COL_OPTIONS
 
 
@@ -40,6 +40,13 @@ def create_data_loader(inp: dict, state: dict):
                     variant=link_button_variant,
                     size=link_button_size,
                 )
+
+    with gr.Row(visible=True, variant="panel"):
+        with gr.Column(scale=1):
+            gr.Markdown(TLDR_TEXT, container=True)
+        with gr.Column(scale=1):
+            with gr.Accordion(METHOD_INFO_HEADING, open=False):
+                gr.Markdown(METHOD_INFO_TEXT, container=True)
     with gr.Row(variant="panel"):
         with gr.Column(scale=3):
             with gr.Accordion("Select dataset to analyze"):
@@ -62,8 +69,6 @@ def create_data_loader(inp: dict, state: dict):
         ):
             with gr.Accordion("ℹ️ Dataset description", open=False):
                 gr.Markdown("*To be added*")
-            with gr.Accordion(METHOD_INFO_HEADING, open=False):
-                gr.Markdown(METHOD_INFO_TEXT, container=True)
             inp["simple_config_dropdown_placeholder"] = gr.Markdown(
                 "*No simple dataset configuration available. Load different dataset or use advanced config.*",
                 container=True,

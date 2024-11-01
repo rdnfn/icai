@@ -3,8 +3,6 @@
 METHOD_INFO_HEADING = "🔬 Method details"
 
 METHOD_INFO_TEXT = """
-**TLDR.** *Inverse Constitutional AI* (ICAI) helps understand the implicit goals encoded in pairwise feedback data.
-
 **Background.**
 Many ML researchers use pairwise feedback as an optimization objective, both for training or evaluation. However, few really understand *what implicit goals* they are training (or evaluating) their models towards, other than "aligning with human values". ICAI helps to understand these implicit goals by compressing large amounts of pairwise feedback data into individual principles, each a possible explanation of annotators' decisions.
 
@@ -19,5 +17,17 @@ There are many different reasons why one set of annotator or annotations leads t
 1. *Contradicting annotator preferences:* the underlying annotator preferences are truly different and contradicting, and thus principles achieve different performance on each dataset.
 2. *Different (possibly non-contradicting) revealed preferences:* in many datasets (e.g. PRISM, Chatbot Arena) the annotators choose themselves what to talk about with the AI. Whilst such annotators may overall agree (e.g., they would label each other's interactions similarly), revealed preference may still reveal something about what principles are more important to them for their use-cases --- even if their preferences are not contradictory.
 3. *Noisy LLM reconstructions:* Some variability may also be explained by the underlying LLM not consistently using one rule in a certain way. Whilst some principles may be clearer to interpret, others can be more vague (and thus lead to noisy reconstructions). Running ICAI on larger datasets should mitigate this effect to certain degree.
+
+"""
+
+TLDR_TEXT = """
+**What is this app?** The *Inverse Constitional AI* (ICAI) App helps interpret pairwise feedback datasets. The app identifies *principles* that annotators may have (implictly) followed to provide pairwise feedback, e.g. *"select the more concise response"*. Each principle is tested by measuring the ability of an AI model prompted to follow the principle to (blindly) reconstruct the original feedback preferences. A principle performing well in this reconstruction task will possibly transfer to downstream use-cases.
+
+
+**How can I intrepret the results?** For example, assume our pairwise feedback data has a well-performing principle *"select the more concise response"*. When used for training, such a dataset may teach a model to *make more concise responses*. When used for *evaluation* (e.g. like [Chatbot Arena](https://lmarena.ai/)), such a data will likely *rank more concise models higher*.
+
+
+
+**What is pairwise feedback?** Pairwise feedback typically consists of a prompt, two corresponding AI model responses, and an annotation picking the better response. Such feedback is very widely used for state-of-the-art AI models, both to train (e.g. [RLHF](https://arxiv.org/abs/2312.14925)) and evaluate (e.g. [Chatbot Arena](https://lmarena.ai/)). Yet, often such datasets are used as a "black-box oracle", without a good understanding of what properties they teach or test in our models.
 
 """
