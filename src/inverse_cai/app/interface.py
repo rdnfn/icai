@@ -20,8 +20,6 @@ def create_data_loader(inp: dict, state: dict):
             )
         link_button_variant = "secondary"
         link_button_size = "lg"
-        # gr.Column(scale=1)
-        # with gr.Column(scale=1):
         with gr.Column(scale=1):
             with gr.Group():
                 gr.Markdown(
@@ -44,9 +42,14 @@ def create_data_loader(inp: dict, state: dict):
     with gr.Row(visible=True, variant="panel"):
         with gr.Column(scale=1):
             gr.Markdown(TLDR_TEXT, container=True)
-        with gr.Column(scale=1):
             with gr.Accordion(METHOD_INFO_HEADING, open=False):
                 gr.Markdown(METHOD_INFO_TEXT, container=True)
+        with gr.Column(scale=1):
+            # https://github.com/rdnfn/icai/blob/e639b4d2d1c11dc0b52bc6a22700363a13b49b91/docs/img/04_app_overview_v1.png
+            gr.Markdown(
+                '**Overview**\n\n<img src="https://github.com/rdnfn/icai/blob/c356c708b949c0bc7f5cc0f78432bcaba0f371db/docs/img/04_app_overview_v2.png?raw=true" alt="App Overview" style="min-width: 400px; max-width: 500px; display: block; margin-left: auto; margin-right: auto;">',
+                container=True,
+            )
     with gr.Row(variant="panel"):
         with gr.Column(scale=3):
             with gr.Accordion("Select dataset to analyze"):
