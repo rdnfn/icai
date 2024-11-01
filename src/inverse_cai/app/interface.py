@@ -8,12 +8,22 @@ from inverse_cai.app.info_texts import METHOD_INFO_TEXT, METHOD_INFO_HEADING, TL
 from inverse_cai.app.metrics import METRIC_COL_OPTIONS
 
 
+def add_title_row(title: str):
+    """Add a title row to the interface.
+
+    Args:
+        title (str): Title text to display
+    """
+    with gr.Row(elem_classes="title-row"):
+        gr.Markdown(f"## {title}")
+
+
 def create_data_loader(inp: dict, state: dict):
     state["datapath"] = gr.State(value="")
     state["df"] = gr.State(value=pd.DataFrame())
     state["unfiltered_df"] = gr.State(value=pd.DataFrame())
     state["dataset_name"] = gr.State(value="")
-    with gr.Row(variant="panel"):
+    with gr.Row(variant="default"):
         with gr.Column(scale=4, variant="default", min_width="300px"):
             gr.HTML(
                 '<img src="https://github.com/rdnfn/icai/blob/34065605749f42a33ab2fc0be3305e96840e9412/docs/img/00_logo_v0_wide.png?raw=true" alt="Logo" width="320">'
@@ -39,6 +49,8 @@ def create_data_loader(inp: dict, state: dict):
                     size=link_button_size,
                 )
 
+    add_title_row("Background")
+
     with gr.Row(visible=True, variant="panel"):
         with gr.Column(scale=1):
             gr.Markdown(TLDR_TEXT, container=True)
@@ -50,6 +62,8 @@ def create_data_loader(inp: dict, state: dict):
                 '**Overview**\n\n<img src="https://github.com/rdnfn/icai/blob/c356c708b949c0bc7f5cc0f78432bcaba0f371db/docs/img/04_app_overview_v2.png?raw=true" alt="App Overview" style="min-width: 400px; max-width: 500px; display: block; margin-left: auto; margin-right: auto;">',
                 container=True,
             )
+
+    add_title_row("Data selection")
     with gr.Row(variant="panel"):
         with gr.Column(scale=3):
             with gr.Accordion("Select dataset to analyze"):
@@ -65,6 +79,7 @@ def create_data_loader(inp: dict, state: dict):
                     )
                     inp["load_btn"] = gr.Button("Load")
 
+    add_title_row("View configuration")
     inp["config"] = gr.Row(visible=True, variant="panel")
     with inp["config"]:
         with gr.Column(
@@ -172,6 +187,18 @@ def generate():
     state = {}
     out = {}
 
+    custom_css = """
+    .title-row {
+        margin-top: 0.5rem !important;
+        margin-bottom: -1rem !important;
+        padding: 0.5rem !important;
+        border-radius: 0.5rem !important;
+    }
+    .title-row h2 {
+        opacity: 0.6 !important;
+    }
+    """
+
     theme = gr.themes.Ocean().set(
         button_secondary_background_fill="*neutral_200",
         button_secondary_background_fill_dark="*primary_700",
@@ -179,10 +206,11 @@ def generate():
         button_secondary_background_fill_hover_dark="*neutral_600",
         block_info_text_color="*neutral_600",
     )
-    with gr.Blocks(theme=theme) as demo:
+    with gr.Blocks(theme=theme, css=custom_css) as demo:
         create_data_loader(inp, state)
 
-        with gr.Row() as main_row:
+        add_title_row("Results")
+        with gr.Row():
             with gr.Column(scale=2, variant="panel") as right_col:
                 create_principle_view(out)
 
