@@ -1,13 +1,11 @@
 import subprocess
 import pathlib
 from loguru import logger
-import os
+
+from inverse_cai.app.constants import GITHUB_TOKEN
 
 
 DATA_DIR = pathlib.Path("icai-tmp-data")
-
-# get env var with github token
-TOKEN = os.getenv("GITHUB_TOKEN")
 
 
 def clone_repo(username, token, repo_name, clone_directory):
@@ -46,7 +44,7 @@ def load_icai_data():
 
     try:
         # Clone the repository
-        clone_repo(username, TOKEN, repo_name, clone_directory)
+        clone_repo(username, GITHUB_TOKEN, repo_name, clone_directory)
 
         logger.info("Data loaded from repo successfully.")
     except Exception as e:

@@ -1,9 +1,20 @@
 """Constants for the app."""
 
+import os
+
 # App/package version
 import importlib.metadata
 
 VERSION = importlib.metadata.version("inverse_cai")
+
+# Constants from environment vars
+# get env var with github token
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+
+# App username and password
+# Will block app behind login if env vars are set
+USERNAME = os.getenv("ICAI_APP_USER")
+PASSWORD = os.getenv("ICAI_APP_PW")
 
 ### Layout and dimensions
 PRINCIPLE_SHORT_LENGTH = 70  # length of principle shown before cutting off
