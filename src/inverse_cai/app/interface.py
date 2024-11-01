@@ -23,6 +23,7 @@ def create_data_loader(inp: dict, state: dict):
     state["df"] = gr.State(value=pd.DataFrame())
     state["unfiltered_df"] = gr.State(value=pd.DataFrame())
     state["dataset_name"] = gr.State(value="")
+    state["active_dataset"] = gr.State(value="")
     with gr.Row(variant="default"):
         with gr.Column(scale=4, variant="default", min_width="300px"):
             gr.HTML(
@@ -69,7 +70,9 @@ def create_data_loader(inp: dict, state: dict):
             with gr.Accordion("Select dataset to analyze"):
                 inp["dataset_btns"] = {}
                 for dataset in BUILTIN_DATASETS:
-                    inp["dataset_btns"][dataset.name] = gr.Button(dataset.name)
+                    inp["dataset_btns"][dataset.name] = gr.Button(
+                        dataset.name, variant="secondary"
+                    )
         with gr.Column(scale=3):
             with gr.Accordion("Alternatively load local results"):
                 with gr.Group():

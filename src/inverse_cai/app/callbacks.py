@@ -29,7 +29,14 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         filter_val_2: str,
         metrics: list[str],
         reset_filters_if_new: bool = True,
+        used_from_button: bool = False,
     ):
+
+        if not used_from_button:
+            button_updates = update_dataset_buttons("")
+        else:
+            button_updates = {}
+
         new_path = True if path != prior_state_datapath else False
 
         if new_path and reset_filters_if_new:
@@ -97,7 +104,17 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             state["df"]: votes_df,
             state["unfiltered_df"]: unfiltered_df,
             state["datapath"]: path,
+            **button_updates,
         }
+
+    def update_dataset_buttons(active_dataset: str) -> dict:
+        """Update dataset button variants based on active dataset."""
+        updates = {}
+        for name, btn in inp["dataset_btns"].items():
+            updates[btn] = gr.Button(
+                variant="primary" if name == active_dataset else "secondary"
+            )
+        return updates
 
     def update_advanced_config_and_load_data(
         prior_state_datapath: str,
@@ -129,7 +146,11 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             selected_adv_config, dataset_config.options
         )
 
+        # Update button variants
+        button_updates = update_dataset_buttons(dataset_name)
+
         return {
+            **button_updates,
             inp["simple_config_dropdown_placeholder"]: gr.Text(
                 visible=not simple_config_avail
             ),
@@ -144,6 +165,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 interactive=True,
                 visible=simple_config_avail,
             ),
+            state["active_dataset"]: dataset_name,  # Update active dataset state
             inp["datapath"]: dataset_config.path,
             state["datapath"]: dataset_config.path,
             state["dataset_name"]: dataset_name,
@@ -158,6 +180,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 adv_config.filter_value_2,
                 metrics=adv_config.metrics,
                 reset_filters_if_new=False,
+                used_from_button=True,
             ),
             inp["filter_value_dropdown"]: gr.Dropdown(
                 choices=[adv_config.filter_value],
@@ -231,7 +254,9 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         state["unfiltered_df"],
         state["datapath"],
         inp["datapath"],
-    ]
+    ] + list(
+        inp["dataset_btns"].values()
+    )  # Add dataset buttons to outputs
 
     # reload data when load button is clicked or view config is changed
     inp["load_btn"].click(
@@ -259,16 +284,21 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         inp["simple_config_dropdown"],
     ]
 
-    update_load_data_outputs = load_data_outputs + [
-        inp["simple_config_dropdown"],
-        inp["simple_config_dropdown_placeholder"],
-        state["dataset_name"],
-        inp["filter_value_dropdown"],
-        inp["filter_value_dropdown_2"],
-        inp["show_individual_prefs_dropdown"],
-        inp["pref_order_dropdown"],
-        inp["metrics_dropdown"],
-    ]
+    update_load_data_outputs = (
+        load_data_outputs
+        + [
+            inp["simple_config_dropdown"],
+            inp["simple_config_dropdown_placeholder"],
+            state["dataset_name"],
+            inp["filter_value_dropdown"],
+            inp["filter_value_dropdown_2"],
+            inp["show_individual_prefs_dropdown"],
+            inp["pref_order_dropdown"],
+            inp["metrics_dropdown"],
+            state["active_dataset"],  # Add active dataset state
+        ]
+        + list(inp["dataset_btns"].values())
+    )  # Add all dataset buttons as outputs
 
     for dataset_button in inp["dataset_btns"].values():
         dataset_button.click(
