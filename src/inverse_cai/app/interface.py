@@ -199,7 +199,7 @@ def generate():
     }
     """
 
-    theme = gr.themes.Ocean().set(
+    theme = gr.themes.Base(primary_hue="neutral", secondary_hue="neutral").set(
         button_secondary_background_fill="*neutral_200",
         button_secondary_background_fill_dark="*primary_700",
         button_secondary_background_fill_hover="*neutral_100",
