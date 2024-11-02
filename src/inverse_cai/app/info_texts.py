@@ -21,6 +21,8 @@ There are many different reasons why one set of annotator or annotations leads t
 """
 
 TLDR_TEXT = """
+**TLDR:** An app to understand what principles pairwise feedback is teaching or testing in our models, e.g. is the pairwise feedback asking for more or less concise output?
+
 **What is this app?** The *Inverse Constitional AI* (ICAI) App helps interpret pairwise feedback datasets. The app helps identify *principles* that annotators may have (implictly) followed to provide pairwise feedback, e.g. *"select the more concise response"*. Each principle is tested by measuring the ability of an AI model prompted to follow the principle to (blindly) reconstruct the original feedback preferences. A principle performing well in this reconstruction task will possibly transfer to downstream use-cases. Note that the app shows results from the ICAI algorithm, but does not currently run the algorithm live.
 
 
