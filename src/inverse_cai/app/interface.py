@@ -63,6 +63,7 @@ def create_data_loader(inp: dict, state: dict):
             gr.Markdown(
                 '**Overview**\n\n<img src="https://github.com/rdnfn/icai/blob/c356c708b949c0bc7f5cc0f78432bcaba0f371db/docs/img/04_app_overview_v2.png?raw=true" alt="App Overview" style="min-width: 400px; max-width: 500px; display: block; margin-left: auto; margin-right: auto;">',
                 container=True,
+                sanitize_html=False,
             )
             gr.Markdown(
                 "Overview 2 image showing below (with simple html)", container=True
@@ -76,6 +77,7 @@ def create_data_loader(inp: dict, state: dict):
                 "Overview 3 \n<center><img src='https://github.com/rdnfn/icai/blob/c356c708b949c0bc7f5cc0f78432bcaba0f371db/docs/img/04_app_overview_v2.png?raw=true' alt='App Overview' width='500px'></center>",
                 visible=True,
                 container=True,
+                sanitize_html=False,
             )
     add_title_row("Data selection")
     with gr.Row(variant="panel"):
