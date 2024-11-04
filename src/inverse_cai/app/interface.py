@@ -2,7 +2,7 @@ import gradio as gr
 import pandas as pd
 
 from inverse_cai.app.callbacks import generate_callbacks, attach_callbacks
-from inverse_cai.app.constants import NONE_SELECTED_VALUE, VERSION
+from inverse_cai.app.constants import NONE_SELECTED_VALUE, VERSION, ALLOW_LOCAL_RESULTS
 from inverse_cai.app.builtin_datasets import BUILTIN_DATASETS
 from inverse_cai.app.info_texts import METHOD_INFO_TEXT, METHOD_INFO_HEADING, TLDR_TEXT
 from inverse_cai.app.metrics import METRIC_COL_OPTIONS
@@ -74,8 +74,9 @@ def create_data_loader(inp: dict, state: dict):
                     inp["dataset_btns"][dataset.name] = gr.Button(
                         dataset.name, variant="secondary"
                     )
-        with gr.Column(scale=3):
-            with gr.Accordion("Alternatively load local results"):
+            with gr.Accordion(
+                "Alternatively load local results", visible=ALLOW_LOCAL_RESULTS
+            ):
                 with gr.Group():
                     inp["datapath"] = gr.Textbox(
                         label="💾 Path",
@@ -83,14 +84,16 @@ def create_data_loader(inp: dict, state: dict):
                     )
                     inp["load_btn"] = gr.Button("Load")
 
+        with gr.Column(scale=3):
+            with gr.Accordion("ℹ️ Dataset description", open=False):
+                gr.Markdown("*To be added*")
+
     add_title_row("View configuration")
     inp["config"] = gr.Row(visible=True, variant="panel")
     with inp["config"]:
         with gr.Column(
             scale=3,
         ):
-            with gr.Accordion("ℹ️ Dataset description", open=False):
-                gr.Markdown("*To be added*")
             inp["simple_config_dropdown_placeholder"] = gr.Markdown(
                 "*No simple dataset configuration available. Load different dataset or use advanced config.*",
                 container=True,
