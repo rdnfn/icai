@@ -6,6 +6,7 @@ from inverse_cai.app.constants import NONE_SELECTED_VALUE, VERSION
 from inverse_cai.app.builtin_datasets import BUILTIN_DATASETS
 from inverse_cai.app.info_texts import METHOD_INFO_TEXT, METHOD_INFO_HEADING, TLDR_TEXT
 from inverse_cai.app.metrics import METRIC_COL_OPTIONS
+from inverse_cai.app.styling import CUSTOM_CSS, THEME
 
 
 def add_title_row(title: str):
@@ -190,26 +191,7 @@ def generate():
     state = {}
     out = {}
 
-    custom_css = """
-    .title-row {
-        margin-top: 0.5rem !important;
-        margin-bottom: -1rem !important;
-        padding: 0.5rem !important;
-        border-radius: 0.5rem !important;
-    }
-    .title-row h2 {
-        opacity: 0.6 !important;
-    }
-    """
-
-    theme = gr.themes.Base(primary_hue="neutral", secondary_hue="neutral").set(
-        button_secondary_background_fill="*neutral_200",
-        button_secondary_background_fill_dark="*primary_700",
-        button_secondary_background_fill_hover="*neutral_100",
-        button_secondary_background_fill_hover_dark="*neutral_600",
-        block_info_text_color="*neutral_600",
-    )
-    with gr.Blocks(theme=theme, css=custom_css) as demo:
+    with gr.Blocks(theme=THEME, css=CUSTOM_CSS) as demo:
         create_data_loader(inp, state)
 
         add_title_row("Results")
