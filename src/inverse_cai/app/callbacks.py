@@ -1,8 +1,9 @@
 """Call backs to be used in the app."""
 
+import pathlib
+
 import gradio as gr
 import pandas as pd
-import pathlib
 from loguru import logger
 
 from inverse_cai.app.loader import create_votes_df
@@ -17,6 +18,7 @@ from inverse_cai.app.builtin_datasets import (
 
 
 def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
+    """Generate callbacks for the ICAI app."""
 
     def load_data(
         path: str,
@@ -30,6 +32,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         metrics: list[str],
         reset_filters_if_new: bool = True,
         used_from_button: bool = False,
+        filterable_columns: list[str] | None = None,
     ):
 
         if not used_from_button:
@@ -60,7 +63,14 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
         unfiltered_df = votes_df.copy(deep=True)
 
-        full_list_of_columns = votes_df.columns.to_list()
+        if filterable_columns is not None:
+            available_columns = [NONE_SELECTED_VALUE] + [
+                filterable_column
+                for filterable_column in filterable_columns
+                if filterable_column in votes_df.columns.to_list()
+            ]
+        else:
+            available_columns = [NONE_SELECTED_VALUE] + votes_df.columns.to_list()
 
         for col, val in [(filter_col, filter_val), (filter_col_2, filter_val_2)]:
             if col != NONE_SELECTED_VALUE:
@@ -73,9 +83,13 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                     votes_df = votes_df[votes_df[col] == val]
 
         if len(votes_df) == 0:
-            raise gr.Error(
-                f"No data to display after filtering ({filter_col} = {filter_val}), {filter_col_2} = {filter_val_2}), please try other filters."
+            error_msg = (
+                f"No data to display after filtering "
+                f"({filter_col} = {filter_val}, "
+                f"{filter_col_2} = {filter_val_2}). "
+                "Please try other filters"
             )
+            raise gr.Error(error_msg)
 
         fig = plotting.generate_hbar_chart(
             votes_df,
@@ -91,12 +105,12 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
         return {
             inp["filter_col_dropdown"]: gr.Dropdown(
-                choices=[NONE_SELECTED_VALUE] + full_list_of_columns,
+                choices=available_columns,
                 value=filter_col,
                 interactive=True,
             ),
             inp["filter_col_dropdown_2"]: gr.Dropdown(
-                choices=[NONE_SELECTED_VALUE] + full_list_of_columns,
+                choices=available_columns,
                 value=filter_col_2,
                 interactive=True,
             ),
@@ -181,6 +195,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 metrics=adv_config.metrics,
                 reset_filters_if_new=False,
                 used_from_button=True,
+                filterable_columns=dataset_config.filterable_columns,
             ),
             inp["filter_value_dropdown"]: gr.Dropdown(
                 choices=[adv_config.filter_value],
@@ -209,7 +224,9 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
     def set_filter_val_dropdown(column: str, votes_df: pd.DataFrame):
         if NONE_SELECTED_VALUE in votes_df.columns:
             raise gr.Error(
-                f"Column '{NONE_SELECTED_VALUE}' is in the dataframe. This is currently not supported."
+                f"Column '{NONE_SELECTED_VALUE}' is in the "
+                "dataframe. This is currently not "
+                "supported."
             )
         if column == NONE_SELECTED_VALUE:
             return gr.Dropdown(

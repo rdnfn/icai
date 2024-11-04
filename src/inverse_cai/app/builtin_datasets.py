@@ -20,6 +20,7 @@ class BuiltinDataset:
     path: str | None = None
     description: str | None = None
     options: list | None = None
+    filterable_columns: list[str] | None = None
 
 
 @dataclass
@@ -76,6 +77,7 @@ PRISM = BuiltinDataset(
     name="💎 PRISM",
     path=DATA_DIR / "prism_1k_v1",
     description="PRISM dataset.",
+    filterable_columns=["chosen_model", "location_birth_region", "english_proficiency"],
     options=[
         Config(
             name="GPT-4-1106-preview winning (against all other models)",
