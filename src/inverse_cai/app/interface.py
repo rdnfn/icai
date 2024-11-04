@@ -85,8 +85,8 @@ def create_data_loader(inp: dict, state: dict):
                     inp["load_btn"] = gr.Button("Load")
 
         with gr.Column(scale=3):
-            with gr.Accordion("ℹ️ Dataset description", open=False):
-                gr.Markdown("*To be added*")
+            with gr.Accordion("ℹ️ Dataset description", open=True):
+                inp["dataset_info"] = gr.Markdown("*No dataset loaded*", container=True)
 
     add_title_row("View configuration")
     inp["config"] = gr.Row(visible=True, variant="panel")

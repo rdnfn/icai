@@ -33,6 +33,8 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         reset_filters_if_new: bool = True,
         used_from_button: bool = False,
         filterable_columns: list[str] | None = None,
+        dataset_name: str = None,
+        dataset_description: str = None,
     ):
 
         if not used_from_button:
@@ -118,6 +120,13 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             state["df"]: votes_df,
             state["unfiltered_df"]: unfiltered_df,
             state["datapath"]: path,
+            inp["dataset_info"]: create_dataset_info(
+                unfiltered_df=unfiltered_df,
+                filtered_df=votes_df,
+                dataset_path=path,
+                dataset_name=dataset_name,
+                dataset_description=dataset_description,
+            ),
             **button_updates,
         }
 
@@ -196,6 +205,8 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 reset_filters_if_new=False,
                 used_from_button=True,
                 filterable_columns=dataset_config.filterable_columns,
+                dataset_name=dataset_config.name,
+                dataset_description=dataset_config.description,
             ),
             inp["filter_value_dropdown"]: gr.Dropdown(
                 choices=[adv_config.filter_value],
@@ -249,6 +260,56 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
     }
 
 
+def create_dataset_info(
+    unfiltered_df: pd.DataFrame,
+    filtered_df: pd.DataFrame,
+    dataset_name: str | None = None,
+    dataset_path: str | None = None,
+    dataset_description: str | None = None,
+) -> str:
+    """Create dataset info markdown string.
+
+    Args:
+        df: DataFrame containing the dataset
+        dataset_name: Name of the dataset
+        dataset_description: Description of the dataset
+
+    Returns:
+        str: Markdown formatted dataset info
+    """
+    if unfiltered_df.empty:
+        return "*No dataset loaded*"
+
+    if dataset_name is None:
+        dataset_name = "N/A"
+    if dataset_description is None:
+        dataset_description = "N/A"
+    if dataset_path is None:
+        dataset_path = "N/A"
+
+    metrics = {}
+
+    for name, df in [("Unfiltered", unfiltered_df), ("Filtered", filtered_df)]:
+        metrics[name] = {}
+        metrics[name]["num_comparisons"] = df["comparison_id"].nunique()
+        metrics[name]["num_principles"] = df["principle"].nunique()
+        metrics[name]["num_total_votes"] = len(df)
+
+    info = f"""
+- **Name**: {dataset_name}
+- **Path**: {dataset_path}
+- **Description**: {dataset_description}
+- **Metrics:**
+    - *Total pairwise comparisons*: {metrics["Unfiltered"]["num_comparisons"]:,} (shown: {metrics["Filtered"]["num_comparisons"]:,})
+    - *Total tested principles*: {metrics["Unfiltered"]["num_principles"]:,} (shown: {metrics["Filtered"]["num_principles"]:,})
+    - *Total votes (comparisons x principles)*: {metrics["Unfiltered"]["num_total_votes"]:,} (shown: {metrics["Filtered"]["num_total_votes"]:,})
+
+
+
+"""
+    return info
+
+
 def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None:
 
     load_data_inputs = [
@@ -271,6 +332,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         state["unfiltered_df"],
         state["datapath"],
         inp["datapath"],
+        inp["dataset_info"],
     ] + list(
         inp["dataset_btns"].values()
     )  # Add dataset buttons to outputs
