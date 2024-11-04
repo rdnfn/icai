@@ -42,7 +42,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         else:
             button_updates = {}
 
-        new_path = True if path != prior_state_datapath else False
+        new_path = True if str(path) != str(prior_state_datapath) else False
 
         if new_path and reset_filters_if_new:
             filter_col = NONE_SELECTED_VALUE
@@ -73,6 +73,16 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             ]
         else:
             available_columns = [NONE_SELECTED_VALUE] + votes_df.columns.to_list()
+
+        # only update filter value dropdown choices if new path
+        # to avoid resetting the filter values (if using built-in dataset)
+        # even if using advanced config
+        if new_path:
+            additional_col_selection_kwargs = {
+                "choices": available_columns,
+            }
+        else:
+            additional_col_selection_kwargs = {}
 
         for col, val in [(filter_col, filter_val), (filter_col_2, filter_val_2)]:
             if col != NONE_SELECTED_VALUE:
@@ -107,14 +117,14 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
         return {
             inp["filter_col_dropdown"]: gr.Dropdown(
-                choices=available_columns,
                 value=filter_col,
                 interactive=True,
+                **additional_col_selection_kwargs,
             ),
             inp["filter_col_dropdown_2"]: gr.Dropdown(
-                choices=available_columns,
                 value=filter_col_2,
                 interactive=True,
+                **additional_col_selection_kwargs,
             ),
             out["plot"]: plot,
             state["df"]: votes_df,
