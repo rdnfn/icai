@@ -179,9 +179,6 @@ def create_data_loader(inp: dict, state: dict):
 
 
 def create_principle_view(out: dict):
-    # note: barplot without any args can lead to
-    # silent error
-    # out["barplot"] = gr.BarPlot(pd.DataFrame())
     out["plot"] = gr.Plot()
 
 
