@@ -21,22 +21,25 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
     """Generate callbacks for the ICAI app."""
 
     def load_data(
-        path: str,
-        prior_state_datapath: str,
-        show_individual_prefs: bool,
-        pref_order: str,
-        filter_col: str,
-        filter_val: str,
-        filter_col_2: str,
-        filter_val_2: str,
-        metrics: list[str],
-        cache: dict,
+        data: dict,
+        *,
         reset_filters_if_new: bool = True,
         used_from_button: bool = False,
         filterable_columns: list[str] | None = None,
         dataset_name: str = None,
         dataset_description: str = None,
     ):
+        """Load data with dictionary inputs instead of individual arguments."""
+        path = data[inp["datapath"]]
+        prior_state_datapath = data[state["datapath"]]
+        show_individual_prefs = data[inp["show_individual_prefs_dropdown"]]
+        pref_order = data[inp["pref_order_dropdown"]]
+        filter_col = data[inp["filter_col_dropdown"]]
+        filter_val = data[inp["filter_value_dropdown"]]
+        filter_col_2 = data[inp["filter_col_dropdown_2"]]
+        filter_val_2 = data[inp["filter_value_dropdown_2"]]
+        metrics = data[inp["metrics_dropdown"]]
+        cache = data[state["cache"]]
 
         if not used_from_button:
             button_updates = update_dataset_buttons("")
@@ -152,12 +155,22 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             )
         return updates
 
-    def update_advanced_config_and_load_data(
-        prior_state_datapath: str,
-        selected_adv_config: str,
-        cache: dict,
-        dataset_name: str,
-    ):
+    def update_advanced_config_and_load_data(data: dict):
+        """Update config with dictionary inputs instead of individual arguments."""
+        prior_state_datapath = data[state["datapath"]]
+        selected_adv_config = data[inp["simple_config_dropdown"]]
+        cache = data[state["cache"]]
+
+        # get dataset name from button clicked
+        # other buttons are not in data dict
+        dataset_name = None
+        for button in inp["dataset_btns"].values():
+            if button in data:
+                dataset_name = data[button]
+
+        if dataset_name is None:
+            dataset_name = data[state["active_dataset"]]
+
         # load dataset specific setup
         dataset_config: BuiltinDataset = get_dataset_from_name(dataset_name)
 
@@ -207,16 +220,20 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             state["datapath"]: dataset_config.path,
             state["dataset_name"]: dataset_name,
             **load_data(
-                dataset_config.path,
-                prior_state_datapath,
-                adv_config.show_individual_prefs,
-                adv_config.pref_order,
-                adv_config.filter_col,
-                adv_config.filter_value,
-                adv_config.filter_col_2,
-                adv_config.filter_value_2,
-                metrics=adv_config.metrics,
-                cache=cache,
+                {
+                    inp["datapath"]: dataset_config.path,
+                    state["datapath"]: prior_state_datapath,
+                    inp[
+                        "show_individual_prefs_dropdown"
+                    ]: adv_config.show_individual_prefs,
+                    inp["pref_order_dropdown"]: adv_config.pref_order,
+                    inp["filter_col_dropdown"]: adv_config.filter_col,
+                    inp["filter_value_dropdown"]: adv_config.filter_value,
+                    inp["filter_col_dropdown_2"]: adv_config.filter_col_2,
+                    inp["filter_value_dropdown_2"]: adv_config.filter_value_2,
+                    inp["metrics_dropdown"]: adv_config.metrics,
+                    state["cache"]: cache,
+                },
                 reset_filters_if_new=False,
                 used_from_button=True,
                 filterable_columns=dataset_config.filterable_columns,
@@ -247,7 +264,15 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             ),
         }
 
-    def set_filter_val_dropdown(column: str, votes_df: pd.DataFrame):
+    def set_filter_val_dropdown(data: dict):
+        """Set filter values with dictionary inputs."""
+        column = (
+            data[inp["filter_col_dropdown"]]
+            if "filter_col_dropdown" in data
+            else data[inp["filter_col_dropdown_2"]]
+        )
+        votes_df = data[state["unfiltered_df"]]
+
         if NONE_SELECTED_VALUE in votes_df.columns:
             raise gr.Error(
                 f"Column '{NONE_SELECTED_VALUE}' is in the "
@@ -326,10 +351,13 @@ def create_dataset_info(
 
 
 def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None:
+    """Attach callbacks using dictionary inputs."""
 
-    load_data_inputs = [
+    all_inputs = {
         inp["datapath"],
         state["datapath"],
+        state["dataset_name"],
+        state["active_dataset"],
         inp["show_individual_prefs_dropdown"],
         inp["pref_order_dropdown"],
         inp["filter_col_dropdown"],
@@ -337,8 +365,9 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         inp["filter_col_dropdown_2"],
         inp["filter_value_dropdown_2"],
         inp["metrics_dropdown"],
+        inp["simple_config_dropdown"],
         state["cache"],
-    ]
+    }
 
     load_data_outputs = [
         inp["filter_col_dropdown"],
@@ -350,14 +379,12 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         state["cache"],
         inp["datapath"],
         inp["dataset_info"],
-    ] + list(
-        inp["dataset_btns"].values()
-    )  # Add dataset buttons to outputs
+    ] + list(inp["dataset_btns"].values())
 
     # reload data when load button is clicked or view config is changed
     inp["load_btn"].click(
         callbacks["load_data"],
-        inputs=load_data_inputs,
+        inputs=all_inputs,
         outputs=load_data_outputs,
     )
 
@@ -370,16 +397,9 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     ]:
         config_value_dropdown.input(
             callbacks["load_data"],
-            inputs=load_data_inputs,
+            inputs=all_inputs,
             outputs=load_data_outputs,
         )
-
-    # load dataset when one of dataset buttons is clicked
-    update_load_data_inputs = [
-        state["datapath"],
-        inp["simple_config_dropdown"],
-        state["cache"],
-    ]
 
     update_load_data_outputs = (
         load_data_outputs
@@ -400,13 +420,13 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     for dataset_button in inp["dataset_btns"].values():
         dataset_button.click(
             callbacks["update_advanced_config_and_load_data"],
-            inputs=update_load_data_inputs + [dataset_button],
+            inputs=all_inputs.union({dataset_button}),
             outputs=update_load_data_outputs,
         )
 
     inp["simple_config_dropdown"].input(
         callbacks["update_advanced_config_and_load_data"],
-        inputs=update_load_data_inputs + [state["dataset_name"]],
+        inputs=all_inputs,
         outputs=update_load_data_outputs,
     )
 
@@ -414,11 +434,11 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     # corresponding filter column dropdown is changed
     inp["filter_col_dropdown"].input(
         callbacks["set_filter_val_dropdown"],
-        inputs=[inp["filter_col_dropdown"], state["unfiltered_df"]],
+        inputs=all_inputs,
         outputs=[inp["filter_value_dropdown"]],
     )
     inp["filter_col_dropdown_2"].input(
         callbacks["set_filter_val_dropdown"],
-        inputs=[inp["filter_col_dropdown_2"], state["unfiltered_df"]],
+        inputs=all_inputs,
         outputs=[inp["filter_value_dropdown_2"]],
     )
