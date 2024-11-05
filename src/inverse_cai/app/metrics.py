@@ -1,7 +1,6 @@
 """Compute metrics """
 
 import pandas as pd
-import numpy as np
 
 
 def get_agreement(value_counts: pd.Series) -> float:
@@ -225,7 +224,8 @@ def get_ordering_options(
         value for key, value in order_options.items() if key in shown_metric_names
     ]
 
-    # make sure initial is first
-    ordering.insert(0, ordering.pop(ordering.index(order_options[initial])))
+    if initial in shown_metric_names:
+        # make sure initial is first
+        ordering.insert(0, ordering.pop(ordering.index(order_options[initial])))
 
     return ordering

@@ -30,6 +30,8 @@ class Config:
     name: str
     show_individual_prefs: bool = False
     pref_order: str = "By reconstruction success"
+    plot_col_name: str = NONE_SELECTED_VALUE
+    plot_col_values: list = field(default_factory=lambda: [NONE_SELECTED_VALUE])
     filter_col: str = NONE_SELECTED_VALUE
     filter_value: str = NONE_SELECTED_VALUE
     filter_col_2: str = NONE_SELECTED_VALUE

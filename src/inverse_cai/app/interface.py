@@ -122,6 +122,21 @@ def create_data_loader(inp: dict, state: dict):
                         value=False,
                         interactive=True,
                     )
+
+                    inp["plot_col_name_dropdown"] = gr.Dropdown(
+                        label="Show plot across values of column",
+                        choices=[NONE_SELECTED_VALUE],
+                        value=NONE_SELECTED_VALUE,
+                        interactive=False,
+                    )
+                    inp["plot_col_value_dropdown"] = gr.Dropdown(
+                        label="Values to show (if none selected, all values are shown)",
+                        choices=[NONE_SELECTED_VALUE],
+                        value=NONE_SELECTED_VALUE,
+                        interactive=False,
+                        multiselect=True,
+                    )
+
                     inp["pref_order_dropdown"] = gr.Dropdown(
                         label="📊 Order of reconstructed preferences",
                         choices=[

@@ -103,7 +103,7 @@ def generate_hbar_chart(
         "acc",
         "relevance",
     ],
-    default_ordering_metric="perf",
+    default_ordering_metric: str = "perf",
     sort_examples_by_agreement: bool = True,
 ) -> go.Figure:
 

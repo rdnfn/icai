@@ -34,6 +34,8 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         prior_state_datapath = data[state["datapath"]]
         show_individual_prefs = data[inp["show_individual_prefs_dropdown"]]
         pref_order = data[inp["pref_order_dropdown"]]
+        plot_col_name = data[inp["plot_col_name_dropdown"]]
+        plot_col_values = data[inp["plot_col_value_dropdown"]]
         filter_col = data[inp["filter_col_dropdown"]]
         filter_val = data[inp["filter_value_dropdown"]]
         filter_col_2 = data[inp["filter_col_dropdown_2"]]
@@ -128,6 +130,11 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             ),
             inp["filter_col_dropdown_2"]: gr.Dropdown(
                 value=filter_col_2,
+                interactive=True,
+                **additional_col_selection_kwargs,
+            ),
+            inp["plot_col_name_dropdown"]: gr.Dropdown(
+                value=plot_col_name,
                 interactive=True,
                 **additional_col_selection_kwargs,
             ),
@@ -227,6 +234,8 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                         "show_individual_prefs_dropdown"
                     ]: adv_config.show_individual_prefs,
                     inp["pref_order_dropdown"]: adv_config.pref_order,
+                    inp["plot_col_name_dropdown"]: adv_config.plot_col_name,
+                    inp["plot_col_value_dropdown"]: adv_config.plot_col_values,
                     inp["filter_col_dropdown"]: adv_config.filter_col,
                     inp["filter_value_dropdown"]: adv_config.filter_value,
                     inp["filter_col_dropdown_2"]: adv_config.filter_col_2,
@@ -266,12 +275,8 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
     def set_filter_val_dropdown(data: dict):
         """Set filter values with dictionary inputs."""
-        column = (
-            data[inp["filter_col_dropdown"]]
-            if "filter_col_dropdown" in data
-            else data[inp["filter_col_dropdown_2"]]
-        )
-        votes_df = data[state["unfiltered_df"]]
+        votes_df = data.pop(state["unfiltered_df"])
+        column = data.popitem()[1]
 
         if NONE_SELECTED_VALUE in votes_df.columns:
             raise gr.Error(
@@ -360,6 +365,8 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         state["active_dataset"],
         inp["show_individual_prefs_dropdown"],
         inp["pref_order_dropdown"],
+        inp["plot_col_name_dropdown"],
+        inp["plot_col_value_dropdown"],
         inp["filter_col_dropdown"],
         inp["filter_value_dropdown"],
         inp["filter_col_dropdown_2"],
@@ -370,12 +377,16 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     }
 
     load_data_outputs = [
+        inp["plot_col_name_dropdown"],
+        inp["plot_col_value_dropdown"],
         inp["filter_col_dropdown"],
         inp["filter_col_dropdown_2"],
         out["plot"],
         state["df"],
         state["unfiltered_df"],
         state["datapath"],
+        state["active_dataset"],
+        state["dataset_name"],
         state["cache"],
         inp["datapath"],
         inp["dataset_info"],
@@ -406,7 +417,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         + [
             inp["simple_config_dropdown"],
             inp["simple_config_dropdown_placeholder"],
-            state["dataset_name"],
+            inp["plot_col_value_dropdown"],
             inp["filter_value_dropdown"],
             inp["filter_value_dropdown_2"],
             inp["show_individual_prefs_dropdown"],
@@ -432,13 +443,13 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
 
     # update filter value dropdowns when
     # corresponding filter column dropdown is changed
-    inp["filter_col_dropdown"].input(
-        callbacks["set_filter_val_dropdown"],
-        inputs=all_inputs,
-        outputs=[inp["filter_value_dropdown"]],
-    )
-    inp["filter_col_dropdown_2"].input(
-        callbacks["set_filter_val_dropdown"],
-        inputs=all_inputs,
-        outputs=[inp["filter_value_dropdown_2"]],
-    )
+    for dropdown in [
+        inp["plot_col_value_dropdown"],
+        inp["filter_value_dropdown"],
+        inp["filter_value_dropdown_2"],
+    ]:
+        dropdown.input(
+            callbacks["load_data"],
+            inputs={state["unfiltered_df"], dropdown},
+            outputs=load_data_outputs,
+        )
