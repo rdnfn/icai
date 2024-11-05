@@ -71,8 +71,10 @@ def compute_metrics(votes_df: pd.DataFrame, baseline_metrics: dict = None) -> di
     metrics = {}
 
     # slightly faster to make data types categorical
-    votes_df["principle"] = votes_df["principle"].astype("category")
-    votes_df["vote"] = votes_df["vote"].astype("category")
+    votes_df = votes_df.assign(
+        principle=votes_df["principle"].astype("category"),
+        vote=votes_df["vote"].astype("category"),
+    )
 
     # more efficient than doing operation for each principle group separately
     value_counts_all = (
