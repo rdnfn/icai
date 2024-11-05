@@ -9,16 +9,20 @@ def get_agreement(value_counts: pd.Series) -> float:
 
 
 def get_acc(value_counts: pd.Series) -> float:
-    try:
-        acc = value_counts.get("Agree", 0) / (
-            value_counts.get("Disagree", 0) + value_counts.get("Agree", 0)
-        )
-        if np.isnan(acc):
-            return 0
-        else:
-            return acc
-    except ZeroDivisionError:
+    """
+    Accuracy: proportion of non-irrelevant votes ('agree' or 'disagree')
+    that agree with original preferences.
+
+    If there are no non-irrelevant votes, return 0.
+    """
+    num_agreed = value_counts.get("Agree", 0)
+    num_disagreed = value_counts.get("Disagree", 0)
+
+    denominator = num_agreed + num_disagreed
+    if denominator == 0:
         return 0
+    else:
+        return num_agreed / denominator
 
 
 def get_relevance(value_counts: pd.Series) -> float:
