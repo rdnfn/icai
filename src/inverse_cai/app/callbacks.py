@@ -63,7 +63,8 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
         votes_df: pd.DataFrame = create_votes_df(results_dir)
 
-        unfiltered_df = votes_df.copy(deep=True)
+        # TODO: check if deep copy is necessary
+        unfiltered_df = votes_df.copy(deep=False)
 
         if filterable_columns is not None:
             available_columns = [NONE_SELECTED_VALUE] + [
