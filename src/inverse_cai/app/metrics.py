@@ -66,10 +66,15 @@ def compute_metrics(votes_df: pd.DataFrame, baseline_metrics: dict = None) -> di
 
     metrics = {}
 
-    grouped = votes_df.groupby("principle")
+    # slightly faster to make data types categorical
+    votes_df["principle"] = votes_df["principle"].astype("category")
+    votes_df["vote"] = votes_df["vote"].astype("category")
+
+    # more efficient than doing operation for each principle
+    grouped = votes_df.groupby("principle", observed=False)
 
     for principle in principles:
-        value_counts = grouped.get_group(principle)["vote"].value_counts()
+        value_counts = grouped.get_group(principle)["vote"].value_counts(sort=False)
 
         for metric in metric_fn.keys():
             if metric not in metrics:
