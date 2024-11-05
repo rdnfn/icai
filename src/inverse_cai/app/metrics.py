@@ -1,6 +1,7 @@
 """Compute metrics """
 
 import pandas as pd
+import numpy as np
 
 
 def get_agreement(value_counts: pd.Series) -> float:
@@ -12,7 +13,10 @@ def get_acc(value_counts: pd.Series) -> float:
         acc = value_counts.get("Agree", 0) / (
             value_counts.get("Disagree", 0) + value_counts.get("Agree", 0)
         )
-        return acc
+        if np.isnan(acc):
+            return 0
+        else:
+            return acc
     except ZeroDivisionError:
         return 0
 
@@ -70,11 +74,23 @@ def compute_metrics(votes_df: pd.DataFrame, baseline_metrics: dict = None) -> di
     votes_df["principle"] = votes_df["principle"].astype("category")
     votes_df["vote"] = votes_df["vote"].astype("category")
 
-    # more efficient than doing operation for each principle
-    grouped = votes_df.groupby("principle", observed=False)
+    # more efficient than doing operation for each principle group separately
+    value_counts_all = (
+        votes_df.groupby(["principle", "vote"], observed=False)
+        .size()
+        .unstack(fill_value=0)
+    )
+
+    # this is equivalent to:
+    # grouped = votes_df.groupby("principle", observed=False)
+    # for principle in principles:
+    #     value_counts = grouped.get_group(principle)["vote"].value_counts(
+    #         sort=False, dropna=False
+    #     )
 
     for principle in principles:
-        value_counts = grouped.get_group(principle)["vote"].value_counts(sort=False)
+        value_counts: pd.Series = value_counts_all.loc[principle]
+        value_counts = value_counts.fillna(0)
 
         for metric in metric_fn.keys():
             if metric not in metrics:
