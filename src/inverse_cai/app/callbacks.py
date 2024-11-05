@@ -402,6 +402,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     for config_value_dropdown in [
         inp["pref_order_dropdown"],
         inp["show_individual_prefs_dropdown"],
+        inp["plot_col_value_dropdown"],
         inp["filter_value_dropdown"],
         inp["filter_value_dropdown_2"],
         inp["metrics_dropdown"],
@@ -443,13 +444,13 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
 
     # update filter value dropdowns when
     # corresponding filter column dropdown is changed
-    for dropdown in [
-        inp["plot_col_value_dropdown"],
-        inp["filter_value_dropdown"],
-        inp["filter_value_dropdown_2"],
+    for dropdown, output in [
+        (inp["plot_col_name_dropdown"], inp["plot_col_value_dropdown"]),
+        (inp["filter_col_dropdown"], inp["filter_value_dropdown"]),
+        (inp["filter_col_dropdown_2"], inp["filter_value_dropdown_2"]),
     ]:
         dropdown.input(
-            callbacks["load_data"],
+            callbacks["set_filter_val_dropdown"],
             inputs={state["unfiltered_df"], dropdown},
-            outputs=load_data_outputs,
+            outputs=[output],
         )

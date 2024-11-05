@@ -133,7 +133,7 @@ def create_data_loader(inp: dict, state: dict):
                         label="Values to show (if none selected, all values are shown)",
                         choices=[NONE_SELECTED_VALUE],
                         value=NONE_SELECTED_VALUE,
-                        interactive=False,
+                        interactive=True,
                         multiselect=True,
                     )
 
