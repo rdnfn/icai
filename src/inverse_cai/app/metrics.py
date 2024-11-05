@@ -66,9 +66,10 @@ def compute_metrics(votes_df: pd.DataFrame, baseline_metrics: dict = None) -> di
 
     metrics = {}
 
+    grouped = votes_df.groupby("principle")
+
     for principle in principles:
-        principle_votes = votes_df[votes_df["principle"] == principle]
-        value_counts = principle_votes["vote"].value_counts()
+        value_counts = grouped.get_group(principle)["vote"].value_counts()
 
         for metric in metric_fn.keys():
             if metric not in metrics:
