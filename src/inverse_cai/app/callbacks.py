@@ -6,7 +6,7 @@ import gradio as gr
 import pandas as pd
 from loguru import logger
 
-from inverse_cai.app.loader import create_votes_df
+from inverse_cai.app.loader import get_votes_df
 import inverse_cai.app.plotting as plotting
 from inverse_cai.app.constants import NONE_SELECTED_VALUE
 from inverse_cai.app.builtin_datasets import (
@@ -30,6 +30,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
         filter_col_2: str,
         filter_val_2: str,
         metrics: list[str],
+        cache: dict,
         reset_filters_if_new: bool = True,
         used_from_button: bool = False,
         filterable_columns: list[str] | None = None,
@@ -61,7 +62,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
 
         gr.Info(f"Updating results (from path '{path}')", duration=3)
 
-        votes_df: pd.DataFrame = create_votes_df(results_dir)
+        votes_df: pd.DataFrame = get_votes_df(results_dir, cache=cache)
 
         # TODO: check if deep copy is necessary
         unfiltered_df = votes_df.copy(deep=False)
@@ -131,6 +132,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             state["df"]: votes_df,
             state["unfiltered_df"]: unfiltered_df,
             state["datapath"]: path,
+            state["cache"]: cache,
             inp["dataset_info"]: create_dataset_info(
                 unfiltered_df=unfiltered_df,
                 filtered_df=votes_df,
@@ -153,6 +155,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
     def update_advanced_config_and_load_data(
         prior_state_datapath: str,
         selected_adv_config: str,
+        cache: dict,
         dataset_name: str,
     ):
         # load dataset specific setup
@@ -213,6 +216,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 adv_config.filter_col_2,
                 adv_config.filter_value_2,
                 metrics=adv_config.metrics,
+                cache=cache,
                 reset_filters_if_new=False,
                 used_from_button=True,
                 filterable_columns=dataset_config.filterable_columns,
@@ -333,6 +337,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         inp["filter_col_dropdown_2"],
         inp["filter_value_dropdown_2"],
         inp["metrics_dropdown"],
+        state["cache"],
     ]
 
     load_data_outputs = [
@@ -342,6 +347,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
         state["df"],
         state["unfiltered_df"],
         state["datapath"],
+        state["cache"],
         inp["datapath"],
         inp["dataset_info"],
     ] + list(
@@ -372,6 +378,7 @@ def attach_callbacks(inp: dict, state: dict, out: dict, callbacks: dict) -> None
     update_load_data_inputs = [
         state["datapath"],
         inp["simple_config_dropdown"],
+        state["cache"],
     ]
 
     update_load_data_outputs = (

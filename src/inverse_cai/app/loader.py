@@ -32,6 +32,25 @@ def convert_vote_to_string(vote: int) -> str:
         raise ValueError(f"Completely invalid vote value: {vote}")
 
 
+def get_votes_df(results_dir: pathlib.Path, cache: dict) -> pd.DataFrame:
+    """
+    Get the votes dataframe for a given results directory.
+    If the dataframe is already in the cache, return it.
+    Otherwise, create it, add it to the cache, and return it.
+    """
+
+    if "votes_df" in cache and results_dir in cache["votes_df"]:
+        return cache["votes_df"][results_dir]
+    else:
+        votes_df = create_votes_df(results_dir)
+
+        if "votes_df" not in cache:
+            cache["votes_df"] = {}
+        cache["votes_df"][results_dir] = votes_df
+
+        return votes_df
+
+
 def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
 
     # load relevant data from experiment logs

@@ -25,6 +25,8 @@ def create_data_loader(inp: dict, state: dict):
     state["unfiltered_df"] = gr.State(value=pd.DataFrame())
     state["dataset_name"] = gr.State(value="")
     state["active_dataset"] = gr.State(value="")
+    state["cache"] = gr.State(value={})
+
     with gr.Row(variant="default"):
         with gr.Column(scale=4, variant="default", min_width="300px"):
             gr.HTML(
