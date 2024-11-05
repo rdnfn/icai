@@ -1,3 +1,10 @@
+"""
+Profile the load_data function
+
+Usage:
+python profile_load_data_fn.py
+"""
+
 from line_profiler import LineProfiler
 from inverse_cai.app.callbacks import generate_callbacks
 from inverse_cai.app import plotting
