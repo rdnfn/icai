@@ -49,10 +49,13 @@ def create_votes_df(results_dir: pathlib.Path) -> list[dict]:
     )
     full_df["comparison_id"] = full_df.index
 
+    # add vote data column
+    full_df["votes_dicts"] = full_df["votes"].apply(ast.literal_eval)
+
     def get_voting_data_columns(row):
         # votes are saved as dict with principle_id as key
         # and True, False, or None as value
-        vote_dict = ast.literal_eval(row["votes"])
+        vote_dict = row["votes_dicts"]
         vote_principle_ids = list(vote_dict.keys())
         vote_principles = [principles_by_id[str(id)] for id in vote_principle_ids]
         vote_values = list(vote_dict.values())
