@@ -4,15 +4,6 @@ import ast
 import pandas as pd
 from loguru import logger
 
-import gradio as gr
-
-import plotly.express as px
-
-import inverse_cai.app.plotting as plotting
-
-df = px.data.tips()
-fig = px.bar(df, x="total_bill", y="day", orientation="h")
-
 
 def load_json_file(path: str):
     with open(path, "r") as f:
