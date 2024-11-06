@@ -12,10 +12,10 @@ def load_json_file(path: str):
     return content
 
 
-def convert_vote_to_string(vote: int) -> str:
-    if vote == True:
+def convert_vote_to_string(vote: bool | None) -> str:
+    if vote is True:
         return "Agree"
-    elif vote == False:
+    elif vote is False:
         return "Disagree"
     elif vote is None:
         return "Not applicable"
