@@ -2,7 +2,12 @@ import gradio as gr
 import pandas as pd
 
 from inverse_cai.app.callbacks import generate_callbacks, attach_callbacks
-from inverse_cai.app.constants import NONE_SELECTED_VALUE, VERSION, ALLOW_LOCAL_RESULTS
+from inverse_cai.app.constants import (
+    NONE_SELECTED_VALUE,
+    VERSION,
+    ALLOW_LOCAL_RESULTS,
+    DEFAULT_DATASET_PATH,
+)
 from inverse_cai.app.builtin_datasets import BUILTIN_DATASETS
 from inverse_cai.app.info_texts import METHOD_INFO_TEXT, METHOD_INFO_HEADING, TLDR_TEXT
 from inverse_cai.app.metrics import METRIC_COL_OPTIONS
@@ -83,7 +88,7 @@ def create_data_loader(inp: dict, state: dict):
                 with gr.Group():
                     inp["datapath"] = gr.Textbox(
                         label="💾 Path",
-                        value="exp/outputs/2024-10-12_15-58-26",
+                        value=DEFAULT_DATASET_PATH,
                     )
                     inp["load_btn"] = gr.Button("Load")
 

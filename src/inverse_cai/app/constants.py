@@ -7,6 +7,8 @@ import importlib.metadata
 
 VERSION = importlib.metadata.version("inverse_cai")
 
+DEFAULT_DATASET_PATH = "exp/outputs/prism_v2"
+
 # Constants from environment vars
 # get env var with github token
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")

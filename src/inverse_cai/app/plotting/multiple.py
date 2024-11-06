@@ -4,7 +4,6 @@ import plotly.graph_objects as go
 import pandas as pd
 import gradio as gr
 
-from inverse_cai.app.plotting.utils import HOVER_TEMPLATE
 import inverse_cai.app.metrics
 
 
@@ -20,7 +19,7 @@ def _plot_multiple_values(
     # overwrite
     # TODO: remove once ready
     plot_col_values = votes_df[plot_col_name].unique()
-    shown_metric_names = ["perf"]
+    shown_metric_names = ["perf", "acc", "relevance"]
 
     # sort plot col values
     plot_col_values = sorted(plot_col_values)
@@ -37,6 +36,7 @@ def _plot_multiple_values(
         plot_col_values = proficiency_values
 
     HEIGHT_PER_PRINCIPLE = 200
+    COLOR_LIST = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
 
     full_metrics = inverse_cai.app.metrics.compute_metrics(votes_df)
     principles = full_metrics["principles"]
@@ -55,7 +55,9 @@ def _plot_multiple_values(
         col_metrics[plot_col_value] = inverse_cai.app.metrics.compute_metrics(col_df)[
             "metrics"
         ]
-        col_metrics[plot_col_value]["data_count"] = len(col_df)
+        col_metrics[plot_col_value]["data_count"] = len(
+            col_df["comparison_id"].unique()
+        )
 
     # sort principles by full perf
     principles = sorted(
@@ -78,7 +80,7 @@ def _plot_multiple_values(
         )
 
         # Add traces for each metric
-        for metric_name in shown_metric_names:
+        for j, metric_name in enumerate(shown_metric_names):
             y_values = [
                 col_metrics[val][metric_name]["by_principle"][principle]
                 for val in plot_col_values
@@ -92,6 +94,11 @@ def _plot_multiple_values(
                     mode="lines+markers",
                     xaxis=f"x{i}",
                     yaxis=f"y{i}",
+                    hovertext=[
+                        f"{col_metrics[val]['data_count']} examples"
+                        for val in plot_col_values
+                    ],
+                    marker=dict(color=COLOR_LIST[j - 1]),
                 )
             )
 

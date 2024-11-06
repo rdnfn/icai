@@ -7,7 +7,7 @@ python profile_load_data_fn.py
 
 from line_profiler import LineProfiler
 from inverse_cai.app.callbacks import generate_callbacks
-from inverse_cai.app import plotting
+from inverse_cai.app.plotting import main
 from inverse_cai.app import metrics
 from inverse_cai.app.loader import create_votes_df
 
