@@ -25,6 +25,17 @@ def _plot_multiple_values(
     # sort plot col values
     plot_col_values = sorted(plot_col_values)
 
+    proficiency_values = [
+        "Basic",
+        "Intermediate",
+        "Advanced",
+        "Fluent",
+        "Native speaker",
+    ]
+
+    if plot_col_name == "english_proficiency":
+        plot_col_values = proficiency_values
+
     HEIGHT_PER_PRINCIPLE = 200
 
     full_metrics = inverse_cai.app.metrics.compute_metrics(votes_df)
@@ -44,6 +55,14 @@ def _plot_multiple_values(
         col_metrics[plot_col_value] = inverse_cai.app.metrics.compute_metrics(col_df)[
             "metrics"
         ]
+        col_metrics[plot_col_value]["data_count"] = len(col_df)
+
+    # sort principles by full perf
+    principles = sorted(
+        principles,
+        key=lambda x: full_metrics["metrics"]["perf"]["by_principle"][x],
+        reverse=True,
+    )
 
     # Create one subplot per principle
     for i, principle in enumerate(principles, 1):
