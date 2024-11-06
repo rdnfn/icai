@@ -110,7 +110,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             )
             raise gr.Error(error_msg)
 
-        fig = inverse_cai.app.plotting.generate_hbar_chart(
+        fig = inverse_cai.app.plotting.generate_plot(
             votes_df,
             unfiltered_df=unfiltered_df,
             show_examples=show_individual_prefs,

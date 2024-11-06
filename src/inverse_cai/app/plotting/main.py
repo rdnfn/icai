@@ -26,7 +26,40 @@ from inverse_cai.app.plotting.multiple import _plot_multiple_values
 # https://plotly.com/python/horizontal-bar-charts/
 
 
-def generate_hbar_chart(
+def generate_plot(
+    votes_df: pd.DataFrame,
+    unfiltered_df: pd.DataFrame,
+    show_examples: bool = False,
+    shown_metric_names: list[str] | None = None,
+    default_ordering_metric: str = "perf",
+    sort_examples_by_agreement: bool = True,
+    plot_col_name: str = NONE_SELECTED_VALUE,
+    plot_col_values: list = None,
+) -> go.Figure:
+
+    if plot_col_name is not None and plot_col_name != NONE_SELECTED_VALUE:
+        # plot per principle and per multiple column values
+        return _plot_multiple_values(
+            votes_df=votes_df,
+            plot_col_name=plot_col_name,
+            plot_col_values=plot_col_values,
+            shown_metric_names=shown_metric_names,
+        )
+    else:
+        # plot only per principle (for entire dataset)
+        return _generate_hbar_chart(
+            votes_df=votes_df,
+            unfiltered_df=unfiltered_df,
+            show_examples=show_examples,
+            shown_metric_names=shown_metric_names,
+            default_ordering_metric=default_ordering_metric,
+            sort_examples_by_agreement=sort_examples_by_agreement,
+            plot_col_name=plot_col_name,
+            plot_col_values=plot_col_values,
+        )
+
+
+def _generate_hbar_chart(
     votes_df: pd.DataFrame,
     unfiltered_df: pd.DataFrame,
     show_examples: bool = False,
@@ -76,16 +109,8 @@ def generate_hbar_chart(
             _plot_aggregated(fig, principles, metrics)
 
     else:
-        # add plots for multiple sets of values
-        plot_col_values = votes_df[plot_col_name].unique()
-        gr.Info("Plotting multiple values...", duration=3)
-        _plot_multiple_values(
-            fig=fig,
-            votes_df=votes_df,
-            principles=principles,
-            plot_col_name=plot_col_name,
-            plot_col_values=plot_col_values,
-            shown_metric_names=shown_metric_names,
+        logger.warning(
+            f"Plotting multiple values for '{plot_col_name}' should not happen here."
         )
 
     # set up general layout configurations

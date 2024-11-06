@@ -22,12 +22,18 @@ def _plot_multiple_values(
     plot_col_values = votes_df[plot_col_name].unique()
     shown_metric_names = ["perf"]
 
+    # sort plot col values
+    plot_col_values = sorted(plot_col_values)
+
+    HEIGHT_PER_PRINCIPLE = 200
+
     full_metrics = inverse_cai.app.metrics.compute_metrics(votes_df)
     principles = full_metrics["principles"]
     # Create subplot layout
     fig = go.Figure()
     fig.update_layout(
-        height=300 * len(principles),  # Adjust height based on number of principles
+        height=HEIGHT_PER_PRINCIPLE
+        * len(principles),  # Adjust height based on number of principles
         showlegend=True,
     )
 
@@ -67,22 +73,34 @@ def _plot_multiple_values(
                     mode="lines+markers",
                     xaxis=f"x{i}",
                     yaxis=f"y{i}",
-                    hovertemplate=HOVER_TEMPLATE,
                 )
             )
 
         # Update layout for this subplot
         fig.update_layout(
             **{
-                f"xaxis{i}": {"title": plot_col_name},
-                f"yaxis{i}": {"title": f"{principle} Metrics"},
+                f"xaxis{i}": {"title": principle},
+                f"yaxis{i}": {"title": str(shown_metric_names)},
             }
+        )
+
+        # add principle text to left of plot
+        fig.add_annotation(
+            text=principle,
+            xref="paper",
+            yref=f"y{i}",
+            x=0.1,
+            y=0.5,
+            showarrow=False,
+            font=dict(size=14),
         )
 
     # Update subplot layout
     fig.update_layout(
         grid={"rows": len(principles), "columns": 1, "pattern": "independent"},
-        title=f"Metrics by {plot_col_name}",
+        title=f"Metrics by '{plot_col_name}' column",
+        height=HEIGHT_PER_PRINCIPLE
+        * len(principles),  # Adjust height based on number of principles
     )
 
     return fig
