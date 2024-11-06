@@ -7,7 +7,7 @@ import pandas as pd
 from loguru import logger
 
 from inverse_cai.app.loader import get_votes_df
-import inverse_cai.app.plotting as plotting
+import inverse_cai.app.plotting
 from inverse_cai.app.constants import NONE_SELECTED_VALUE
 from inverse_cai.app.builtin_datasets import (
     get_config_from_name,
@@ -110,7 +110,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             )
             raise gr.Error(error_msg)
 
-        fig = plotting.generate_hbar_chart(
+        fig = inverse_cai.app.plotting.generate_hbar_chart(
             votes_df,
             unfiltered_df=unfiltered_df,
             show_examples=show_individual_prefs,
@@ -118,6 +118,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
                 True if pref_order == "By reconstruction success" else False
             ),
             shown_metric_names=metrics,
+            plot_col_name=plot_col_name,
         )
 
         plot = gr.Plot(fig)
