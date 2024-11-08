@@ -39,6 +39,9 @@ def generate_plot(
 
     if plot_col_name is not None and plot_col_name != NONE_SELECTED_VALUE:
         # plot per principle and per multiple column values
+        gr.Warning(
+            "Plots of the selected configuration (based on column values) are currently experimental, results may vary."
+        )
         return _plot_multiple_values(
             votes_df=votes_df,
             plot_col_name=plot_col_name,
