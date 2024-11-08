@@ -75,42 +75,56 @@ CHATBOT_ARENA = BuiltinDataset(
     ],
 )
 
-PRISM = BuiltinDataset(
-    name="💎 PRISM",
+PRISM_VIEW_OPTIONS = [
+    Config(
+        name="GPT-4-1106-preview winning (against all other models)",
+        filter_col="chosen_model",
+        filter_value="gpt-4-1106-preview",
+    ),
+    Config(
+        name="Location (by birth region): Americas",
+        filter_col="location_birth_region",
+        filter_value="Americas",
+        metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+    ),
+    Config(
+        name="Location (by birth region): Europe",
+        filter_col="location_birth_region",
+        filter_value="Europe",
+        metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+    ),
+    Config(
+        name="English proficiency: intermediate",
+        filter_col="english_proficiency",
+        filter_value="Intermediate",
+        metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+    ),
+    Config(
+        name="English proficiency: native speaker",
+        filter_col="english_proficiency",
+        filter_value="Native speaker",
+        metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
+    ),
+]
+
+PRISM_DESCRIPTION = "PRISM dataset by Kirk et al. ([paper](https://arxiv.org/abs/2404.16019)) consisting of around 8,000 pairwise comparisons between 21 LLMs with a focus on value-laden and controversial topics."
+
+PRISM_1k = BuiltinDataset(
+    name="💎 PRISM (1k subset)",
     path=DATA_DIR / "prism_1k_v1",
-    description="PRISM dataset.",
+    description=PRISM_DESCRIPTION
+    + " These results use a 1k subset of the dataset for faster processing.",
     filterable_columns=["chosen_model", "location_birth_region", "english_proficiency"],
-    options=[
-        Config(
-            name="GPT-4-1106-preview winning (against all other models)",
-            filter_col="chosen_model",
-            filter_value="gpt-4-1106-preview",
-        ),
-        Config(
-            name="Location (by birth region): Americas",
-            filter_col="location_birth_region",
-            filter_value="Americas",
-            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
-        ),
-        Config(
-            name="Location (by birth region): Europe",
-            filter_col="location_birth_region",
-            filter_value="Europe",
-            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
-        ),
-        Config(
-            name="English proficiency: intermediate",
-            filter_col="english_proficiency",
-            filter_value="Intermediate",
-            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
-        ),
-        Config(
-            name="English proficiency: native speaker",
-            filter_col="english_proficiency",
-            filter_value="Native speaker",
-            metrics=["perf", "relevance", "acc", "perf_diff", "perf_base"],
-        ),
-    ],
+    options=PRISM_VIEW_OPTIONS,
+)
+
+PRISM_8k = BuiltinDataset(
+    name="💎 PRISM (full)",
+    path=DATA_DIR / "prism_8k_v2",
+    description=PRISM_DESCRIPTION
+    + " These results use the full dataset (~8k datapoints).",
+    filterable_columns=["chosen_model", "location_birth_region", "english_proficiency"],
+    options=PRISM_VIEW_OPTIONS,
 )
 
 ALPACA_EVAL = BuiltinDataset(
@@ -120,7 +134,7 @@ ALPACA_EVAL = BuiltinDataset(
 )
 
 # List of all built-in datasets
-BUILTIN_DATASETS = [SYNTHETIC, CHATBOT_ARENA, PRISM, ALPACA_EVAL]
+BUILTIN_DATASETS = [SYNTHETIC, CHATBOT_ARENA, ALPACA_EVAL, PRISM_1k, PRISM_8k]
 
 # make sure entire dataset is an option for all built-in datasets
 for dataset in BUILTIN_DATASETS:
