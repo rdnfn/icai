@@ -20,6 +20,7 @@ def run(
     feedback: pd.DataFrame,
     save_path: str,
     num_principles_generated_per_ranking: int,
+    num_rankings_per_sampling_step: int,
     num_clusters: int,
     random_clusters: bool,
     skip_voting: bool,
@@ -64,6 +65,7 @@ def run(
         num_principles_generated_per_ranking,
         model_name=model_name,
         config=config,
+        num_rankings_per_sampling_step=num_rankings_per_sampling_step,
     )
     feedback["principles"].to_csv(
         save_path / "010_principles_per_comparison.csv", index=True, index_label="index"

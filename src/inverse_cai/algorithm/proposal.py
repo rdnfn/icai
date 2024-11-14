@@ -3,6 +3,7 @@ from joblib import Parallel, delayed
 import pandas as pd
 import tqdm
 from loguru import logger
+import numpy as np
 
 import inverse_cai as icai
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
@@ -15,6 +16,7 @@ def generate_principles_from_feedback(
     num_principles_per_ranking,
     model_name: str,
     config: ExpConfig,
+    num_rankings_per_sampling_step: int,
 ) -> list:
     """
     Generate principles from feedback.
@@ -58,25 +60,59 @@ def generate_principles_from_feedback(
     # initialize the principles column
     feedback["principles"] = None
 
-    def process_row(index, row, num_principles_per_ranking, model_name, config):
-        principles = generate_principles_from_single_ranking(
-            preferred_text=get_preferred_text(row),
-            rejected_text=get_rejected_text(row),
-            num_principles=num_principles_per_ranking,
-            model_name=model_name,
-            config=config,
+    if num_rankings_per_sampling_step == 1:
+
+        def process_row(index, row, num_principles_per_ranking, model_name, config):
+            principles = generate_principles_from_single_ranking(
+                preferred_text=get_preferred_text(row),
+                rejected_text=get_rejected_text(row),
+                num_principles=num_principles_per_ranking,
+                model_name=model_name,
+                config=config,
+            )
+            return index, principles
+
+        # parallelize the process
+        results = Parallel(n_jobs=config.parallel_workers)(
+            delayed(process_row)(
+                index, row, num_principles_per_ranking, model_name, config
+            )
+            for index, row in tqdm.tqdm(feedback.iterrows(), total=feedback.shape[0])
         )
-        return index, principles
+        # update the feedback DataFrame
+        for index, principles in results:
+            feedback.at[index, "principles"] = principles
 
-    # parallelize the process
-    results = Parallel(n_jobs=config.parallel_workers)(
-        delayed(process_row)(index, row, num_principles_per_ranking, model_name, config)
-        for index, row in tqdm.tqdm(feedback.iterrows(), total=feedback.shape[0])
-    )
+    elif num_rankings_per_sampling_step > 1:
 
-    # update the feedback DataFrame
-    for index, principles in results:
-        feedback.at[index, "principles"] = principles
+        # allocate group_ids, such that each row is assigned to a random equally
+        # sized group
+        n_groups = num_rankings_per_sampling_step
+        feedback["group_id"] = pd.qcut(
+            np.random.permutation(len(feedback)), q=n_groups, labels=False
+        )
+
+        def process_multiple_rows(
+            index, rows, num_principles_per_ranking, model_name, config
+        ):
+            principles = generate_principles_from_multiple_rankings(
+                preferred_texts=[get_preferred_text(row) for row in rows],
+                rejected_texts=[get_rejected_text(row) for row in rows],
+                num_principles=num_principles_per_ranking,
+                model_name=model_name,
+                config=config,
+            )
+            return index, principles
+
+        # parallelize the process
+        results = Parallel(n_jobs=config.parallel_workers)(
+            delayed(process_multiple_rows)(
+                index, rows, num_principles_per_ranking, model_name, config
+            )
+            for index, rows in tqdm.tqdm(
+                feedback.groupby("group_id"), total=feedback.shape[0]
+            )
+        )
 
     return feedback
 
@@ -95,6 +131,8 @@ def generate_principles_from_single_ranking(
         preferred_text: The preferred text.
         rejected_text: The rejected text.
         num_principles: The number of principles to generate.
+        model_name: The name of the model to use.
+        config: The experiment configuration.
 
     Returns:
         A list of principles.
@@ -111,6 +149,74 @@ def generate_principles_from_single_ranking(
             prompt_kwargs=dict(
                 preferred_sample=preferred_text,
                 rejected_sample=rejected_text,
+                num_principles=num_principles,
+            ),
+        )
+
+        # generate principles
+        principle_output = model.invoke(messages).content
+
+        # parse the principles
+        try:
+            principle_output = clean_principle_str(principle_output)
+            parsed_output = ast.literal_eval(principle_output)["principles"]
+            principles += parsed_output
+            if len(parsed_output) < num_principles:
+                logger.warning(
+                    f"Generated fewer ({len(parsed_output)}) principles "
+                    f"than expected ({num_principles})"
+                )
+        except Exception as e:
+            logger.error(f"Failed to parse principles: {principle_output}")
+            logger.error(e)
+
+    return principles
+
+
+def generate_principles_from_multiple_rankings(
+    preferred_texts: list[str],
+    rejected_texts: list[str],
+    num_principles: int,
+    model_name: str,
+    config: ExpConfig,
+) -> list:
+    """
+    Generate principles from multiple rankings.
+
+    Args:
+        preferred_texts: List of preferred texts.
+        rejected_texts: List of rejected texts.
+        num_principles: The number of principles to generate.
+        model_name: The name of the model to use.
+        config: The experiment configuration.
+
+    Returns:
+        A list of principles.
+    """
+    assert num_principles > 0, "Number of principles must be greater than 0"
+    assert len(preferred_texts) == len(
+        rejected_texts
+    ), "Number of preferred and rejected texts must match"
+    assert len(preferred_texts) > 0, "At least one ranking must be provided"
+
+    # get the model
+    model = icai.models.get_model(model_name)
+    principles: list = []
+
+    rankings_str = "\n".join(
+        [
+            f"## Ranking {i+1}:\n### Preferred: {preferred_text}\n\n### Rejected: {rejected_text}\n\n-----\n\n"
+            for i, (preferred_text, rejected_text) in enumerate(
+                zip(preferred_texts, rejected_texts)
+            )
+        ]
+    )
+
+    for prompt in config.alg_prompts.generator_prompts:
+        messages = inverse_cai.algorithm.utils.parse_prompt(
+            prompt_str=prompt,
+            prompt_kwargs=dict(
+                rankings=rankings_str,
                 num_principles=num_principles,
             ),
         )

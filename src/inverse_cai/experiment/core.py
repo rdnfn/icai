@@ -185,6 +185,7 @@ def run(cfg: DictConfig):
             save_path=results_path,
             feedback=data,
             num_principles_generated_per_ranking=cfg.s1_num_principles_per_instance,
+            num_rankings_per_sampling_step=cfg.s1_num_rankings_per_sampling_step,
             num_clusters=cfg.s2_num_clusters,
             random_clusters=cfg.s2_random_clusters,
             skip_voting=cfg.s3_skip_voting_entirely,
