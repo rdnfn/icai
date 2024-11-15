@@ -92,9 +92,16 @@ def generate_principles_from_feedback(
 
         # allocate group_ids, such that each row is assigned to a random equally
         # sized group
-        n_groups = num_rankings_per_sampling_step
+        n_groups = -(len(feedback) // -num_rankings_per_sampling_step)
         feedback["group_id"] = pd.qcut(
             np.random.permutation(len(feedback)), q=n_groups, labels=False
+        )
+        assert (
+            feedback["group_id"].value_counts().max() <= num_rankings_per_sampling_step
+        ), f"Number of rankings per group must be less than or equal to {num_rankings_per_sampling_step}, max is {feedback['group_id'].value_counts().max()}"
+        assert (
+            feedback["group_id"].unique().shape[0] == n_groups,
+            f"Number of groups ({feedback['group_id'].unique().shape[0]}) must be equal to {n_groups}",
         )
 
         def process_multiple_rows(
@@ -122,9 +129,9 @@ def generate_principles_from_feedback(
         # update the feedback DataFrame, adding groups principles to each row in group
         for index, principles in results:
             # add principles to each row in the group
-            feedback[feedback["group_id"] == index]["principles"] = [principles] * len(
-                feedback[feedback["group_id"] == index]
-            )
+            feedback.loc[feedback["group_id"] == index]["principles"] = [
+                principles
+            ] * len(feedback[feedback["group_id"] == index])
 
     # get list of all principles (note that in results
     # principles are lists of principles)
