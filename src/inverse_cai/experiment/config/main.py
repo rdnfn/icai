@@ -82,7 +82,8 @@ class ExpConfig:
     )
 
     # Stage 1: principle generation
-    s1_num_principles_per_instance: int = 3
+    s1_num_principles_per_sampling_step: int = 3
+    s1_num_principles_per_instance: int | None = None
     s1_num_rankings_per_sampling_step: int = 1
 
     # Stage 2: principle clustering and de-duplication

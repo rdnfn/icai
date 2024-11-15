@@ -19,7 +19,7 @@ import inverse_cai.experiment
 def run(
     feedback: pd.DataFrame,
     save_path: str,
-    num_principles_generated_per_ranking: int,
+    num_principles_per_sampling_step: int,
     num_rankings_per_sampling_step: int,
     num_clusters: int,
     random_clusters: bool,
@@ -60,9 +60,9 @@ def run(
 
     ### STAGE 1: Generate principles from feedback
     logger.info("Stage 1: Generate principles from feedback")
-    feedback = generate_principles_from_feedback(
-        feedback,
-        num_principles_generated_per_ranking,
+    feedback, principles = generate_principles_from_feedback(
+        feedback=feedback,
+        num_principles_per_sampling_step=num_principles_per_sampling_step,
         model_name=model_name,
         config=config,
         num_rankings_per_sampling_step=num_rankings_per_sampling_step,
@@ -71,8 +71,6 @@ def run(
         save_path / "010_principles_per_comparison.csv", index=True, index_label="index"
     )
 
-    # flatten list of lists of principles into single list
-    principles = [item for sublist in list(feedback["principles"]) for item in sublist]
     print("\n".join(principles))
     save_to_json(principles, save_path / "011_principles_list.json")
 

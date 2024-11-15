@@ -13,7 +13,7 @@ import inverse_cai.algorithm.utils
 
 def generate_principles_from_feedback(
     feedback: pd.DataFrame,
-    num_principles_per_ranking,
+    num_principles_per_sampling_step,
     model_name: str,
     config: ExpConfig,
     num_rankings_per_sampling_step: int,
@@ -35,18 +35,18 @@ def generate_principles_from_feedback(
         f"{len(config.alg_prompts.generator_prompts)}"
     )
     logger.info(
-        f"Number of principles per ranking per prompt: {num_principles_per_ranking}"
+        f"Number of principles per sampling step per prompt: {num_principles_per_sampling_step}"
     )
     overall_num_principles = (
         len(feedback)
         * len(config.alg_prompts.generator_prompts)
-        * num_principles_per_ranking
+        * num_principles_per_sampling_step
     )
     logger.info(
         f"Will overall generate {overall_num_principles} principles from the feedback"
     )
 
-    if num_principles_per_ranking == 1:
+    if num_principles_per_sampling_step == 1:
         logger.warning(
             (
                 "Generating a single principle per sample currently "
@@ -62,11 +62,13 @@ def generate_principles_from_feedback(
 
     if num_rankings_per_sampling_step == 1:
 
-        def process_row(index, row, num_principles_per_ranking, model_name, config):
+        def process_row(
+            index, row, num_principles_per_sampling_step, model_name, config
+        ):
             principles = generate_principles_from_single_ranking(
                 preferred_text=get_preferred_text(row),
                 rejected_text=get_rejected_text(row),
-                num_principles=num_principles_per_ranking,
+                num_principles=num_principles_per_sampling_step,
                 model_name=model_name,
                 config=config,
             )
@@ -75,7 +77,7 @@ def generate_principles_from_feedback(
         # parallelize the process
         results = Parallel(n_jobs=config.parallel_workers)(
             delayed(process_row)(
-                index, row, num_principles_per_ranking, model_name, config
+                index, row, num_principles_per_sampling_step, model_name, config
             )
             for index, row in tqdm.tqdm(feedback.iterrows(), total=feedback.shape[0])
         )
@@ -93,12 +95,12 @@ def generate_principles_from_feedback(
         )
 
         def process_multiple_rows(
-            index, rows, num_principles_per_ranking, model_name, config
+            index, rows, num_principles_per_sampling_step, model_name, config
         ):
             principles = generate_principles_from_multiple_rankings(
-                preferred_texts=[get_preferred_text(row) for row in rows],
-                rejected_texts=[get_rejected_text(row) for row in rows],
-                num_principles=num_principles_per_ranking,
+                preferred_texts=[get_preferred_text(row) for _, row in rows.iterrows()],
+                rejected_texts=[get_rejected_text(row) for _, row in rows.iterrows()],
+                num_principles=num_principles_per_sampling_step,
                 model_name=model_name,
                 config=config,
             )
@@ -107,14 +109,27 @@ def generate_principles_from_feedback(
         # parallelize the process
         results = Parallel(n_jobs=config.parallel_workers)(
             delayed(process_multiple_rows)(
-                index, rows, num_principles_per_ranking, model_name, config
+                index, rows, num_principles_per_sampling_step, model_name, config
             )
             for index, rows in tqdm.tqdm(
                 feedback.groupby("group_id"), total=feedback.shape[0]
             )
         )
 
-    return feedback
+        # update the feedback DataFrame, adding groups principles to each row in group
+        for index, principles in results:
+            # add principles to each row in the group
+            feedback[feedback["group_id"] == index]["principles"] = [principles] * len(
+                feedback[feedback["group_id"] == index]
+            )
+
+    # get list of all principles (note that in results
+    # principles are lists of principles)
+    principles = [
+        principle for _, principle_list in results for principle in principle_list
+    ]
+
+    return feedback, principles
 
 
 def generate_principles_from_single_ranking(

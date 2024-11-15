@@ -180,11 +180,21 @@ def run(cfg: DictConfig):
     test_data = setup_test_data(cfg)
     assert_no_identical_rows(data, test_data)
 
+    # TODO: remove this in a future version once s1_num_principles_per_instance is removed
+    if cfg.s1_num_principles_per_instance is not None:
+        logger.warning(
+            "`s1_num_principles_per_instance` is set. This is deprecated and will be removed in a future version. "
+            "Please use `s1_num_principles_per_sampling_step` instead. Overwriting `s1_num_principles_per_sampling_step`."
+        )
+        num_principles_per_sampling_step = cfg.s1_num_principles_per_instance
+    else:
+        num_principles_per_sampling_step = cfg.s1_num_principles_per_sampling_step
+
     if cfg.generate_constitution:
         results = inverse_cai.algorithm.run(
             save_path=results_path,
             feedback=data,
-            num_principles_generated_per_ranking=cfg.s1_num_principles_per_instance,
+            num_principles_per_sampling_step=num_principles_per_sampling_step,
             num_rankings_per_sampling_step=cfg.s1_num_rankings_per_sampling_step,
             num_clusters=cfg.s2_num_clusters,
             random_clusters=cfg.s2_random_clusters,
