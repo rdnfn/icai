@@ -4,7 +4,7 @@ data_len: 65
 test_data_path: "./data/processed/tatsu_lab/alpacaeval_goldcrossannotations_rand.csv"
 test_data_start_index: 200
 test_data_len: 65
-test_data_invert_labels: false
+test_data_invert_labels: true
 alg_model: "openai/gpt-4o-2024-05-13"
 s1_num_principles_per_instance: 10
 s1_num_rankings_per_sampling_step: 5 # ablation: IMPORTANT DIFFERENCE
