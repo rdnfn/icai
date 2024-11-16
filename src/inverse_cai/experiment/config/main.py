@@ -81,6 +81,10 @@ class ExpConfig:
         True  # whether to generate a constitution using the algorithm
     )
 
+    # Optional: set principles to test (skip generation)
+    s0_added_principles_to_test: list[str] | None = None
+    s0_skip_principle_generation: bool = False
+
     # Stage 1: principle generation
     s1_num_principles_per_sampling_step: int = 3
     s1_num_principles_per_instance: int | None = None

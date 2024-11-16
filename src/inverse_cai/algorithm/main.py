@@ -58,39 +58,59 @@ def run(
     # make sure data without ties
     assert not feedback["preferred_text"].str.contains("tie").any()
 
-    ### STAGE 1: Generate principles from feedback
-    logger.info("Stage 1: Generate principles from feedback")
-    feedback, principles = generate_principles_from_feedback(
-        feedback=feedback,
-        num_principles_per_sampling_step=num_principles_per_sampling_step,
-        model_name=model_name,
-        config=config,
-        num_rankings_per_sampling_step=num_rankings_per_sampling_step,
-    )
-    feedback["principles"].to_csv(
-        save_path / "010_principles_per_comparison.csv", index=True, index_label="index"
-    )
+    if not config.s0_skip_principle_generation:
+        ### STAGE 1: Generate principles from feedback
+        logger.info("Stage 1: Generate principles from feedback")
+        feedback, principles = generate_principles_from_feedback(
+            feedback=feedback,
+            num_principles_per_sampling_step=num_principles_per_sampling_step,
+            model_name=model_name,
+            config=config,
+            num_rankings_per_sampling_step=num_rankings_per_sampling_step,
+        )
+        feedback["principles"].to_csv(
+            save_path / "010_principles_per_comparison.csv",
+            index=True,
+            index_label="index",
+        )
 
-    print("\n".join(principles))
-    save_to_json(principles, save_path / "011_principles_list.json")
+        print("\n".join(principles))
+        save_to_json(principles, save_path / "011_principles_list.json")
 
-    ### STAGE 2: Cluster principles
-    logger.info("Stage 2: Cluster principles")
-    clusters = cluster_principles(
-        principles,
-        num_clusters=num_clusters,
-        random_clusters=random_clusters,
-    )
-    save_to_json(clusters, save_path / "020_principle_clusters.json")
+        ### STAGE 2: Cluster principles
+        logger.info("Stage 2: Cluster principles")
+        clusters = cluster_principles(
+            principles,
+            num_clusters=num_clusters,
+            random_clusters=random_clusters,
+        )
+        save_to_json(clusters, save_path / "020_principle_clusters.json")
 
-    summaries = get_cluster_summaries(
-        clusters,
-        model_name=model_name,
-        sample_instead_of_rewrite=True,
-        config=config,
-    )
-    print_clusters(clusters, summaries)
-    save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
+        summaries = get_cluster_summaries(
+            clusters,
+            model_name=model_name,
+            sample_instead_of_rewrite=True,
+            config=config,
+        )
+        print_clusters(clusters, summaries)
+        save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
+    else:
+        logger.warning("Skipping principle generation stage")
+        summaries = {}
+
+    if config.s0_added_principles_to_test is not None:
+        logger.info(
+            f"Adding fixed test principles to summaries: {config.s3_added_principles_to_test}"
+        )
+        num_generated_principles = len(summaries.values())
+        summaries = {
+            **summaries,
+            **{
+                str(num_generated_principles + i): principle
+                for i, principle in enumerate(config.s3_added_principles_to_test)
+                if principle not in summaries.values()
+            },
+        }
 
     ### STAGE 3: Get votes for principles
     logger.info("Stage 3: Get votes for principles")
