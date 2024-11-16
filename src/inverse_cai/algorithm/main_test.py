@@ -53,8 +53,9 @@ def test_run_full_workflow(
     mock_save_path,
 ):
     # Setup mock returns
-    mock_generate_principles.return_value = mock_feedback_df
-    mock_feedback_df["principles"] = [["principle1"], ["principle2"]]
+    mock_principles = ["principle1", "principle2"]
+    mock_generate_principles.return_value = mock_feedback_df, mock_principles
+    mock_feedback_df["principles"] = mock_principles
 
     mock_cluster_principles.return_value = {
         "cluster1": ["principle1"],
@@ -91,7 +92,7 @@ def test_run_full_workflow(
     result = run(
         feedback=mock_feedback_df,
         save_path=mock_save_path,
-        num_principles_generated_per_ranking=2,
+        num_principles_per_sampling_step=2,
         num_rankings_per_sampling_step=1,
         num_clusters=2,
         random_clusters=False,
@@ -147,8 +148,9 @@ def test_run_skip_voting(
     mock_save_path,
 ):
     # Setup mock returns
-    mock_generate_principles.return_value = mock_feedback_df
-    mock_feedback_df["principles"] = [["principle1"], ["principle2"]]
+    mock_principles = ["principle1", "principle2"]
+    mock_generate_principles.return_value = mock_feedback_df, mock_principles
+    mock_feedback_df["principles"] = mock_principles
 
     mock_cluster_principles.return_value = {
         "cluster1": ["principle1"],
@@ -161,7 +163,7 @@ def test_run_skip_voting(
     result = run(
         feedback=mock_feedback_df,
         save_path=mock_save_path,
-        num_principles_generated_per_ranking=2,
+        num_principles_per_sampling_step=2,
         num_rankings_per_sampling_step=3,
         num_clusters=2,
         random_clusters=False,
@@ -226,7 +228,7 @@ def test_run_integration(
     result = run(
         feedback=mock_feedback_df,
         save_path=mock_save_path,
-        num_principles_generated_per_ranking=2,
+        num_principles_per_sampling_step=2,
         num_rankings_per_sampling_step=1,
         num_clusters=2,
         random_clusters=False,
