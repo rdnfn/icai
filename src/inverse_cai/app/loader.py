@@ -19,6 +19,8 @@ def convert_vote_to_string(vote: bool | None) -> str:
         return "Disagree"
     elif vote is None:
         return "Not applicable"
+    elif vote == "invalid":
+        return "Invalid"
     else:
         raise ValueError(f"Completely invalid vote value: {vote}")
 

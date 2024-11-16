@@ -68,6 +68,7 @@ COLORS_DICT = {
     "Agree": "#93c37d",
     "Disagree": "#c17c92",
     "Not applicable": DARK_GREY,
+    "Invalid": "black",
 }
 DARK_COLORS_DICT = {
     "Agree": DARK_GREEN,
