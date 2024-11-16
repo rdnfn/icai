@@ -43,6 +43,7 @@ DO NOT add markdown formatting around JSON.
 ONLY REPLY IN JSON FORMAT
 <|im_end|>"""
 
+# TODO: fix typo
 DEFAULT_VOTING_PROMPT = """<|im_start|>system
 Your job is to check which sample is should be selected according to the given rules. You're an expert at this.
 <|im_end|>
