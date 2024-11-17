@@ -2,6 +2,7 @@ import ast
 import tqdm
 import random
 import pandas as pd
+from pathlib import Path
 from loguru import logger
 from joblib import Parallel, delayed
 
@@ -9,6 +10,7 @@ import inverse_cai as icai
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
 from inverse_cai.experiment.config import ExpConfig
 import inverse_cai.algorithm.utils
+from inverse_cai.algorithm.cache import VoteCache
 
 
 def get_votes_for_principles(
@@ -17,6 +19,7 @@ def get_votes_for_principles(
     summaries: dict,
     config: ExpConfig,
     model_name: str,
+    cache_path: Path,
 ) -> tuple[pd.DataFrame, dict]:
     """Get votes for principles.
 
@@ -58,6 +61,7 @@ def get_votes_for_principles(
             summaries=summary_part,
             config=config,
             model_name=model_name,
+            cache_path=cache_path,
         )
 
         # append to pd series another pd series
@@ -77,19 +81,26 @@ def run_pass_to_get_votes_for_principles(
     summaries: dict,
     config: ExpConfig,
     model_name: str,
+    cache_path: Path,
 ) -> tuple[pd.Series, dict]:
     """
     Given a dataframe of conversations, run voting with each proposed
     principle on each pairwise comparison. Single pass over dataset.
-
-    Model output is formatted as json format, for each principle.
     """
-
     feedback_df = feedback_df.copy()
     feedback_df["votes"] = None
 
     # Function to process each row
     def process_row(index, row, summaries, model_name, config):
+        # Check cache first
+        # Initialize cache
+        vote_cache = VoteCache(cache_path)
+
+        # Load existing votes
+        cached_votes = vote_cache.get_cached_votes()
+        if index in cached_votes:
+            return index, cached_votes[index]
+
         preferred = get_preferred_text(row)
         rejected = get_rejected_text(row)
         vote = get_preference_vote_for_single_text(
@@ -99,6 +110,9 @@ def run_pass_to_get_votes_for_principles(
             model_name=model_name,
             config=config,
         )
+
+        # Update cache
+        vote_cache.update_cache(index, vote)
         return index, vote
 
     # Parallel processing of rows
@@ -112,7 +126,6 @@ def run_pass_to_get_votes_for_principles(
         feedback_df.at[index, "votes"] = vote
 
     raw_votes = feedback_df["votes"]
-
     combined_votes = combine_votes(list(raw_votes), summaries)
 
     return raw_votes, combined_votes

@@ -123,6 +123,7 @@ def run(
             summaries=summaries,
             max_votes_in_single_prompt=config.s3_filter_max_votes_in_single_prompt,
             model_name=model_name,
+            cache_path=save_path / "040_votes_per_comparison.csv",
             config=config,
         )
 
