@@ -90,16 +90,17 @@ def run_pass_to_get_votes_for_principles(
     feedback_df = feedback_df.copy()
     feedback_df["votes"] = None
 
+    initial_cache = VoteCache(cache_path)
+    initial_cached_votes = initial_cache.get_cached_votes()
+
     # Function to process each row
-    def process_row(index, row, summaries, model_name, config):
+    def process_row(index, row, summaries, model_name, config, initial_cached_votes):
         # Check cache first
         # Initialize cache
         vote_cache = VoteCache(cache_path)
 
-        # Load existing votes
-        cached_votes = vote_cache.get_cached_votes()
-        if index in cached_votes:
-            return index, cached_votes[index]
+        if index in initial_cached_votes.keys():
+            return index, initial_cached_votes[index]
 
         preferred = get_preferred_text(row)
         rejected = get_rejected_text(row)
@@ -117,7 +118,9 @@ def run_pass_to_get_votes_for_principles(
 
     # Parallel processing of rows
     results = Parallel(n_jobs=config.parallel_workers)(
-        delayed(process_row)(index, row, summaries, model_name, config)
+        delayed(process_row)(
+            index, row, summaries, model_name, config, initial_cached_votes
+        )
         for index, row in tqdm.tqdm(feedback_df.iterrows(), total=feedback_df.shape[0])
     )
 

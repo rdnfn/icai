@@ -32,16 +32,16 @@ class VoteCache:
             with open(self.index_path, "w", encoding="utf-8") as f:
                 json.dump(set(), f, default=list)
 
-    def _get_processed_indices(self) -> set:
+    def get_processed_indices(self) -> set:
         """Load set of processed indices."""
         with open(self.index_path, "r", encoding="utf-8") as f:
             return set(json.load(f))
 
     def _add_processed_index(self, index: int):
         """Add index to processed set."""
-        processed = self._get_processed_indices()
+        processed = self.get_processed_indices()
         processed.add(index)
-        with open(self.index_path, "w") as f:
+        with open(self.index_path, "w", encoding="utf-8") as f:
             json.dump(list(processed), f)
 
     def get_cached_votes(self) -> dict:
@@ -68,7 +68,7 @@ class VoteCache:
             try:
                 with self.lock:
                     # Check if already processed
-                    processed = self._get_processed_indices()
+                    processed = self.get_processed_indices()
                     if index in processed:
                         return
 
