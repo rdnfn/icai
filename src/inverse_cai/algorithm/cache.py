@@ -3,6 +3,9 @@ import time
 from pathlib import Path
 from filelock import FileLock
 from loguru import logger
+import csv
+import json
+import ast
 
 
 class VoteCache:
@@ -14,54 +17,67 @@ class VoteCache:
             lock_timeout: Maximum time to wait for file lock in seconds
         """
         self.cache_path = Path(cache_path)
+        self.index_path = self.cache_path.with_suffix(".index.json")
         self.lock_path = self.cache_path.with_suffix(".lock")
         self.lock_timeout = lock_timeout
         self.lock = FileLock(self.lock_path, timeout=lock_timeout)
 
-        # Initialize empty cache file if it doesn't exist
+        # Initialize empty cache files if they don't exist
         if not self.cache_path.exists():
-            self._save_df(pd.DataFrame(columns=["index", "votes"]))
+            with open(self.cache_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(["index", "votes"])
 
-    def _save_df(self, df: pd.DataFrame):
-        """Save dataframe to csv with index."""
-        df.to_csv(self.cache_path, index=False)
+        if not self.index_path.exists():
+            with open(self.index_path, "w", encoding="utf-8") as f:
+                json.dump(set(), f, default=list)
 
-    def _load_df(self) -> pd.DataFrame:
-        """Load dataframe from csv."""
-        return pd.read_csv(self.cache_path)
+    def _get_processed_indices(self) -> set:
+        """Load set of processed indices."""
+        with open(self.index_path, "r", encoding="utf-8") as f:
+            return set(json.load(f))
+
+    def _add_processed_index(self, index: int):
+        """Add index to processed set."""
+        processed = self._get_processed_indices()
+        processed.add(index)
+        with open(self.index_path, "w") as f:
+            json.dump(list(processed), f)
 
     def get_cached_votes(self) -> dict:
         """Get all cached votes as dictionary of index -> vote."""
         with self.lock:
-            df = self._load_df()
-            # Convert string representation of dict back to dict
-            votes_dict = {
-                row["index"]: eval(row["votes"])
-                for _, row in df.iterrows()
-                if pd.notna(row["votes"])
-            }
+            votes_dict = {}
+            with open(self.cache_path, "r", newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row["votes"] and pd.notna(row["votes"]):
+                        votes_dict[int(row["index"])] = ast.literal_eval(row["votes"])
         return votes_dict
 
     def update_cache(self, index: int, vote: dict):
-        """Update cache with new vote result.
+        """Update cache with new vote result by appending to file.
+        Skips if index was already processed.
 
         Will retry if lock is not available.
         """
-        max_retries = 3
+        max_retries = 10
         retry_delay = 1
 
         for attempt in range(max_retries):
             try:
                 with self.lock:
-                    df = self._load_df()
+                    # Check if already processed
+                    processed = self._get_processed_indices()
+                    if index in processed:
+                        return
 
-                    # Update or append new row
-                    new_row = pd.DataFrame({"index": [index], "votes": [str(vote)]})
-                    df = pd.concat(
-                        [df[df["index"] != index], new_row], ignore_index=True
-                    )
+                    # Append new vote and update index
+                    with open(self.cache_path, "a", newline="", encoding="utf-8") as f:
+                        writer = csv.writer(f)
+                        writer.writerow([index, str(vote)])
 
-                    self._save_df(df)
+                    self._add_processed_index(index)
                 return
             except TimeoutError as exc:
                 if attempt < max_retries - 1:
@@ -71,5 +87,5 @@ class VoteCache:
                     time.sleep(retry_delay)
                 else:
                     raise TimeoutError(
-                        "Failed to acquire lock after multiple retries"
+                        f"Failed to acquire lock after {max_retries} retries"
                     ) from exc
