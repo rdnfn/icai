@@ -131,12 +131,15 @@ def run(
         )
         save_to_json(combined_votes, save_path / "041_votes_per_cluster.json")
 
-        # visualise
-        inverse_cai.visualisation.plot_approval_bars(
-            categories=list(summaries.values()),
-            votes=list(combined_votes.values()),
-            path=save_path / "042_principle_approval_votes.png",
-        )
+        try:
+            # visualise
+            inverse_cai.visualisation.plot_approval_bars(
+                categories=list(summaries.values()),
+                votes=list(combined_votes.values()),
+                path=save_path / "042_principle_approval_votes.png",
+            )
+        except ValueError as e:
+            logger.warning(f"Error visualising approval bars: {e}")
 
         filtered_plinciple_keys = filter_according_to_votes(
             combined_votes=combined_votes,
