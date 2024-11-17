@@ -43,12 +43,38 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
         )
         return None
     else:
-        return setup_data(
-            data_path=cfg.test_data_path,
-            invert_labels=cfg.test_data_invert_labels,
-            data_len=cfg.test_data_len,
-            data_start_index=cfg.test_data_start_index,
-        )
+        if isinstance(cfg.test_data_path, list):
+            assert isinstance(
+                cfg.test_data_len, list
+            ), "test_data_len must be a list if test_data_path is a list"
+            assert isinstance(
+                cfg.test_data_start_index, list
+            ), "test_data_start_index must be a list if test_data_path is a list"
+            assert isinstance(
+                cfg.test_data_invert_labels, list
+            ), "test_data_invert_labels must be a list if test_data_path is a list"
+
+            return [
+                setup_data(
+                    data_path=path,
+                    invert_labels=invert_labels,
+                    data_len=data_len,
+                    data_start_index=cfg.test_data_start_index,
+                )
+                for path, data_len, invert_labels, data_start_index in zip(
+                    cfg.test_data_path,
+                    cfg.test_data_len,
+                    cfg.test_data_invert_labels,
+                    cfg.test_data_start_index,
+                )
+            ]
+        else:
+            return setup_data(
+                data_path=cfg.test_data_path,
+                invert_labels=cfg.test_data_invert_labels,
+                data_len=cfg.test_data_len,
+                data_start_index=cfg.test_data_start_index,
+            )
 
 
 def setup_data(
@@ -246,24 +272,41 @@ def run(cfg: DictConfig):
             logger.info(f"Results table (training data):\n{annotation_results}")
             annotation_results.to_csv(results_path / "092_results_training.csv")
         if test_data is not None:
-            logger.info("Running LLM annotation on test data")
-            test_annotation_results = inverse_cai.annotator.annotate(
-                config=cfg,
-                data=test_data,
-                constitution=constitution,
-                is_single_annotator=cfg.annotator.is_single_annotator,
-                tmp_files_path=tmp_path / "testset",
-            )
-            logger.info(f"Results table (test data):\n{test_annotation_results}")
-            test_annotation_results.to_csv(results_path / "093_results_testset.csv")
+            if isinstance(test_data, list):
+                for i, test_data_single in enumerate(test_data):
+                    logger.info(
+                        f"Running LLM annotation on test data {i}/{len(test_data)}"
+                    )
+                    test_annotation_results = inverse_cai.annotator.annotate(
+                        config=cfg,
+                        data=test_data_single,
+                        constitution=constitution,
+                        is_single_annotator=cfg.annotator.is_single_annotator,
+                        tmp_files_path=tmp_path / "testset",
+                    )
+                    logger.info(
+                        f"Results table (test data {i}/{len(test_data)}):\n{test_annotation_results}"
+                    )
+                    test_annotation_results.to_csv(
+                        results_path / f"093_results_testset_{i}.csv"
+                    )
+            else:
+                logger.info("Running LLM annotation on test data")
+                test_annotation_results = inverse_cai.annotator.annotate(
+                    config=cfg,
+                    data=test_data,
+                    constitution=constitution,
+                    is_single_annotator=cfg.annotator.is_single_annotator,
+                    tmp_files_path=tmp_path / "testset",
+                )
+                logger.info(f"Results table (test data):\n{test_annotation_results}")
+                test_annotation_results.to_csv(results_path / "093_results_testset.csv")
         else:
             if cfg.annotator.test_data_only:
                 logger.warning(
                     "No test data provided, but `test_data_only` is set to True. "
                     "No test data will be annotated."
                 )
-
-    # TODO: add wandb logging of results
 
     logger.info(f"Experiment finished. Find results at {results_path}")
 

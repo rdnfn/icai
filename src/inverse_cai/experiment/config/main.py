@@ -68,10 +68,10 @@ class ExpConfig:
     data_invert_labels: bool = False  # Whether to invert the labels of the data
 
     # Test data config
-    test_data_path: Optional[str] = None
-    test_data_len: Optional[int] = None
-    test_data_start_index: int = 0
-    test_data_invert_labels: bool = False
+    test_data_path: Optional[str | list[str]] = None
+    test_data_len: Optional[int | list[int]] = None
+    test_data_start_index: int | list[int] = 0
+    test_data_invert_labels: bool | list[bool] = False
 
     # Cache config
     prior_cache_path: str | None = (
