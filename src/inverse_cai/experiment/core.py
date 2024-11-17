@@ -68,12 +68,25 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
                     cfg.test_data_start_index,
                 )
             ]
-        else:
+        elif isinstance(cfg.test_data_path, str):
+            assert isinstance(
+                cfg.test_data_len, int
+            ), "test_data_len must be an int if test_data_path is a string"
+            assert isinstance(
+                cfg.test_data_start_index, int
+            ), "test_data_start_index must be an int if test_data_path is a string"
+            assert isinstance(
+                cfg.test_data_invert_labels, bool
+            ), "test_data_invert_labels must be a bool if test_data_path is a string"
             return setup_data(
                 data_path=cfg.test_data_path,
                 invert_labels=cfg.test_data_invert_labels,
                 data_len=cfg.test_data_len,
                 data_start_index=cfg.test_data_start_index,
+            )
+        else:
+            raise ValueError(
+                f"test_data_path must be a string or a list of strings (given '{cfg.test_data_path}')"
             )
 
 
