@@ -93,24 +93,26 @@ def run(
             config=config,
         )
         print_clusters(clusters, summaries)
-        save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
     else:
         logger.warning("Skipping principle generation stage")
         summaries = {}
+        clusters = None
 
     if config.s0_added_principles_to_test is not None:
         logger.info(
-            f"Adding fixed test principles to summaries: {config.s3_added_principles_to_test}"
+            f"Adding fixed test principles to summaries: {config.s0_added_principles_to_test}"
         )
         num_generated_principles = len(summaries.values())
         summaries = {
             **summaries,
             **{
-                str(num_generated_principles + i): principle
-                for i, principle in enumerate(config.s3_added_principles_to_test)
+                num_generated_principles + i: principle
+                for i, principle in enumerate(config.s0_added_principles_to_test)
                 if principle not in summaries.values()
             },
         }
+
+    save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
 
     ### STAGE 3: Get votes for principles
     logger.info("Stage 3: Get votes for principles")

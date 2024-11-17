@@ -40,7 +40,12 @@ def get_votes_for_principles(
 
     logger.info(f"Split voting into {len(summaries_parts)} runs over entire dataset.")
 
-    assert sum(len(part) for part in summaries_parts) == len(summaries)
+    assert sum(len(part) for part in summaries_parts) == len(summaries), (
+        f"Sum of lengths of summaries parts ({sum(len(part) for part in summaries_parts)}) "
+        f"does not match length of summaries ({len(summaries)})"
+        f"Full summaries: {summaries}\nFull summaries parts: {summaries_parts}"
+        f"max votes in single prompt: {max_votes_in_single_prompt}"
+    )
 
     raw_votes = []
     combined_votes = []
