@@ -1,6 +1,8 @@
 from loguru import logger
 import pandas as pd
 import random
+import shutil
+from pathlib import Path
 
 from inverse_cai.algorithm.clustering import (
     get_cluster_summaries,
@@ -118,18 +120,28 @@ def run(
     logger.info("Stage 3: Get votes for principles")
 
     if not skip_voting:
+
+        new_vote_cache_path = save_path / "040_votes_per_comparison.csv"
+        if config.prior_cache_path is not None:
+            # copy over prior cache file
+            shutil.copy(
+                Path(config.prior_cache_path)
+                / "results"
+                / "040_votes_per_comparison.csv",
+                new_vote_cache_path,
+            )
+            logger.info(f"Copied over prior cache from '{config.prior_cache_path}'")
+
         raw_votes, combined_votes = get_votes_for_principles(
             feedback_df=feedback,
             summaries=summaries,
             max_votes_in_single_prompt=config.s3_filter_max_votes_in_single_prompt,
             model_name=model_name,
-            cache_path=save_path / "040_votes_per_comparison.csv",
+            cache_path=new_vote_cache_path,
             config=config,
         )
 
-        raw_votes.to_csv(
-            save_path / "040_votes_per_comparison.csv", index=True, index_label="index"
-        )
+        raw_votes.to_csv(new_vote_cache_path, index=True, index_label="index")
         save_to_json(combined_votes, save_path / "041_votes_per_cluster.json")
 
         try:

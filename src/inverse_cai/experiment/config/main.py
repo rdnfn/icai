@@ -73,6 +73,11 @@ class ExpConfig:
     test_data_start_index: int = 0
     test_data_invert_labels: bool = False
 
+    # Cache config
+    prior_cache_path: str | None = (
+        None  # Path to the prior experiment results (path to main run directory)
+    )
+
     ## Algorithm config
     # general
     alg_model: str = "openai/gpt-3.5-turbo-0125"  # model to use for the algorithm
