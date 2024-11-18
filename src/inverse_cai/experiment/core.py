@@ -59,7 +59,7 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
                     data_path=path,
                     invert_labels=invert_labels,
                     data_len=data_len,
-                    data_start_index=cfg.test_data_start_index,
+                    data_start_index=data_start_index,
                 )
                 for path, data_len, invert_labels, data_start_index in zip(
                     cfg.test_data_path,
@@ -124,9 +124,12 @@ def setup_data(
     return data
 
 
-def assert_no_identical_rows(df1, df2):
+def assert_no_identical_rows(df1: pd.DataFrame, df2: pd.DataFrame | list[pd.DataFrame]):
 
-    concatenated_df = pd.concat([df1, df2])
+    if isinstance(df2, list):
+        concatenated_df = pd.concat([df1, *df2])
+    else:
+        concatenated_df = pd.concat([df1, df2])
     unique_df = concatenated_df.drop_duplicates()
 
     # Check if the lengths are the same
