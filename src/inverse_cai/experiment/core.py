@@ -298,7 +298,7 @@ def run(cfg: DictConfig):
                         data=test_data_single,
                         constitution=constitution,
                         is_single_annotator=cfg.annotator.is_single_annotator,
-                        tmp_files_path=tmp_path / "testset",
+                        tmp_files_path=tmp_path / f"testset_{i}",
                     )
                     logger.info(
                         f"Results table (test data {i}/{len(test_data)}):\n{test_annotation_results}"
