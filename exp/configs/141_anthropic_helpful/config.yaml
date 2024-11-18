@@ -1,4 +1,4 @@
-data_path: "./data/processed/anthropic/anthropic_harmless_base_train_10000canonrand.csv"
+data_path: "./data/processed/anthropic/anthropic_helpful_base_train_10000canonrand.csv"
 data_len: 100
 test_data_path:
   - "./data/processed/anthropic/anthropic_harmless_base_train_10000canonrand.csv"
@@ -10,6 +10,7 @@ test_data_start_index: [100, 100, 100]
 alg_model: "openai/gpt-4o-mini-2024-07-18"
 s1_num_principles_per_instance: 2
 s2_num_clusters: 80
+s3_filter_max_votes_in_single_prompt: 20
 s3_max_principles: 5
 annotator:
   is_single_annotator: true
