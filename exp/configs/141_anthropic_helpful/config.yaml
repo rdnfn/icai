@@ -3,10 +3,9 @@ data_len: 100
 test_data_path:
   - "./data/processed/anthropic/anthropic_harmless_base_train_10000canonrand_balanced.csv"
   - "./data/processed/anthropic/anthropic_helpful_base_train_10000canonrand_balanced.csv"
-  - "./data/processed/anthropic/anthropic_harmless_base_train_10000canonrand_balanced.csv"
-test_data_len: [1000, 1000, 1000]
-test_data_invert_labels: [false, false, true]
-test_data_start_index: [100, 100, 100]
+test_data_len: [1000, 1000]
+test_data_invert_labels: [false, false]
+test_data_start_index: [100, 100]
 alg_model: "openai/gpt-4o-mini-2024-07-18"
 s1_num_principles_per_instance: 2
 s2_num_clusters: 160
