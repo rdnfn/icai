@@ -25,6 +25,8 @@ def get_results_from_paths(results_path, dataset):
             path = complete_results_path / "092_results_training.csv"
         elif dataset == "test":
             path = complete_results_path / "093_results_testset.csv"
+        elif dataset.startswith("testset"):
+            path = complete_results_path / f"093_results_{dataset}.csv"
         else:
             logger.error(f"Could not find results files for dataset {dataset}.")
 
