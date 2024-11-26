@@ -22,7 +22,7 @@ class VoteCache:
         self.lock_timeout = lock_timeout
         self.lock = FileLock(self.lock_path, timeout=lock_timeout)
 
-        # Initialize empty cache files if they don't exist
+        # Initialize empty cache file if it doesn't exist
         if not self.cache_path.exists():
             with open(self.cache_path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
@@ -37,27 +37,48 @@ class VoteCache:
         with open(self.index_path, "r", encoding="utf-8") as f:
             return set(json.load(f))
 
-    def _add_processed_index(self, index: int):
+    def get_full_index(self, index: int, vote: dict) -> str:
+        """Get full index string for a vote.
+
+        Starting with comparison index, then lowest and highest principle id voted on.
+        Note that the votes_per_comparison csv can contain multiple votes per
+        comparison, so we need to be able to handle this.
+        """
+        min_principle_id_voted_on = min(vote.keys())
+        max_principle_id_voted_on = max(vote.keys())
+        return f"{index}_{min_principle_id_voted_on}_{max_principle_id_voted_on}"
+
+    def check_if_index_processed(self, index: int, vote: dict) -> bool:
+        """Check if index has been processed."""
+        processed = self.get_processed_indices()
+        return self.get_full_index(index, vote) in processed
+
+    def _add_processed_index(self, index: int, vote: dict):
         """Add index to processed set."""
         processed = self.get_processed_indices()
-        processed.add(index)
+        processed.add(self.get_full_index(index, vote))
         with open(self.index_path, "w", encoding="utf-8") as f:
             json.dump(list(processed), f)
 
     def get_cached_votes(self) -> dict:
-        """Get all cached votes as dictionary of index -> vote."""
+        """Get all cached votes as dictionary of index -> dictionary of votes."""
         with self.lock:
             votes_dict = {}
             with open(self.cache_path, "r", newline="", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     if row["votes"] and pd.notna(row["votes"]):
-                        votes_dict[int(row["index"])] = ast.literal_eval(row["votes"])
+                        index = int(row["index"])
+                        vote = ast.literal_eval(row["votes"])
+                        full_index = self.get_full_index(index, vote)
+                        if full_index not in votes_dict:
+                            votes_dict[full_index] = {}
+                        votes_dict[full_index] = vote
         return votes_dict
 
     def update_cache(self, index: int, vote: dict):
         """Update cache with new vote result by appending to file.
-        Skips if index was already processed.
+        Multiple votes per index are allowed.
 
         Will retry if lock is not available.
         """
@@ -67,17 +88,17 @@ class VoteCache:
         for attempt in range(max_retries):
             try:
                 with self.lock:
-                    # Check if already processed
-                    processed = self.get_processed_indices()
-                    if index in processed:
+                    if self.check_if_index_processed(index, vote):
+                        print(
+                            f"Cache warning: Index {index} already processed. Cache not updated."
+                        )
                         return
-
-                    # Append new vote and update index
+                    # Append new vote
                     with open(self.cache_path, "a", newline="", encoding="utf-8") as f:
                         writer = csv.writer(f)
                         writer.writerow([index, str(vote)])
 
-                    self._add_processed_index(index)
+                    self._add_processed_index(index, vote)
                 return
             except TimeoutError as exc:
                 if attempt < max_retries - 1:
