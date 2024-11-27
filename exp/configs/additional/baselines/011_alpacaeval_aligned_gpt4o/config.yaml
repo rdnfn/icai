@@ -10,4 +10,3 @@ annotator:
   other_annotator_configs:
     - data/annotator_configs/alpaca_eval_gpt4o_fn_noinstruction_flipped
     - data/annotator_configs/gpt4o_popalign
-
