@@ -324,6 +324,14 @@ def run(cfg: DictConfig):
                     "No test data will be annotated."
                 )
 
+    logger.warning(
+        "Usage guidance: ICAI can only provide information about specific preference "
+        "annotation datasets rather than annotators' reasoning processes more broadly. "
+        "We recommend caution to avoid overinterpreting the results. Further, we "
+        "recommend to manually inspect ICAI's interpretable constitutions before using "
+        "them for downstream tasks to avoid accidentally amplifying harmful biases."
+    )
+
     logger.info(f"Experiment finished. Find results at {results_path}")
 
 
