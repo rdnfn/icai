@@ -26,11 +26,13 @@ This repository contains the official implementation of the *Inverse Constitutio
 
 ## Quickstart
 
-Given a feedback dataset (use the [data notebook](https://github.com/rdnfn/icai/blob/main/notebooks/01_data_prepocessing.ipynb) to download one), you can run your first Inverse Constitutional AI (ICAI) experiment using the `icai-exp` command:
+You can run your first Inverse Constitutional AI (ICAI) experiment using the `icai-exp` command:
 
 ```
 icai-exp data_path="data/processed/example/example.csv"
 ```
+
+This will run the ICAI algorithm on the toy `example.csv` pairwise feedback dataset and generate a constitution for this dataset.
 
 To get the available experiment parameters and instructions on how to adjust them, run
 
@@ -43,7 +45,7 @@ icai-exp --help
 
 ### Inspecting results
 
-By default all experiment results are saved in the `./outputs/<DATE>_<TIME>` directory. These outputs contain a full record of API calls, as well as intermediate states of the algorithm (proposed principles, clusters, distilled principles, etc.). Each result output follows the structure below:
+By default all experiment results are saved in the `./outputs/<DATE>_<TIME>` directory. The exact result file location is also printed to the console at the end of any (completed) `icai-exp` call. These outputs contain a full record of API calls, as well as intermediate states of the algorithm (proposed principles, clusters, distilled principles, etc.). Each result output follows the structure below:
 
 ```text
 ./outputs
@@ -63,6 +65,14 @@ By default all experiment results are saved in the `./outputs/<DATE>_<TIME>` dir
             ├── 060_constitution.json
             ├── 092_results_training.csv
             └── 093_results_testset.json
+```
+
+## Run experiment with your own data
+
+To run ICAI on your dataset, you first need to convert it to a `csv` file with the following three columns: `text_a`,`text_b`,`preferred_text`. The first two should be strings. Note that the ICAI implementation currently uses no separate "prompt" column. If such a column exists in your dataset, you likely want to add the prompt to each response column (`text_a`,`text_b`) such that the ICAI algorithm can understand the full context of the preference label. Entries in the column `preferred_text` should take one of two values: `"text_a"` or `"text_b"`. Ties or other annotation values are currently not used by algorithm. To run ICAI on you prepared dataset, simply use:
+
+```
+icai-exp data_path="<path/to/your-data.csv>"
 ```
 
 ## Run experiment from config file
