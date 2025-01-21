@@ -56,7 +56,7 @@ class ExpConfig:
         -1
     )  # Number of parallel workers to use, -1 for all avaliable
 
-    # logging config via wandb
+    # logging config via wandb (DEPRECATED, only here for compatibility)
     wandb_project: Optional[str] = None
     wandb_entity: Optional[str] = None
     wandb_silent: bool = True

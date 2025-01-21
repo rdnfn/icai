@@ -1,19 +1,16 @@
 """Script to run the Inverse Constitutional AI reconstruction experiment."""
 
-from dataclasses import dataclass, MISSING, field, asdict
-from typing import Optional, Dict, Any, Union
+from typing import Optional
 import os
 import hydra
 from hydra.core.config_store import ConfigStore
 from hydra.core.hydra_config import HydraConfig
-from omegaconf import OmegaConf, DictConfig, open_dict
+from omegaconf import OmegaConf, DictConfig
 import pandas as pd
 from loguru import logger
 import dotenv
 import pathlib
-import wandb
 import numpy as np
-import copy
 import langchain.cache
 import langchain.globals
 
@@ -182,18 +179,10 @@ def run(cfg: DictConfig):
     if cfg.wandb_project is not None:
         if cfg.wandb_silent:
             os.environ["WANDB_SILENT"] = "true"
-
-        wandb_logging = True
-        wandb.init(
-            project=cfg.wandb_project,
-            entity=cfg.wandb_entity,
-            config=asdict(cfg),
+        logger.warning(
+            "Logging to wandb is deprecated, but cfg.wandb_project argument passed. "
+            "Please remove the argument."
         )
-        logger.info("Logging to wandb")
-        logger.info(f"Wandb run: {wandb.run.id}")
-        logger.info(f"Wandb run page: {wandb.run.get_url()}")
-    else:
-        wandb_logging = False
 
     if cfg.alg_model_cache:
         logger.warning(
