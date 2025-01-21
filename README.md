@@ -1,39 +1,30 @@
 # Inverse Constitutional AI
 
-This repository contains the official implementation of the *Inverse Constitutional AI* (ICAI) algorithm [[paper]](https://arxiv.org/abs/2406.06560). ICAI compresses pairwise preference datasets into a readable list of principles (constitution) that the annotations appear to follow. ICAI principles provide an interpretable overview of a dataset, for example enabling users to find *problematic annotation biases* or to better understand differences between datasets or models.
+This repository contains the official implementation of the *Inverse Constitutional AI* (ICAI) algorithm [[paper]](https://arxiv.org/abs/2406.06560). ICAI compresses pairwise preference datasets into a readable list of principles (constitution) that the annotations appear to follow (e.g. "select the friendlier response"). ICAI principles provide an interpretable overview of a feedback dataset, enabling users to discover *problematic annotation biases*  or *better understand differences between datasets, user groups or models*.
+
+<p align="center">
+<img src="./docs/img/01_basic_overview_v2.png" width="1000px" align="center">
+</p>
 
 
 ## Installation
 
-1. *Pip install the package*
-
-    - **Non-contributors**
-        ```
-        pip install git+https://github.com/rdnfn/icai.git
-        ```
-    - **Contributors:** clone repo locally, e.g.
-        ```
-        git clone git@github.com:rdnfn/icai.git
-        ```
-        Then (inside repo folder) install package in editable mode:
-        ```
-        pip install -e .
-        ```
-2. *Set up API secrets:* inside the main directory of the cloned repo (or wherever you like really) set up a secrets.toml file like below. You only need to include keys for APIs you want to use.
+1. Pip install the package (contributors see [here](#dev-installation))
+    ```
+    pip install git+https://github.com/rdnfn/icai.git
+    ```
+2. Set up API secrets: inside the main directory of the cloned repo (or wherever you like really) set up a secrets.toml file like below. You only need to include keys for APIs you want to use.
     ```toml
     OPENAI_API_KEY="<YOURKEY>"
     ANTHROPIC_API_KEY="<YOURKEY>"
     ```
-3. *Download data*, or use your own feedback data. You can use the data notebook (see Quickstart) to download the supported data sources. Currently supported data sources:
-    - https://github.com/anthropics/hh-rlhf
-    - https://huggingface.co/datasets/lmsys/chatbot_arena_conversations
 
 ## Quickstart
 
 Given a feedback dataset (use the [data notebook](https://github.com/rdnfn/icai/blob/main/notebooks/01_data_prepocessing.ipynb) to download one), you can run your first Inverse Constitutional AI (ICAI) experiment using the `icai-exp` command:
 
 ```
-icai-exp secrets_path="./secrets.toml" data_path="data/processed/example/example.csv"
+icai-exp data_path="data/processed/example/example.csv"
 ```
 
 To get the available experiment parameters and instructions on how to adjust them, run
@@ -88,6 +79,17 @@ icai-exp -cd ./exp/configs/001_synthetic_orthogonal
 > Look at the README file inside the `exp/configs`. This file gives detailed instructions on which configurations to run, and how to generate the corresponding plots.
 
 ## Development
+
+### Dev installation
+
+clone repo locally, e.g.
+```
+git clone git@github.com:rdnfn/icai.git
+```
+Then (inside repo folder) install package in editable mode:
+```
+pip install -e .
+```
 
 ### Running test cases
 
