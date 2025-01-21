@@ -27,6 +27,7 @@ dependencies = [
   "loguru",
   "hydra-core",
   "matplotlib",
+  "setuptools", # for alpaca-eval
 ]
 
 [project.optional-dependencies]
