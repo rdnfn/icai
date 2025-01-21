@@ -1,23 +1,7 @@
 # Inverse Constitutional AI
 
-Repository containing code for the paper "Inverse Constitutional AI: Compressing Preferences into Principles" ([pdf](https://arxiv.org/abs/2406.06560)). The figure below provides an overview of the *Inverse Constitutional AI* (ICAI) problem we introduce: starting from a set of pairwise preference feedback, we derive a set of natural language principles (a *constitution*) that explain the preference data.
-For validation, we re-construct the original preferences with an LLM judging according to the generated constitution. The constitution represents a (highly compact) compression of the preferences.
+This repository contains the official implementation of the *Inverse Constitutional AI* (ICAI) algorithm [[paper]](https://arxiv.org/abs/2406.06560). ICAI compresses pairwise preference datasets into a readable list of principles (constitution) that the annotations appear to follow. ICAI principles provide an interpretable overview of a dataset, for example enabling users to find *problematic annotation biases* or to better understand differences between datasets or models.
 
-<p align="center">
-<img src="./docs/img/02_complete_overview.png" width="1000px" align="center">
-</p>
-
-# Motivation
-
-Feedback data plays an important role in fine-tuning and evaluating state-of-the-art AI models. Often pairwise text preferences are used: given two texts, human (or AI) annotators select the “better” one. Such feedback data is widely used to align models to human preferences (e.g., reinforcement learning from human feedback), or to rank models according to human preferences (e.g., Chatbot Arena). Despite its wide-spread use, prior work has demonstrated that human-annotated pairwise text preference data often exhibits unintended biases. For example, human annotators have been shown to prefer assertive over truthful texts in certain contexts. Models trained or evaluated on this data may implicitly encode these biases in a manner hard to identify. To be able to better understand existing pairwise text preference data, we formulate its interpretation as a compression task: the *Inverse Constitutional AI* problem. Read the [full paper](https://arxiv.org/abs/2406.06560) for more background.
-
-# Algorithm
-
-We introduce a first *Inverse Constitutional AI* (ICAI) algorithm that generates a set of principles based on a feedback dataset. See the figure below for an overview of the algorithm. Given a dataset of pairwise rankings, in Step 1 candidate principles are generated using an LLM. In Step 2, these principles are clustered using an embedding model. In Step 3, similar principles are “de-duplicated” by sampling one principle per cluster. In Step 4, each principle is tested to evaluate its ability to help an LLM reconstruct the original annotations. Finally in Step 5, the principles are filtered according to the testing results and a set of filtered principles are returned as the final constitution. Optionally, this last step is augmented with additional clustering and subsampling steps to ensure diverse principles. The implementation is provided in this repository.
-
-<p align="center">
-<img src="./docs/img/03_algorithm.png" width="800px" align="center">
-</p>
 
 ## Installation
 
@@ -119,6 +103,29 @@ This doesn't do any meaningful experimental work but allows running the experime
 ```
 icai-exp generate_constitution=false annotator.constitution=null annotator.other_annotator_configs="[]"
 ```
+
+# Background
+
+## Motivation
+
+Feedback data plays an important role in fine-tuning and evaluating state-of-the-art AI models. Often pairwise text preferences are used: given two texts, human (or AI) annotators select the “better” one. Such feedback data is widely used to align models to human preferences (e.g., reinforcement learning from human feedback), or to rank models according to human preferences (e.g., Chatbot Arena). Despite its wide-spread use, prior work has demonstrated that human-annotated pairwise text preference data often exhibits unintended biases. For example, human annotators have been shown to prefer assertive over truthful texts in certain contexts. Models trained or evaluated on this data may implicitly encode these biases in a manner hard to identify. To be able to better understand existing pairwise text preference data, we formulate its interpretation as a compression task: the *Inverse Constitutional AI* problem. Read the [full paper](https://arxiv.org/abs/2406.06560) for more background.
+
+## Method overview
+
+The figure below provides an overview of the *Inverse Constitutional AI* (ICAI) problem we introduce: starting from a set of pairwise preference feedback, we derive a set of natural language principles (a *constitution*) that explain the preference data.
+For validation, we re-construct the original preferences with an LLM judging according to the generated constitution. The constitution represents a (highly compact) compression of the preferences.
+
+<p align="center">
+<img src="./docs/img/02_complete_overview.png" width="1000px" align="center">
+</p>
+
+## Algorithm
+
+We introduce a first *Inverse Constitutional AI* (ICAI) algorithm that generates a set of principles based on a feedback dataset. See the figure below for an overview of the algorithm. Given a dataset of pairwise rankings, in Step 1 candidate principles are generated using an LLM. In Step 2, these principles are clustered using an embedding model. In Step 3, similar principles are “de-duplicated” by sampling one principle per cluster. In Step 4, each principle is tested to evaluate its ability to help an LLM reconstruct the original annotations. Finally in Step 5, the principles are filtered according to the testing results and a set of filtered principles are returned as the final constitution. Optionally, this last step is augmented with additional clustering and subsampling steps to ensure diverse principles. The implementation is provided in this repository.
+
+<p align="center">
+<img src="./docs/img/03_algorithm.png" width="800px" align="center">
+</p>
 
 
 ### License
