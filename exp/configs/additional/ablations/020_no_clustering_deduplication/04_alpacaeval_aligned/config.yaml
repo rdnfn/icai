@@ -1,0 +1,21 @@
+data_path: "./data/processed/tatsu_lab/alpacaeval_goldcrossannotations_rand.csv"
+data_invert_labels: false # IMPORTANT DIFFERENCE
+data_len: 65
+test_data_path: "./data/processed/tatsu_lab/alpacaeval_goldcrossannotations_rand.csv"
+test_data_start_index: 200
+test_data_len: 65
+test_data_invert_labels: false
+alg_model: "openai/gpt-4o-2024-05-13"
+s1_num_principles_per_instance: 2
+s2_num_clusters: 80
+s2_random_clusters: true # ablation: remove replace embedding-based clusters with random
+s3_ratio_of_max_principles_to_cluster_again: 1.0 # ablation: remove second clustering/filtering, > 1 would be filtering again
+s3_max_principles: 5
+annotator:
+  is_single_annotator: true
+  base_constitutional_annotator_configs:
+    - data/annotator_configs/chatgpt_fn_constitutional_base_neutral_v1
+    - data/annotator_configs/gpt4o_fn_constitutional_base_neutral_v1
+  other_annotator_configs:
+    - data/annotator_configs/chatgpt_fn_noinstruction
+    #- data/annotator_configs/alpaca_eval_gpt4o_fn_noinstruction

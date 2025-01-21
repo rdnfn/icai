@@ -1,0 +1,8 @@
+data_path: "./data/processed/prism/prism_rand_incl_metadata_v2.csv"
+data_len: 7990
+alg_model: "openai/gpt-4o-mini-2024-07-18"
+s1_num_principles_per_instance: 2
+s2_num_clusters: 160
+s3_max_principles: 5
+annotator:
+  skip: true

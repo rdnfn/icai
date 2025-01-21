@@ -1,19 +1,16 @@
 """Script to run the Inverse Constitutional AI reconstruction experiment."""
 
-from dataclasses import dataclass, MISSING, field, asdict
-from typing import Optional, Dict, Any, Union
+from typing import Optional
 import os
 import hydra
 from hydra.core.config_store import ConfigStore
 from hydra.core.hydra_config import HydraConfig
-from omegaconf import OmegaConf, DictConfig, open_dict
+from omegaconf import OmegaConf, DictConfig
 import pandas as pd
 from loguru import logger
 import dotenv
 import pathlib
-import wandb
 import numpy as np
-import copy
 import langchain.cache
 import langchain.globals
 
@@ -43,12 +40,51 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
         )
         return None
     else:
-        return setup_data(
-            data_path=cfg.test_data_path,
-            invert_labels=cfg.test_data_invert_labels,
-            data_len=cfg.test_data_len,
-            data_start_index=cfg.test_data_start_index,
-        )
+        if isinstance(cfg.test_data_path, list):
+            assert isinstance(
+                cfg.test_data_len, list
+            ), "test_data_len must be a list if test_data_path is a list"
+            assert isinstance(
+                cfg.test_data_start_index, list
+            ), "test_data_start_index must be a list if test_data_path is a list"
+            assert isinstance(
+                cfg.test_data_invert_labels, list
+            ), "test_data_invert_labels must be a list if test_data_path is a list"
+
+            return [
+                setup_data(
+                    data_path=path,
+                    invert_labels=invert_labels,
+                    data_len=data_len,
+                    data_start_index=data_start_index,
+                )
+                for path, data_len, invert_labels, data_start_index in zip(
+                    cfg.test_data_path,
+                    cfg.test_data_len,
+                    cfg.test_data_invert_labels,
+                    cfg.test_data_start_index,
+                )
+            ]
+        elif isinstance(cfg.test_data_path, str):
+            assert isinstance(
+                cfg.test_data_len, int
+            ), "test_data_len must be an int if test_data_path is a string"
+            assert isinstance(
+                cfg.test_data_start_index, int
+            ), "test_data_start_index must be an int if test_data_path is a string"
+            assert isinstance(
+                cfg.test_data_invert_labels, bool
+            ), "test_data_invert_labels must be a bool if test_data_path is a string"
+            return setup_data(
+                data_path=cfg.test_data_path,
+                invert_labels=cfg.test_data_invert_labels,
+                data_len=cfg.test_data_len,
+                data_start_index=cfg.test_data_start_index,
+            )
+        else:
+            raise ValueError(
+                f"test_data_path must be a string or a list of strings (given '{cfg.test_data_path}')"
+            )
 
 
 def setup_data(
@@ -85,9 +121,12 @@ def setup_data(
     return data
 
 
-def assert_no_identical_rows(df1, df2):
+def assert_no_identical_rows(df1: pd.DataFrame, df2: pd.DataFrame | list[pd.DataFrame]):
 
-    concatenated_df = pd.concat([df1, df2])
+    if isinstance(df2, list):
+        concatenated_df = pd.concat([df1, *df2])
+    else:
+        concatenated_df = pd.concat([df1, df2])
     unique_df = concatenated_df.drop_duplicates()
 
     # Check if the lengths are the same
@@ -140,18 +179,10 @@ def run(cfg: DictConfig):
     if cfg.wandb_project is not None:
         if cfg.wandb_silent:
             os.environ["WANDB_SILENT"] = "true"
-
-        wandb_logging = True
-        wandb.init(
-            project=cfg.wandb_project,
-            entity=cfg.wandb_entity,
-            config=asdict(cfg),
+        logger.warning(
+            "Logging to wandb is deprecated, but cfg.wandb_project argument passed. "
+            "Please remove the argument."
         )
-        logger.info("Logging to wandb")
-        logger.info(f"Wandb run: {wandb.run.id}")
-        logger.info(f"Wandb run page: {wandb.run.get_url()}")
-    else:
-        wandb_logging = False
 
     if cfg.alg_model_cache:
         logger.warning(
@@ -176,14 +207,26 @@ def run(cfg: DictConfig):
     dotenv.load_dotenv(cfg.secrets_path, verbose=True)
 
     data = setup_train_data(cfg)
+    data.to_csv(results_path / "000_train_data.csv", index=True, index_label="index")
     test_data = setup_test_data(cfg)
     assert_no_identical_rows(data, test_data)
+
+    # TODO: remove this in a future version once s1_num_principles_per_instance is removed
+    if cfg.s1_num_principles_per_instance is not None:
+        logger.warning(
+            "`s1_num_principles_per_instance` is set. This is deprecated and will be removed in a future version. "
+            "Please use `s1_num_principles_per_sampling_step` instead. Overwriting `s1_num_principles_per_sampling_step`."
+        )
+        num_principles_per_sampling_step = cfg.s1_num_principles_per_instance
+    else:
+        num_principles_per_sampling_step = cfg.s1_num_principles_per_sampling_step
 
     if cfg.generate_constitution:
         results = inverse_cai.algorithm.run(
             save_path=results_path,
             feedback=data,
-            num_principles_generated_per_ranking=cfg.s1_num_principles_per_instance,
+            num_principles_per_sampling_step=num_principles_per_sampling_step,
+            num_rankings_per_sampling_step=cfg.s1_num_rankings_per_sampling_step,
             num_clusters=cfg.s2_num_clusters,
             random_clusters=cfg.s2_random_clusters,
             skip_voting=cfg.s3_skip_voting_entirely,
@@ -234,16 +277,35 @@ def run(cfg: DictConfig):
             logger.info(f"Results table (training data):\n{annotation_results}")
             annotation_results.to_csv(results_path / "092_results_training.csv")
         if test_data is not None:
-            logger.info("Running LLM annotation on test data")
-            test_annotation_results = inverse_cai.annotator.annotate(
-                config=cfg,
-                data=test_data,
-                constitution=constitution,
-                is_single_annotator=cfg.annotator.is_single_annotator,
-                tmp_files_path=tmp_path / "testset",
-            )
-            logger.info(f"Results table (test data):\n{test_annotation_results}")
-            test_annotation_results.to_csv(results_path / "093_results_testset.csv")
+            if isinstance(test_data, list):
+                for i, test_data_single in enumerate(test_data):
+                    logger.info(
+                        f"Running LLM annotation on test data {i}/{len(test_data)}"
+                    )
+                    test_annotation_results = inverse_cai.annotator.annotate(
+                        config=cfg,
+                        data=test_data_single,
+                        constitution=constitution,
+                        is_single_annotator=cfg.annotator.is_single_annotator,
+                        tmp_files_path=tmp_path / f"testset_{i}",
+                    )
+                    logger.info(
+                        f"Results table (test data {i}/{len(test_data)}):\n{test_annotation_results}"
+                    )
+                    test_annotation_results.to_csv(
+                        results_path / f"093_results_testset_{i}.csv"
+                    )
+            else:
+                logger.info("Running LLM annotation on test data")
+                test_annotation_results = inverse_cai.annotator.annotate(
+                    config=cfg,
+                    data=test_data,
+                    constitution=constitution,
+                    is_single_annotator=cfg.annotator.is_single_annotator,
+                    tmp_files_path=tmp_path / "testset",
+                )
+                logger.info(f"Results table (test data):\n{test_annotation_results}")
+                test_annotation_results.to_csv(results_path / "093_results_testset.csv")
         else:
             if cfg.annotator.test_data_only:
                 logger.warning(
@@ -251,7 +313,13 @@ def run(cfg: DictConfig):
                     "No test data will be annotated."
                 )
 
-    # TODO: add wandb logging of results
+    logger.warning(
+        "Usage guidance: ICAI can only provide information about specific preference "
+        "annotation datasets rather than annotators' reasoning processes more broadly. "
+        "We recommend caution to avoid overinterpreting the results. Further, we "
+        "recommend to manually inspect ICAI's interpretable constitutions before using "
+        "them for downstream tasks to avoid accidentally amplifying harmful biases."
+    )
 
     logger.info(f"Experiment finished. Find results at {results_path}")
 

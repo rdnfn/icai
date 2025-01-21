@@ -40,7 +40,7 @@ class AnnotatorConfig:
     )
     other_annotator_configs: list[str] = field(
         default_factory=lambda: [
-            "chatgpt_fn",  # annotators to test against
+            "data/annotator_configs/chatgpt_fn_noinstruction",  # annotators to test against
         ]
     )
     test_data_only: bool = False  # whether to only annotate the test data
@@ -52,8 +52,11 @@ class ExpConfig:
 
     # General config
     secrets_path: str = "./secrets.toml"  # Path to the secrets file
+    parallel_workers: int = (
+        -1
+    )  # Number of parallel workers to use, -1 for all avaliable
 
-    # logging config via wandb
+    # logging config via wandb (DEPRECATED, only here for compatibility)
     wandb_project: Optional[str] = None
     wandb_entity: Optional[str] = None
     wandb_silent: bool = True
@@ -65,10 +68,15 @@ class ExpConfig:
     data_invert_labels: bool = False  # Whether to invert the labels of the data
 
     # Test data config
-    test_data_path: Optional[str] = None
-    test_data_len: Optional[int] = None
-    test_data_start_index: int = 0
-    test_data_invert_labels: bool = False
+    test_data_path: Any = None
+    test_data_len: Any = None
+    test_data_start_index: Any = 0
+    test_data_invert_labels: Any = False
+
+    # Cache config
+    prior_cache_path: str | None = (
+        None  # Path to the prior experiment results (path to main run directory)
+    )
 
     ## Algorithm config
     # general
@@ -78,8 +86,14 @@ class ExpConfig:
         True  # whether to generate a constitution using the algorithm
     )
 
+    # Optional: set principles to test (skip generation)
+    s0_added_principles_to_test: list[str] | None = None
+    s0_skip_principle_generation: bool = False
+
     # Stage 1: principle generation
-    s1_num_principles_per_instance: int = 3
+    s1_num_principles_per_sampling_step: int = 3
+    s1_num_principles_per_instance: int | None = None
+    s1_num_rankings_per_sampling_step: int = 1
 
     # Stage 2: principle clustering and de-duplication
     s2_num_clusters: int = 3

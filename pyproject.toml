@@ -1,5 +1,5 @@
 [project]
-name = "inverse_cai"
+name = "inverse-cai"
 version = "0.1.0"
 authors = [
   { name="rdnfn", email="hi@arduin.io" },
@@ -15,23 +15,32 @@ classifiers = [
 ]
 dependencies = [
   "langchain",
-  "python-dotenv",
+  "langchain-community",
   "langchain-openai",
   "langchain-anthropic",
-  "langchain-community",
-  "scikit-learn",
   "anthropic",
+  "alpaca-eval",
+  "datasets", # To fetch huggingface datasets
+  "scikit-learn", # used for clustering
+  "pandas",
+  "python-dotenv",
   "loguru",
   "hydra-core",
-  "pandas",
   "matplotlib",
-  "datasets", # To fetch huggingface datasets
-  "wandb",
-  "alpaca-eval",
-  "nbconvert",
+  "setuptools", # for alpaca-eval
+]
 
-  "jupyter",
-  "ipywidgets", # IProgress in jupyter notebooks
+[project.optional-dependencies]
+dev = [
+    "pytest >=6.0",
+    "black ==24.10.0",
+]
+app = [
+    "gradio",
+    "plotly",
+    "nbconvert",
+    "jupyter",
+    "ipywidgets", # IProgress in jupyter notebooks
 ]
 
 [build-system]
@@ -40,3 +49,13 @@ build-backend = "hatchling.build"
 
 [project.scripts]
 icai-exp = "inverse_cai.experiment.core:run"
+icai-app = "inverse_cai.app.main:run"
+
+[tool.pytest.ini_options]
+pythonpath = "."
+testpaths = ["src"]
+python_files = ["*_test.py"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']

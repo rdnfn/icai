@@ -1,6 +1,8 @@
 from loguru import logger
 import pandas as pd
 import random
+import shutil
+from pathlib import Path
 
 from inverse_cai.algorithm.clustering import (
     get_cluster_summaries,
@@ -19,7 +21,8 @@ import inverse_cai.experiment
 def run(
     feedback: pd.DataFrame,
     save_path: str,
-    num_principles_generated_per_ranking: int,
+    num_principles_per_sampling_step: int,
+    num_rankings_per_sampling_step: int,
     num_clusters: int,
     random_clusters: bool,
     skip_voting: bool,
@@ -57,60 +60,99 @@ def run(
     # make sure data without ties
     assert not feedback["preferred_text"].str.contains("tie").any()
 
-    ### STAGE 1: Generate principles from feedback
-    logger.info("Stage 1: Generate principles from feedback")
-    feedback = generate_principles_from_feedback(
-        feedback,
-        num_principles_generated_per_ranking,
-        model_name=model_name,
-        config=config,
-    )
-    feedback["principles"].to_csv(save_path / "010_principles_per_comparison.csv")
+    if not config.s0_skip_principle_generation:
+        ### STAGE 1: Generate principles from feedback
+        logger.info("Stage 1: Generate principles from feedback")
+        feedback, principles = generate_principles_from_feedback(
+            feedback=feedback,
+            num_principles_per_sampling_step=num_principles_per_sampling_step,
+            model_name=model_name,
+            config=config,
+            num_rankings_per_sampling_step=num_rankings_per_sampling_step,
+        )
+        feedback["principles"].to_csv(
+            save_path / "010_principles_per_comparison.csv",
+            index=True,
+            index_label="index",
+        )
 
-    # flatten list of lists of principles into single list
-    principles = [item for sublist in list(feedback["principles"]) for item in sublist]
-    print("\n".join(principles))
-    save_to_json(principles, save_path / "011_principles_list.json")
+        print("\n".join(principles))
+        save_to_json(principles, save_path / "011_principles_list.json")
 
-    ### STAGE 2: Cluster principles
-    logger.info("Stage 2: Cluster principles")
-    clusters = cluster_principles(
-        principles,
-        num_clusters=num_clusters,
-        random_clusters=random_clusters,
-    )
-    save_to_json(clusters, save_path / "020_principle_clusters.json")
+        ### STAGE 2: Cluster principles
+        logger.info("Stage 2: Cluster principles")
+        clusters = cluster_principles(
+            principles,
+            num_clusters=num_clusters,
+            random_clusters=random_clusters,
+        )
+        save_to_json(clusters, save_path / "020_principle_clusters.json")
 
-    summaries = get_cluster_summaries(
-        clusters,
-        model_name=model_name,
-        sample_instead_of_rewrite=True,
-        config=config,
-    )
-    print_clusters(clusters, summaries)
+        summaries = get_cluster_summaries(
+            clusters,
+            model_name=model_name,
+            sample_instead_of_rewrite=True,
+            config=config,
+        )
+        print_clusters(clusters, summaries)
+    else:
+        logger.warning("Skipping principle generation stage")
+        summaries = {}
+        clusters = None
+
+    if config.s0_added_principles_to_test is not None:
+        logger.info(
+            f"Adding fixed test principles to summaries: {config.s0_added_principles_to_test}"
+        )
+        num_generated_principles = len(summaries.values())
+        summaries = {
+            **summaries,
+            **{
+                num_generated_principles + i: principle
+                for i, principle in enumerate(config.s0_added_principles_to_test)
+                if principle not in summaries.values()
+            },
+        }
+
     save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
 
     ### STAGE 3: Get votes for principles
     logger.info("Stage 3: Get votes for principles")
 
     if not skip_voting:
+
+        new_vote_cache_path = save_path / "040_votes_per_comparison.csv"
+        if config.prior_cache_path is not None:
+            # copy over prior cache file
+            shutil.copy(
+                Path(config.prior_cache_path)
+                / "results"
+                / "040_votes_per_comparison.csv",
+                new_vote_cache_path,
+            )
+            logger.info(f"Copied over prior cache from '{config.prior_cache_path}'")
+
         raw_votes, combined_votes = get_votes_for_principles(
             feedback_df=feedback,
             summaries=summaries,
             max_votes_in_single_prompt=config.s3_filter_max_votes_in_single_prompt,
             model_name=model_name,
+            cache_path=new_vote_cache_path,
             config=config,
         )
 
-        raw_votes.to_csv(save_path / "040_votes_per_comparison.csv")
+        raw_votes.to_csv(new_vote_cache_path, index=True, index_label="index")
         save_to_json(combined_votes, save_path / "041_votes_per_cluster.json")
 
-        # visualise
-        inverse_cai.visualisation.plot_approval_bars(
-            categories=list(summaries.values()),
-            votes=list(combined_votes.values()),
-            path=save_path / "042_principle_approval_votes.png",
-        )
+        try:
+            # visualise
+            inverse_cai.visualisation.plot_approval_bars(
+                categories=list(summaries.values()),
+                votes=list(combined_votes.values()),
+                path=save_path / "042_principle_approval_votes.png",
+            )
+        except ValueError as e:
+            logger.warning(f"Error visualising approval bars: {e}")
 
         filtered_plinciple_keys = filter_according_to_votes(
             combined_votes=combined_votes,
@@ -119,8 +161,10 @@ def run(
             require_majority_valid=require_majority_valid,
             require_minimum_relevance=require_minimum_relevance,
             order_by=order_by,
-            max_principles=int(
-                max_principles * ratio_of_max_principles_to_cluster_again
+            max_principles=(
+                int(max_principles * ratio_of_max_principles_to_cluster_again)
+                if max_principles is not None
+                else None
             ),
         )
 
@@ -128,20 +172,14 @@ def run(
 
         save_to_json(filtered_principles, save_path / "050_filtered_principles.json")
 
-        if len(filtered_principles) <= max_principles:
+        if not max_principles or len(filtered_principles) <= max_principles:
             logger.warning(
-                "Number of filtered principles is less or equal to max principles. "
+                "Number of filtered principles is less or equal to max principles, "
+                "or max principles is not set. "
                 "Using all filtered principles. "
                 "Skipping final clustering and subsampling step."
             )
             final_principles = filtered_principles
-        elif len(set(filtered_principles)) < max_principles:
-            logger.warning(
-                "Number of unique filtered principles is less than max principles. "
-                "Cannot apply clustering."
-                "Simply using first 'max_principles' principles."
-            )
-            final_principles = filtered_principles[:max_principles]
         else:
             logger.info(
                 f"Final clustering and subsampling step. Going from {len(filtered_principles)} to {max_principles} principles."

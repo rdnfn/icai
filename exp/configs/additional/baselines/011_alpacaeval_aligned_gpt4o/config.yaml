@@ -1,0 +1,12 @@
+data_path: "./data/processed/tatsu_lab/alpacaeval_goldcrossannotations_rand.csv"
+# since we are just running annotators just using test set
+data_invert_labels: false # IMPORTANT DIFFERENCE
+data_start_index: 200
+data_len: 65
+generate_constitution: false
+annotator:
+  is_single_annotator: true
+  base_constitutional_annotator_configs: []
+  other_annotator_configs:
+    - data/annotator_configs/alpaca_eval_gpt4o_fn_noinstruction_flipped
+    - data/annotator_configs/gpt4o_popalign

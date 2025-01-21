@@ -72,11 +72,11 @@ def generate_tmp_annotator_config(
     annotator_config_path = pathlib.Path(annotator_config_path)
     if not annotator_config_path.exists():
         raise FileNotFoundError(
-            f"Annotator config {annotator_config_path} does not exist"
+            f"Annotator config '{annotator_config_path}' does not exist"
         )
     if not annotator_config_path.is_dir():
         raise NotADirectoryError(
-            f"Annotator config {annotator_config_path} is not a directory"
+            f"Annotator config '{annotator_config_path}' is not a directory"
         )
 
     tmp_annotator_config_path = (

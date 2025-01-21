@@ -2,13 +2,15 @@ import ast
 import tqdm
 import random
 import pandas as pd
+from pathlib import Path
 from loguru import logger
-from langchain_core.messages import HumanMessage, SystemMessage
+from joblib import Parallel, delayed
 
 import inverse_cai as icai
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
 from inverse_cai.experiment.config import ExpConfig
 import inverse_cai.algorithm.utils
+from inverse_cai.algorithm.cache import VoteCache
 
 
 def get_votes_for_principles(
@@ -17,7 +19,8 @@ def get_votes_for_principles(
     summaries: dict,
     config: ExpConfig,
     model_name: str,
-) -> tuple[pd.Series, dict]:
+    cache_path: Path,
+) -> tuple[pd.DataFrame, dict]:
     """Get votes for principles.
 
     Distributed over multiple passes if necessary."""
@@ -40,7 +43,12 @@ def get_votes_for_principles(
 
     logger.info(f"Split voting into {len(summaries_parts)} runs over entire dataset.")
 
-    assert sum(len(part) for part in summaries_parts) == len(summaries)
+    assert sum(len(part) for part in summaries_parts) == len(summaries), (
+        f"Sum of lengths of summaries parts ({sum(len(part) for part in summaries_parts)}) "
+        f"does not match length of summaries ({len(summaries)})"
+        f"Full summaries: {summaries}\nFull summaries parts: {summaries_parts}"
+        f"max votes in single prompt: {max_votes_in_single_prompt}"
+    )
 
     raw_votes = []
     combined_votes = []
@@ -53,6 +61,7 @@ def get_votes_for_principles(
             summaries=summary_part,
             config=config,
             model_name=model_name,
+            cache_path=cache_path,
         )
 
         # append to pd series another pd series
@@ -72,32 +81,54 @@ def run_pass_to_get_votes_for_principles(
     summaries: dict,
     config: ExpConfig,
     model_name: str,
+    cache_path: Path,
 ) -> tuple[pd.Series, dict]:
     """
     Given a dataframe of conversations, run voting with each proposed
     principle on each pairwise comparison. Single pass over dataset.
-
-    Model output is formatted as json format, for each principle.
     """
-
     feedback_df = feedback_df.copy()
-
     feedback_df["votes"] = None
-    votes = []
 
-    for index, row in tqdm.tqdm(feedback_df.iterrows(), total=len(feedback_df)):
+    initial_cache = VoteCache(cache_path)
+    initial_cached_votes = initial_cache.get_cached_votes()
+
+    # Function to process each row
+    def process_row(index, row, summaries, model_name, config, initial_cached_votes):
+        # Check cache first
+        # Initialize cache
+        vote_cache = VoteCache(cache_path)
+
+        if index in initial_cached_votes.keys():
+            return index, initial_cached_votes[index]
+
+        preferred = get_preferred_text(row)
+        rejected = get_rejected_text(row)
         vote = get_preference_vote_for_single_text(
-            preferred_sample=get_preferred_text(row),
-            rejected_sample=get_rejected_text(row),
+            preferred_sample=preferred,
+            rejected_sample=rejected,
             summaries=summaries,
             model_name=model_name,
             config=config,
         )
-        votes.append(vote)
+
+        # Update cache
+        vote_cache.update_cache(index, vote)
+        return index, vote
+
+    # Parallel processing of rows
+    results = Parallel(n_jobs=config.parallel_workers)(
+        delayed(process_row)(
+            index, row, summaries, model_name, config, initial_cached_votes
+        )
+        for index, row in tqdm.tqdm(feedback_df.iterrows(), total=feedback_df.shape[0])
+    )
+
+    # Updating DataFrame with results
+    for index, vote in results:
         feedback_df.at[index, "votes"] = vote
 
     raw_votes = feedback_df["votes"]
-
     combined_votes = combine_votes(list(raw_votes), summaries)
 
     return raw_votes, combined_votes

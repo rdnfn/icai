@@ -1,0 +1,31 @@
+<|im_start|>system
+You are a helpful instruction-following assistant that selects outputs according to rules.
+<|im_end|>
+<|im_start|>user
+
+## Output (a):
+{output_1}
+
+---
+
+## Output (b):
+{output_2}
+
+---
+
+## TASK
+
+Select the output (a) or (b) according to the following rules (if they apply):
+{constitution}
+
+You MUST follow the rules above if they apply.
+Select the output randomly if they do not apply.
+Focus on the last response by the assistant.
+
+Your answer should ONLY contain: Output (a) or Output (b).
+
+## Note:
+If the rules do not apply, you MUST select randomly. DO NOT follow you own opinion.
+
+## Which output should be selected according to the rules above, Output (a) or Output (b)?
+<|im_end|>

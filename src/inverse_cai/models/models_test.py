@@ -78,5 +78,5 @@ def test_get_token_probs_with_missing_token(mock_logger):
     assert token_probs == {"token1": 1.0, "token2": 0.0}
     assert errors == ["token_not_found_in_top_logprobs_token2"]
     mock_logger.warning.assert_called_once_with(
-        f"Token token2 not found in top logprobs. Returning {NULL_LOGPROB_VALUE} logprob (close to 0 probability for token)."
+        "Token token2 not found in top logprobs. Returning -1000000 logprob (close to 0 probability for token)."
     )

@@ -1,0 +1,8 @@
+data_path: "./data/processed/combined/chatbotarena_prism_500_500_training.csv"
+data_len: 1000
+alg_model: "openai/gpt-4o-mini-2024-07-18"
+s1_num_principles_per_instance: 2
+s2_num_clusters: 400
+s3_max_principles: 10
+annotator:
+  skip: true

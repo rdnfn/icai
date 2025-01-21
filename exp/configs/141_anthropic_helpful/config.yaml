@@ -1,0 +1,167 @@
+data_path: "./data/processed/anthropic/anthropic_helpful_base_train_10000canonrand_balanced.csv"
+data_len: 100
+test_data_path:
+  - "./data/processed/anthropic/anthropic_harmless_base_train_10000canonrand_balanced.csv"
+  - "./data/processed/anthropic/anthropic_helpful_base_train_10000canonrand_balanced.csv"
+test_data_len: [1000, 1000]
+test_data_invert_labels: [false, false]
+test_data_start_index: [100, 100]
+alg_model: "openai/gpt-4o-mini-2024-07-18"
+s1_num_principles_per_instance: 2
+s2_num_clusters: 160
+s3_max_principles: 5
+annotator:
+  is_single_annotator: true
+  base_constitutional_annotator_configs:
+    - data/annotator_configs/gpt4omini_fn_constitutional_base_neutral_v2
+    - data/annotator_configs/gpt4omini_fn_constitutional_base_neutral_v3_mt
+  other_annotator_configs:
+    - data/annotator_configs/alpaca_eval_gpt4omini_fn_noinstruction
+    - data/annotator_configs/alpaca_eval_gpt4omini_fn_noinstruction_v2_mt
+alg_prompts:
+  generator_prompts:
+  - '<|im_start|>system
+
+    Your job is to analyse data and come up with explanations. You''re an expert at
+    this.
+
+    <|im_end|>
+
+    <|im_start|>user
+
+    Selected sample:
+
+    {preferred_sample}
+
+    ---
+
+    Other sample:
+
+    {rejected_sample}
+
+    ---
+
+
+    Given the data above, why do you think the annotator selected the given sample
+    over the other sample? Reply with {num_principles} most likely rules that may
+    explain the selection, each in 10 words or less. Be specific and focus on the
+    differences between the two samples, for example in content, subjects, traits,
+    writing style or topic. Focus on the last response by the assistant.
+
+
+    Note: the intend of the selection was to find bad samples (to prevent a user seeing
+    them). Always suggest as rule that starts with ''Select the response that...<bad
+    thing>''. Suggest rules that help find bad samples.
+
+
+    Reply as a json similar to: {{"principles": ["<YOUR PRINCIPLE TEXT>", "<YOUR NEXT
+    PRINCIPLE TEXT>",...]}}.
+
+    DO NOT respond with any text apart from the json format above!
+
+    DO NOT add markdown formatting around JSON.
+
+    ONLY REPLY IN JSON FORMAT
+
+    <|im_end|>'
+  - '<|im_start|>system
+
+    Your job is to analyse data and come up with explanations. You''re an expert at
+    this.
+
+    <|im_end|>
+
+    <|im_start|>user
+
+    Selected sample:
+
+    {preferred_sample}
+
+    ---
+
+
+    Other sample:
+
+    {rejected_sample}
+
+    ---
+
+
+    Given the data above, why do you think the annotator selected the given sample
+    over the other sample? Reply with {num_principles} most likely rules that may
+    explain the selection, each in 10 words or less. Be specific and focus on the
+    differences between the two samples, for example in content, subjects, traits,
+    writing style or topic.  Always suggest as rule that starts with ''Select the
+    response that...''. Focus on the last response by the assistant.
+
+
+    Reply as a json similar to: {{"principles": ["<YOUR PRINCIPLE TEXT>", "<YOUR NEXT
+    PRINCIPLE TEXT>",...]}}.
+
+    DO NOT respond with any text apart from the json format above!
+
+    DO NOT add markdown formatting around JSON.
+
+    ONLY REPLY IN JSON FORMAT
+
+    <|im_end|>'
+  voting_prompt: '<|im_start|>system
+
+    Your job is to check which sample is should be selected according to the given
+    rules. You''re an expert at this.
+
+    <|im_end|>
+
+    <|im_start|>user
+
+    Sample A:
+
+    {sample_a}
+
+    ---
+
+
+    Sample B:
+
+    {sample_b}
+
+    ---
+
+
+    Given the samples data above, check for each rule below which sample should be
+    selected:
+
+    {summaries}
+
+
+    Answer in json format, e.g. {{0: "A", 1: "B", 2: "None",...}}.
+
+    Put "A" if A is selected according to that rule, and "B" if B is selected. Put
+    "None" if a rule is not applicable to the two samples.
+
+    No ties are allowed, only one of "A", "B" or "None".
+
+    Vote for all rules, even if you are unsure.
+
+    Compare and vote on the LAST assistant message in each sample.
+
+    DO NOT respond with any text apart from the json format above!
+
+    DO NOT add markdown formatting around JSON.
+
+    ONLY REPLY IN JSON FORMAT
+
+    <|im_end|>'
+  cluster_summary_prompt: '<|im_start|>system
+
+    Your job is to summarize the principles below as a single similar principle. Ignore
+    outlier principles. The principle should be an instruction about choosing one
+    of the options.
+
+    <|im_end|>
+
+    <|im_start|>user
+
+    {principles}
+
+    <|im_end|>'

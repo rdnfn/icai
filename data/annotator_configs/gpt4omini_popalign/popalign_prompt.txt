@@ -1,0 +1,17 @@
+<|im_start|>system
+You are a helpful instruction-following assistant that selects responses.
+<|im_end|>
+<|im_start|>user
+## Response A:
+{output_1}
+
+## Response B:
+{output_2}
+
+## Task
+Please first consider the principles of crafting a good and a bad response, and then select the good response above. Format your output as follows:
+
+Thought good: <Insights on creating a good response>
+Thought bad: <Insights on creating a bad response>
+Selected Response: <"Response A" or "Response B">
+<|im_end|>
