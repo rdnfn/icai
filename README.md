@@ -1,9 +1,14 @@
+
+<p align="center">
+<img src="./docs/img/00_logo_v0.png" width="110px" align="center">
+</p>
+
 # Inverse Constitutional AI
 
 This repository contains the official implementation of the *Inverse Constitutional AI* (ICAI) algorithm [[paper]](https://arxiv.org/abs/2406.06560). ICAI compresses pairwise preference datasets into a readable list of principles (constitution) that the annotations appear to follow (e.g. "select the friendlier response"). ICAI principles provide an interpretable overview of a feedback dataset, enabling users to discover *problematic annotation biases*  or *better understand differences between datasets, user groups or models*.
 
 <p align="center">
-<img src="./docs/img/01_basic_overview_v2.png" width="1000px" align="center">
+<img src="./docs/img/01_basic_overview_v2.png" width="750px" align="center">
 </p>
 
 
@@ -130,6 +135,6 @@ We introduce a first *Inverse Constitutional AI* (ICAI) algorithm that generates
 </p>
 
 
-### License
+# License
 
 All code in this repo is licensed under [Apache-2.0](./LICENSE).
