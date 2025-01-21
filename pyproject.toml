@@ -15,30 +15,31 @@ classifiers = [
 ]
 dependencies = [
   "langchain",
-  "python-dotenv",
+  "langchain-community",
   "langchain-openai",
   "langchain-anthropic",
-  "langchain-community",
-  "scikit-learn",
   "anthropic",
+  "alpaca-eval",
+  "datasets", # To fetch huggingface datasets
+  "scikit-learn", # used for clustering
+  "pandas",
+  "python-dotenv",
   "loguru",
   "hydra-core",
-  "pandas",
   "matplotlib",
-  "datasets", # To fetch huggingface datasets
-  "wandb",
-  "alpaca-eval",
-  "nbconvert",
-  "jupyter",
-  "ipywidgets", # IProgress in jupyter notebooks
-  "gradio",
-  "plotly",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest >=6.0",
     "black ==24.10.0",
+]
+app = [
+    "gradio",
+    "plotly",
+    "nbconvert",
+    "jupyter",
+    "ipywidgets", # IProgress in jupyter notebooks
 ]
 
 [build-system]
