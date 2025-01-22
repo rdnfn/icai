@@ -1,6 +1,9 @@
 import subprocess
+import pytest
 
 
+@pytest.mark.slow
+@pytest.mark.api
 def test_cli_minimal_experiment():
     """Test that we can run a minimal experiment end-to-end using the CLI."""
     # Run the CLI command in a subprocess
