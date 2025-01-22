@@ -58,6 +58,10 @@ icai-app = "inverse_cai.app.main:run"
 pythonpath = "."
 testpaths = ["src"]
 python_files = ["*_test.py"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "api: marks tests as API tests (deselect with '-m \"not api\"')",
+]
 
 [tool.black]
 line-length = 88
