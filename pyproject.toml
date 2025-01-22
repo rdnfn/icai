@@ -19,7 +19,7 @@ dependencies = [
   "langchain-openai",
   "langchain-anthropic",
   "anthropic",
-  "alpaca-eval",
+  "alpaca-eval<=0.6.5",
   "datasets", # To fetch huggingface datasets
   "scikit-learn", # used for clustering
   "pandas",
