@@ -19,7 +19,7 @@ dependencies = [
   "langchain-openai",
   "langchain-anthropic",
   "anthropic",
-  "alpaca-eval",
+  "alpaca-eval<=0.6.5",
   "datasets", # To fetch huggingface datasets
   "scikit-learn", # used for clustering
   "pandas",
@@ -47,6 +47,9 @@ app = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/inverse_cai/assets" = "inverse_cai/assets"
+
 [project.scripts]
 icai-exp = "inverse_cai.experiment.core:run"
 icai-app = "inverse_cai.app.main:run"
@@ -55,6 +58,10 @@ icai-app = "inverse_cai.app.main:run"
 pythonpath = "."
 testpaths = ["src"]
 python_files = ["*_test.py"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "api: marks tests as API tests (deselect with '-m \"not api\"')",
+]
 
 [tool.black]
 line-length = 88

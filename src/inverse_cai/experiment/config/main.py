@@ -32,15 +32,21 @@ class AnnotatorConfig:
         None  # constitution to use for AI judgment
     )
     is_single_annotator: bool = False  # whether to use a single annotator (or four)
+    # for available default annotators, see inverse_cai/assets/alpacaeval_annotator_configs,
+    # for these you can just use the name of the annotator, e.g.
+    # "gpt4omini_fn_constitutional_base_neutral_v2"
+    # for custom annotators, you can use the path to the annotator config file, e.g.
+    # "data/annotator_configs/my_custom_annotator"
     base_constitutional_annotator_configs: list[str] = field(
         default_factory=lambda: [
-            "data/annotator_configs/chatgpt_fn_constitutional_base_neutral_v1"
+            "gpt4omini_fn_constitutional_base_neutral_v2"
             # base annotator config to add constitution to
         ]
     )
     other_annotator_configs: list[str] = field(
         default_factory=lambda: [
-            "data/annotator_configs/chatgpt_fn_noinstruction",  # annotators to test against
+            "alpaca_eval_gpt4omini_fn_noinstruction",
+            # non-constitutionalannotators to test against
         ]
     )
     test_data_only: bool = False  # whether to only annotate the test data

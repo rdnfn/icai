@@ -69,7 +69,7 @@ By default all experiment results are saved in the `./outputs/<DATE>_<TIME>` dir
 
 ## Run experiment with your own data
 
-To run ICAI on your dataset, you first need to convert it to a `csv` file with the following three columns: `text_a`,`text_b`,`preferred_text`. The first two should be strings. Note that the ICAI implementation currently uses no separate "prompt" column. If such a column exists in your dataset, you likely want to add the prompt to each response column (`text_a`,`text_b`) such that the ICAI algorithm can understand the full context of the preference label. Entries in the column `preferred_text` should take one of two values: `"text_a"` or `"text_b"`. Ties or other annotation values are currently not used by algorithm. To run ICAI on you prepared dataset, simply use:
+To run ICAI on your dataset, you first need to convert it to a `csv` file with the following three columns: `text_a`,`text_b`,`preferred_text`. The first two should be strings. Note that the ICAI implementation currently uses no separate "prompt" column. If such a column exists in your dataset, you likely want to add the prompt to each response column (`text_a`,`text_b`) such that the ICAI algorithm can understand the full context of the preference label. Entries in the column `preferred_text` should take one of two values: `"text_a"` or `"text_b"`. Ties or other annotation values are currently not used by the algorithm. To run ICAI on you prepared dataset, simply use:
 
 ```
 icai-exp data_path="<path/to/your-data.csv>"

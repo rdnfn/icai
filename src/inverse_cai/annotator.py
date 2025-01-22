@@ -5,12 +5,21 @@ Based on AlpacaEval.
 
 import pathlib
 import shutil
-import random
+from importlib import resources
 from loguru import logger
 import pandas as pd
 import alpaca_eval.main
 
 from inverse_cai.experiment.config.main import ExpConfig
+
+# get default annotators from alpacaeval_annotator_configs assets
+DEFAULT_ANNOTATORS = {
+    path.name: path
+    for path in resources.files(
+        "inverse_cai.assets.alpacaeval_annotator_configs"
+    ).iterdir()
+    if path.is_dir()
+}
 
 
 def generate_constitutional_annotator_configs(
@@ -71,9 +80,21 @@ def generate_tmp_annotator_config(
         raise ValueError("No config provided for the annotator, given None value.")
     annotator_config_path = pathlib.Path(annotator_config_path)
     if not annotator_config_path.exists():
-        raise FileNotFoundError(
-            f"Annotator config '{annotator_config_path}' does not exist"
-        )
+        if str(annotator_config_path) == annotator_config_path.name:
+            if annotator_config_path.name in DEFAULT_ANNOTATORS:
+                annotator_config_path = DEFAULT_ANNOTATORS[annotator_config_path.name]
+                logger.info(f"Using default annotator '{annotator_config_path.name}'")
+            else:
+                raise FileNotFoundError(
+                    f"No default annotator with name '{annotator_config_path.name}'"
+                    f" found in available default annotators: {list(DEFAULT_ANNOTATORS.keys())}."
+                )
+
+        else:
+            raise FileNotFoundError(
+                f"Annotator config path '{annotator_config_path}' does not exist. "
+                f"To use default annotators just put their name (available configs: {list(DEFAULT_ANNOTATORS.keys())})"
+            )
     if not annotator_config_path.is_dir():
         raise NotADirectoryError(
             f"Annotator config '{annotator_config_path}' is not a directory"
