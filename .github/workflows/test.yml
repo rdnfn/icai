@@ -26,4 +26,6 @@ jobs:
         run: pytest -v -m "not api"
 
       - name: Run API tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: pytest -v -m "api"
