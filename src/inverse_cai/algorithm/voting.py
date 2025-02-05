@@ -1,6 +1,7 @@
 import ast
 import tqdm
 import random
+import time
 import pandas as pd
 from pathlib import Path
 from loguru import logger
@@ -99,8 +100,11 @@ def run_pass_to_get_votes_for_principles(
         # Initialize cache
         vote_cache = VoteCache(cache_path)
 
-        if index in initial_cached_votes.keys():
-            return index, initial_cached_votes[index]
+        cache_index = vote_cache.get_full_index(index, summaries)
+
+        if cache_index in initial_cached_votes:
+            time.sleep(0.1)
+            return index, initial_cached_votes[cache_index]
 
         preferred = get_preferred_text(row)
         rejected = get_rejected_text(row)
