@@ -95,14 +95,14 @@ icai-exp -cd ./exp/configs/001_synthetic_orthogonal
 
 ### Using cache to continue aborted experiment
 
-[Experimental feature] Sometimes long-running (expensive) ICAI experiments get interrupted. Instead of requiring a full re-run, the ICAI package supports continuing certain experiments after they were interupted. This feature is only available for the voting stage of experiments: only for experiments that do not generate principles but use a pre-existing principle list to test.
+**[Experimental feature]** Sometimes long-running (expensive) ICAI experiments get interrupted. Instead of requiring a full re-run, the ICAI package supports continuing certain experiments after they were interupted. This feature is only available for the voting stage of experiments: only for experiments that do not generate principles but use a pre-existing principle list to test.
 
 To re-start an experiment with log dir `exp/outputs/prior-experiment` and config dir `exp/configs/exp-config`, use the following command:
 ```
 icai-exp -cd exp/configs/prior-experiment prior_cache_path='exp/outputs/prior-experiment'
 ```
-
-Note that there is no strict config consistency check between cache and new experiment - thus use with caution, only using caches from prior experiments with identical configs.
+>[!WARNING]
+> Note that there is no strict config consistency check between cache and new experiment - thus use with caution, only using caches from prior experiments with identical configs.
 
 ## Development
 
