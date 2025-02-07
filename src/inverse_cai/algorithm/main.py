@@ -130,6 +130,12 @@ def run(
                 / "040_votes_per_comparison.csv",
                 new_vote_cache_path,
             )
+            shutil.copy(
+                Path(config.prior_cache_path)
+                / "results"
+                / "040_votes_per_comparison.index.json",
+                new_vote_cache_path.with_suffix(".index.json"),
+            )
             logger.info(f"Copied over prior cache from '{config.prior_cache_path}'")
 
         raw_votes, combined_votes = get_votes_for_principles(
