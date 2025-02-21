@@ -266,7 +266,7 @@ def run(cfg: DictConfig):
         logger.info("Running LLM annotation stage")
 
         if not cfg.annotator.test_data_only:
-            annotation_results = inverse_cai.annotator.annotate(
+            annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
                 config=cfg,
                 data=data,
                 constitution=constitution,
@@ -282,12 +282,14 @@ def run(cfg: DictConfig):
                     logger.info(
                         f"Running LLM annotation on test data {i}/{len(test_data)}"
                     )
-                    test_annotation_results = inverse_cai.annotator.annotate(
-                        config=cfg,
-                        data=test_data_single,
-                        constitution=constitution,
-                        is_single_annotator=cfg.annotator.is_single_annotator,
-                        tmp_files_path=tmp_path / f"testset_{i}",
+                    test_annotation_results = (
+                        inverse_cai.annotators.alpaca_eval.annotate(
+                            config=cfg,
+                            data=test_data_single,
+                            constitution=constitution,
+                            is_single_annotator=cfg.annotator.is_single_annotator,
+                            tmp_files_path=tmp_path / f"testset_{i}",
+                        )
                     )
                     logger.info(
                         f"Results table (test data {i}/{len(test_data)}):\n{test_annotation_results}"
@@ -297,7 +299,7 @@ def run(cfg: DictConfig):
                     )
             else:
                 logger.info("Running LLM annotation on test data")
-                test_annotation_results = inverse_cai.annotator.annotate(
+                test_annotation_results = inverse_cai.alpaca_eval.annotate(
                     config=cfg,
                     data=test_data,
                     constitution=constitution,
