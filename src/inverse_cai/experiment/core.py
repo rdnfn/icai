@@ -196,9 +196,9 @@ def run(cfg: DictConfig):
 
     logger.info("Starting experiment with config: \n" + OmegaConf.to_yaml(cfg))
 
-    if cfg.annotator.constitution is not None and cfg.generate_constitution:
+    if cfg.annotator.alpaca_eval.constitution is not None and cfg.generate_constitution:
         raise ValueError(
-            "A constitution was provided via `annotator.constitution`, "
+            "A constitution was provided via `annotator.alpaca_eval.constitution`, "
             "but also `generate_constitution` is set to True. "
             "Please only set one of them."
         )
@@ -282,14 +282,12 @@ def run(cfg: DictConfig):
                     logger.info(
                         f"Running LLM annotation on test data {i}/{len(test_data)}"
                     )
-                    test_annotation_results = (
-                        inverse_cai.annotators.alpaca_eval.annotate(
-                            config=cfg,
-                            data=test_data_single,
-                            constitution=constitution,
-                            is_single_annotator=cfg.annotator.is_single_annotator,
-                            tmp_files_path=tmp_path / f"testset_{i}",
-                        )
+                    test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
+                        config=cfg,
+                        data=test_data_single,
+                        constitution=constitution,
+                        is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
+                        tmp_files_path=tmp_path / f"testset_{i}",
                     )
                     logger.info(
                         f"Results table (test data {i}/{len(test_data)}):\n{test_annotation_results}"
@@ -299,7 +297,7 @@ def run(cfg: DictConfig):
                     )
             else:
                 logger.info("Running LLM annotation on test data")
-                test_annotation_results = inverse_cai.alpaca_eval.annotate(
+                test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
                     config=cfg,
                     data=test_data,
                     constitution=constitution,

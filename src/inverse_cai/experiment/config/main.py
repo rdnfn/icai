@@ -20,10 +20,10 @@ UPDATED_HYDRA_DEFAULTS = {
 
 
 @dataclass
-class AnnotatorConfig:
+class AlpacaEvalAnnotatorConfig:
     """Configuration for the AI annotator."""
 
-    skip: bool = False  # whether to skip the AI judgment stage
+    skip: bool = False  # whether to skip AlpacaEval annotators
     create_other_annotator_tmp_configs: bool = (
         True  # whether to create tmp annotator configs
         # (to avoid accidentally using old cached data)
@@ -50,6 +50,16 @@ class AnnotatorConfig:
         ]
     )
     test_data_only: bool = False  # whether to only annotate the test data
+
+
+@dataclass
+class AnnotatorConfig:
+    """Configuration for the AI annotator."""
+
+    alpaca_eval: AlpacaEvalAnnotatorConfig = field(
+        default_factory=AlpacaEvalAnnotatorConfig
+    )
+    skip: bool = False  # whether to skip the AI judgment stage
 
 
 @dataclass
