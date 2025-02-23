@@ -245,13 +245,13 @@ def run(cfg: DictConfig):
         logger.warning(
             "Running LLM annotation on dataset without generating a new constitution"
         )
-        if cfg.annotator.constitution is None:
+        if cfg.annotator.alpaca_eval.constitution is None:
             logger.error(
                 "No constitution provided and `generate_constitution` is set to False. "
                 "No constitution will be used in annotation. "
                 "You may want to provide a constitution via `annotator.constitution`."
             )
-        constitution = cfg.annotator.constitution
+        constitution = cfg.annotator.alpaca_eval.constitution
 
     if cfg.annotator.skip:
         logger.warning("Skipping LLM annotation stage")
@@ -265,12 +265,12 @@ def run(cfg: DictConfig):
     else:
         logger.info("Running LLM annotation stage")
 
-        if not cfg.annotator.test_data_only:
+        if not cfg.annotator.alpaca_eval.test_data_only:
             annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
                 config=cfg,
                 data=data,
                 constitution=constitution,
-                is_single_annotator=cfg.annotator.is_single_annotator,
+                is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
                 tmp_files_path=tmp_path / "trainset",
             )
 
@@ -301,13 +301,13 @@ def run(cfg: DictConfig):
                     config=cfg,
                     data=test_data,
                     constitution=constitution,
-                    is_single_annotator=cfg.annotator.is_single_annotator,
+                    is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
                     tmp_files_path=tmp_path / "testset",
                 )
                 logger.info(f"Results table (test data):\n{test_annotation_results}")
                 test_annotation_results.to_csv(results_path / "093_results_testset.csv")
         else:
-            if cfg.annotator.test_data_only:
+            if cfg.annotator.alpaca_eval.test_data_only:
                 logger.warning(
                     "No test data provided, but `test_data_only` is set to True. "
                     "No test data will be annotated."
