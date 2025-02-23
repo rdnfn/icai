@@ -14,6 +14,7 @@ from inverse_cai.algorithm.voting import get_votes_for_principles
 from inverse_cai.algorithm.filter import filter_according_to_votes
 from inverse_cai.utils import save_to_json
 from inverse_cai.experiment.config import ExpConfig
+from inverse_cai.experiment.config.default_principles import DEFAULT_PRINCIPLES
 import inverse_cai.visualisation
 import inverse_cai.experiment
 
@@ -104,15 +105,30 @@ def run(
         logger.info(
             f"Adding fixed test principles to summaries: {config.s0_added_principles_to_test}"
         )
-        num_generated_principles = len(summaries.values())
-        summaries = {
-            **summaries,
-            **{
-                num_generated_principles + i: principle
-                for i, principle in enumerate(config.s0_added_principles_to_test)
-                if principle not in summaries.values()
-            },
-        }
+
+        def _add_principles(summaries: dict, principles: list[str]) -> dict:
+            num_generated_principles = len(summaries.values())
+            return {
+                **summaries,
+                **{
+                    num_generated_principles + i: principle
+                    for i, principle in enumerate(principles)
+                    if principle not in summaries.values()
+                },
+            }
+
+        # add standard principles if configured
+        if config.s0_added_standard_principles_to_test is not None:
+            logger.info(
+                f"Adding fixed test principles to summaries: {config.s0_added_standard_principles_to_test}"
+            )
+            for version in config.s0_added_standard_principles_to_test:
+                summaries = _add_principles(summaries, DEFAULT_PRINCIPLES[version])
+
+        # add any additional principles added via config
+        summaries = _add_principles(
+            summaries, config.s0_added_standard_principles_to_test
+        )
 
     save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
 
