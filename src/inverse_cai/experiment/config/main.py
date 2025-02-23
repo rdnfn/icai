@@ -104,7 +104,7 @@ class ExpConfig:
 
     # Optional: set principles to test (skip generation)
     s0_added_principles_to_test: list[str] | None = None
-    s0_added_standard_principles_to_test: str | list[str] | None = (
+    s0_added_standard_principles_to_test: list[str] | None = (
         None  # version number of standard principles to test, e.g. "v1" or "v2"
     )
     s0_skip_principle_generation: bool = False
