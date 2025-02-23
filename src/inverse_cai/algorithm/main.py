@@ -127,9 +127,6 @@ def run(
         for version in config.s0_added_standard_principles_to_test:
             summaries = _add_principles(summaries, DEFAULT_PRINCIPLES[version])
 
-    # add any additional principles added via config
-    summaries = _add_principles(summaries, config.s0_added_standard_principles_to_test)
-
     logger.info(f"Principles to be tested: {list(summaries.values())}")
 
     save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
