@@ -101,34 +101,36 @@ def run(
         summaries = {}
         clusters = None
 
+    def _add_principles(summaries: dict, principles: list[str]) -> dict:
+        num_generated_principles = len(summaries.values())
+        return {
+            **summaries,
+            **{
+                num_generated_principles + i: principle
+                for i, principle in enumerate(principles)
+                if principle not in summaries.values()
+            },
+        }
+
     if config.s0_added_principles_to_test is not None:
         logger.info(
-            f"Adding fixed test principles to summaries: {config.s0_added_principles_to_test}"
+            f"Adding {len(config.s0_added_principles_to_test)} fixed test principles to summaries (set by cfg.s0_added_principles_to_test)"
         )
+        for principle in config.s0_added_principles_to_test:
+            summaries = _add_principles(summaries, [principle])
 
-        def _add_principles(summaries: dict, principles: list[str]) -> dict:
-            num_generated_principles = len(summaries.values())
-            return {
-                **summaries,
-                **{
-                    num_generated_principles + i: principle
-                    for i, principle in enumerate(principles)
-                    if principle not in summaries.values()
-                },
-            }
-
-        # add standard principles if configured
-        if config.s0_added_standard_principles_to_test is not None:
-            logger.info(
-                f"Adding fixed test principles to summaries: {config.s0_added_standard_principles_to_test}"
-            )
-            for version in config.s0_added_standard_principles_to_test:
-                summaries = _add_principles(summaries, DEFAULT_PRINCIPLES[version])
-
-        # add any additional principles added via config
-        summaries = _add_principles(
-            summaries, config.s0_added_standard_principles_to_test
+    # add standard principles if configured
+    if config.s0_added_standard_principles_to_test is not None:
+        logger.info(
+            f"Adding standard test principles to summaries (versions {config.s0_added_standard_principles_to_test}, set by cfg.s0_added_standard_principles_to_test)"
         )
+        for version in config.s0_added_standard_principles_to_test:
+            summaries = _add_principles(summaries, DEFAULT_PRINCIPLES[version])
+
+    # add any additional principles added via config
+    summaries = _add_principles(summaries, config.s0_added_standard_principles_to_test)
+
+    logger.info(f"Principles to be tested: {list(summaries.values())}")
 
     save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
 
