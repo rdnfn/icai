@@ -322,6 +322,12 @@ def run(cfg: DictConfig):
     )
 
     logger.info(f"Experiment finished. Find results at {results_path}")
+    logger.info(
+        "🔍 You can use Feedback Forensics to inspect the results "
+        f"via the following command: \n\nfeedback-forensics -d {results_path.parent}\n\n"
+        "Follow the instructions in the Feedback Forensics repo to install it (https://github.com/rdnfn/feedback-forensics)."
+    )
+    logger.info("All done! ✨")
 
 
 if __name__ == "__main__":
