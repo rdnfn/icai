@@ -1,0 +1,8 @@
+data_path: "./data/processed/prism/prism_rand_incl_metadata_v2.csv"
+data_len: 7990
+alg_model: "openai/gpt-4o-mini-2024-07-18"
+s0_skip_principle_generation: true
+s0_added_standard_principles_to_test:
+  - v2
+annotator:
+  skip: true
