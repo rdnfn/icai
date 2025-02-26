@@ -8,6 +8,11 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
+	// Enable GPU passthrough if a GPU is available
+	"hostRequirements": {
+		"gpu": "optional"
+	},
+
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
