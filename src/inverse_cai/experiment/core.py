@@ -196,9 +196,9 @@ def run(cfg: DictConfig):
 
     logger.info("Starting experiment with config: \n" + OmegaConf.to_yaml(cfg))
 
-    if cfg.annotator.constitution is not None and cfg.generate_constitution:
+    if cfg.annotator.alpaca_eval.constitution is not None and cfg.generate_constitution:
         raise ValueError(
-            "A constitution was provided via `annotator.constitution`, "
+            "A constitution was provided via `annotator.alpaca_eval.constitution`, "
             "but also `generate_constitution` is set to True. "
             "Please only set one of them."
         )
@@ -245,13 +245,13 @@ def run(cfg: DictConfig):
         logger.warning(
             "Running LLM annotation on dataset without generating a new constitution"
         )
-        if cfg.annotator.constitution is None:
+        if cfg.annotator.alpaca_eval.constitution is None:
             logger.error(
                 "No constitution provided and `generate_constitution` is set to False. "
                 "No constitution will be used in annotation. "
                 "You may want to provide a constitution via `annotator.constitution`."
             )
-        constitution = cfg.annotator.constitution
+        constitution = cfg.annotator.alpaca_eval.constitution
 
     if cfg.annotator.skip:
         logger.warning("Skipping LLM annotation stage")
@@ -265,12 +265,12 @@ def run(cfg: DictConfig):
     else:
         logger.info("Running LLM annotation stage")
 
-        if not cfg.annotator.test_data_only:
-            annotation_results = inverse_cai.annotator.annotate(
+        if not cfg.annotator.alpaca_eval.test_data_only:
+            annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
                 config=cfg,
                 data=data,
                 constitution=constitution,
-                is_single_annotator=cfg.annotator.is_single_annotator,
+                is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
                 tmp_files_path=tmp_path / "trainset",
             )
 
@@ -282,11 +282,11 @@ def run(cfg: DictConfig):
                     logger.info(
                         f"Running LLM annotation on test data {i}/{len(test_data)}"
                     )
-                    test_annotation_results = inverse_cai.annotator.annotate(
+                    test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
                         config=cfg,
                         data=test_data_single,
                         constitution=constitution,
-                        is_single_annotator=cfg.annotator.is_single_annotator,
+                        is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
                         tmp_files_path=tmp_path / f"testset_{i}",
                     )
                     logger.info(
@@ -297,17 +297,17 @@ def run(cfg: DictConfig):
                     )
             else:
                 logger.info("Running LLM annotation on test data")
-                test_annotation_results = inverse_cai.annotator.annotate(
+                test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
                     config=cfg,
                     data=test_data,
                     constitution=constitution,
-                    is_single_annotator=cfg.annotator.is_single_annotator,
+                    is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
                     tmp_files_path=tmp_path / "testset",
                 )
                 logger.info(f"Results table (test data):\n{test_annotation_results}")
                 test_annotation_results.to_csv(results_path / "093_results_testset.csv")
         else:
-            if cfg.annotator.test_data_only:
+            if cfg.annotator.alpaca_eval.test_data_only:
                 logger.warning(
                     "No test data provided, but `test_data_only` is set to True. "
                     "No test data will be annotated."
@@ -322,6 +322,12 @@ def run(cfg: DictConfig):
     )
 
     logger.info(f"Experiment finished. Find results at {results_path}")
+    logger.info(
+        "🔍 You can use Feedback Forensics to inspect the results "
+        f"via the following command: \n\nfeedback-forensics -d {results_path.parent}\n\n"
+        "Follow the instructions in the Feedback Forensics repo to install it (https://github.com/rdnfn/feedback-forensics)."
+    )
+    logger.info("All done! ✨")
 
 
 if __name__ == "__main__":

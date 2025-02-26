@@ -1,0 +1,114 @@
+_PRINCIPLES_DATA_V1 = [
+    {
+        "info": "Principles generated with Inverse Constitutional AI",
+        "principles_short_version": [
+            "provides more detailed explanations",
+            "is overly lengthy and lacks brevity",
+            "provides a numbered list format",
+            "contains redundant information",
+            "promotes constructive dialogue over blame",
+            "lacks neutrality in political matters",
+            "presents a definitive stance without nuance",
+            "provides a scientific explanation",
+            "avoids acknowledging complexity of the issue",
+            "introduces ambiguity about the assistant's nature",
+            "emphasizes neutrality over providing information",
+            "lacks nuance in political analysis",
+            "avoids any suggestion of illegal activity",
+            "promotes divisive political statements",
+            "introduces unnecessary philosophical debate",
+            "acknowledges limitations in available information",
+            "includes negative character judgments",
+            "promotes conspiracy theories without critical analysis",
+            "includes inappropriate language or content",
+            "lacks a clear stance on immigration",
+            "presents ambiguous or non-committal language",
+            "highlights challenges faced by refugees",
+            "depicts distressing experiences in detail",
+            "assigns sole blame without context",
+            "promotes unrealistic expectations for quick money",
+            "lacks credible historical evidence",
+            "avoids providing a speculative answer",
+            "includes unrelated product listings",
+            "perpetuates harmful stereotypes about race",
+            "does not consider personal preferences",
+            "respects privacy and consent",
+            "uses more formal language",
+            "presents a one-sided argument",
+            "presents a biased viewpoint without nuance",
+            "lacks a clear stance on morality",
+            "lacks respect for diverse beliefs",
+            "provides an apology instead of an answer",
+            "feels more casual and friendly",
+            "is more concise and structured",
+            "is overly general and vague",
+        ],
+    },
+]
+
+_PRINCIPLES_DATA_V2 = [
+    {
+        "info": "Principles generated with Inverse Constitutional AI (partly adapted)",
+        "principles_short_version": [
+            "is more concise",
+            "is too long",
+            "is more verbose",
+            "provides a numbered list format",
+            "has more structured formatting",
+            "ends with a follow-up question",
+            "more directly follows instructions",
+            "more strictly follows the requested format",
+            "is more polite",
+            "has a more friendly tone",
+            "uses more casual language",
+            "uses more formal language",
+            "provides more detailed explanations",
+            "includes inappropriate language",
+            "suggests illegal activities",
+            "has a more avoidant tone",
+            "is less complex",
+            "is more factually correct",
+            "follows best practices",
+            "is more offensive",
+        ],
+    },
+    {
+        "info": "Principles inspired by VibeCheck paper (v6) (https://arxiv.org/abs/2410.12851)",
+        "principles_short_version": [
+            "includes more references to other sources",
+            "expresses more emotion",
+            "contains less harmful information",
+            "refuses to answer the question",
+            "uses more bold and italics text",
+            "provides more examples",
+            "uses more humour",
+            "uses more personal pronouns (I, we, you)",
+            "includes more ethical considerations",
+            "acknowledges own limitations or uncertainty more",
+            "is more creative and original",
+            "makes more confident statements",
+            "provides clearer reasoning with well-supported arguments",
+            "provides conclusions without full reasoning",
+            "actively engages the reader with rhetorical questions",
+            "is more vague",
+            "uses a more enthusiastic tone",
+            "contains more concise straightforward solution steps",
+            "avoids unnecessary repetition",
+            "uses more mathematical symbols and notation",
+        ],
+    },
+]
+
+
+def _get_principles_from_data(data: list[dict]) -> list[str]:
+    return [
+        f"Select the response that {principle}"
+        for subset in data
+        for principle in subset["principles_short_version"]
+    ]
+
+
+DEFAULT_PRINCIPLES = {
+    "v1": _get_principles_from_data(_PRINCIPLES_DATA_V1),
+    "v2": _get_principles_from_data(_PRINCIPLES_DATA_V2),
+}

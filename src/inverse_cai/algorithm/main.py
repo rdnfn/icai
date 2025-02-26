@@ -14,6 +14,7 @@ from inverse_cai.algorithm.voting import get_votes_for_principles
 from inverse_cai.algorithm.filter import filter_according_to_votes
 from inverse_cai.utils import save_to_json
 from inverse_cai.experiment.config import ExpConfig
+from inverse_cai.experiment.config.default_principles import DEFAULT_PRINCIPLES
 import inverse_cai.visualisation
 import inverse_cai.experiment
 
@@ -100,19 +101,33 @@ def run(
         summaries = {}
         clusters = None
 
-    if config.s0_added_principles_to_test is not None:
-        logger.info(
-            f"Adding fixed test principles to summaries: {config.s0_added_principles_to_test}"
-        )
+    def _add_principles(summaries: dict, principles: list[str]) -> dict:
         num_generated_principles = len(summaries.values())
-        summaries = {
+        return {
             **summaries,
             **{
                 num_generated_principles + i: principle
-                for i, principle in enumerate(config.s0_added_principles_to_test)
+                for i, principle in enumerate(principles)
                 if principle not in summaries.values()
             },
         }
+
+    if config.s0_added_principles_to_test is not None:
+        logger.info(
+            f"Adding {len(config.s0_added_principles_to_test)} fixed test principles to summaries (set by cfg.s0_added_principles_to_test)"
+        )
+        for principle in config.s0_added_principles_to_test:
+            summaries = _add_principles(summaries, [principle])
+
+    # add standard principles if configured
+    if config.s0_added_standard_principles_to_test is not None:
+        logger.info(
+            f"Adding standard test principles to summaries (versions {config.s0_added_standard_principles_to_test}, set by cfg.s0_added_standard_principles_to_test)"
+        )
+        for version in config.s0_added_standard_principles_to_test:
+            summaries = _add_principles(summaries, DEFAULT_PRINCIPLES[version])
+
+    logger.info(f"Principles to be tested: {list(summaries.values())}")
 
     save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
 

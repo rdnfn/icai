@@ -176,7 +176,12 @@ def get_preference_vote_for_single_text(
 
     model = icai.models.get_model(model_name)
 
-    vote = model.invoke(messages).content
+    try:
+        vote = model.invoke(messages).content
+    except Exception as e:
+        logger.error(f"Error invoking model: {e}")
+        logger.error(f"Parsed messages: {messages}")
+        raise e
 
     vote = parse_individual_pref_vote(vote, summaries_len=len(summaries))
 

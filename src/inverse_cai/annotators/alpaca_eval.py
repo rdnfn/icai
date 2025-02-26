@@ -27,7 +27,9 @@ def generate_constitutional_annotator_configs(
 ):
     """Generate the constitutional annotator config."""
 
-    base_const_configs = config.annotator.base_constitutional_annotator_configs
+    base_const_configs = (
+        config.annotator.alpaca_eval.base_constitutional_annotator_configs
+    )
 
     tmp_config_paths = []
 
@@ -56,11 +58,11 @@ def generate_other_annotator_configs(config: ExpConfig, tmp_files_path: str):
     via config `config.annotator.create_other_annotator_tmp_configs`.
     """
 
-    annotator_configs = config.annotator.other_annotator_configs
+    annotator_configs = config.annotator.alpaca_eval.other_annotator_configs
 
     tmp_config_paths = []
 
-    if config.annotator.create_other_annotator_tmp_configs:
+    if config.annotator.alpaca_eval.create_other_annotator_tmp_configs:
         for annotator_config in annotator_configs:
             tmp_annotator_config = generate_tmp_annotator_config(
                 annotator_config_path=annotator_config,

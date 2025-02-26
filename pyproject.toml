@@ -53,6 +53,7 @@ build-backend = "hatchling.build"
 [project.scripts]
 icai-exp = "inverse_cai.experiment.core:run"
 icai-app = "inverse_cai.app.main:run"
+icai-clean = "inverse_cai.tools.data_cleaner:run"
 
 [tool.pytest.ini_options]
 pythonpath = "."
