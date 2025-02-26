@@ -6,7 +6,13 @@
 	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	"features": {
+		// Install cuda
+		"ghcr.io/devcontainers/features/nvidia-cuda:1": {
+			"installToolkit": true
+		}
+	},
+
 
 	// Enable GPU passthrough if a GPU is available
 	"hostRequirements": {
