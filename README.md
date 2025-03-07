@@ -49,8 +49,8 @@ By default all experiment results are saved in the `./outputs/<DATE>_<TIME>` dir
 
 ```text
 ./outputs
-└── 2024-03-14
-    └── 16-09-43
+└── 2045-03-07
+    └── 12-09-43
         ├── api_calls.jsonl
         ├── core.log
         ├── main.log
