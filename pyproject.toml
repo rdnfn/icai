@@ -1,6 +1,6 @@
 [project]
 name = "inverse-cai"
-version = "0.1.2"
+version = "0.1.3"
 authors = [
   { name="rdnfn", email="hi@arduin.io" },
   { name="timokau" },
@@ -70,7 +70,7 @@ line-length = 88
 target-version = ['py311']
 
 [tool.bumpversion]
-current_version = "0.1.2"
+current_version = "0.1.3"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 search = "{current_version}"
