@@ -1,7 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 
-from icai.app.plotting.multiple import _plot_multiple_values
+from inverse_cai.app.plotting.multiple import _plot_multiple_values
 
 
 def test_plot():

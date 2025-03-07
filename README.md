@@ -41,7 +41,7 @@ icai-exp --help
 ```
 >[!NOTE]
 > **If you want more control**:
-> the `icai-exp` command executes the `run` function inside [`./src/icai/experiment/core.py`](https://github.com/rdnfn/icai/blob/main/src/icai/experiment/core.py#L111). Edit that file, and the other parts of the `icai` Python package it uses, to fully adapt this code to your needs.
+> the `icai-exp` command executes the `run` function inside [`./src/inverse_cai/experiment/core.py`](https://github.com/rdnfn/icai/blob/main/src/inverse_cai/experiment/core.py#L111). Edit that file, and the other parts of the `inverse_cai` Python package it uses, to fully adapt this code to your needs.
 
 ### Inspecting results
 
