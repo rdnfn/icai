@@ -4,8 +4,8 @@ from dataclasses import dataclass, field
 import gradio as gr
 from loguru import logger
 
-from icai.app.constants import NONE_SELECTED_VALUE
-from icai.app.data_loader import load_icai_data, DATA_DIR
+from inverse_cai.app.constants import NONE_SELECTED_VALUE
+from inverse_cai.app.data_loader import load_icai_data, DATA_DIR
 
 load_icai_data()
 

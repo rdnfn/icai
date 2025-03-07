@@ -1,1 +1,1 @@
-from icai.app.plotting.main import generate_plot
+from inverse_cai.app.plotting.main import generate_plot

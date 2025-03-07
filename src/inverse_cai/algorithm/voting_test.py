@@ -4,16 +4,16 @@ Tests for the voting module.
 
 from unittest.mock import patch, MagicMock
 
-from icai.algorithm.voting import (
+from inverse_cai.algorithm.voting import (
     get_preference_vote_for_single_text,
     clean_vote_json,
     parse_individual_pref_vote,
 )
-from icai.experiment.core import ExpConfig
+from inverse_cai.experiment.core import ExpConfig
 
 
-@patch("icai.algorithm.voting.icai.models.get_model")
-@patch("icai.algorithm.voting.random.choice")
+@patch("inverse_cai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.random.choice")
 def test_get_preference_vote_for_single_text_flipped(
     mock_random_choice, mock_get_model
 ):
@@ -34,8 +34,8 @@ def test_get_preference_vote_for_single_text_flipped(
     assert result == {1: False, 2: True}
 
 
-@patch("icai.algorithm.voting.icai.models.get_model")
-@patch("icai.algorithm.voting.random.choice")
+@patch("inverse_cai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.random.choice")
 def test_get_preference_vote_for_single_text_not_flipped(
     mock_random_choice, mock_get_model
 ):
@@ -55,8 +55,8 @@ def test_get_preference_vote_for_single_text_not_flipped(
     assert result == {1: True, 2: False}
 
 
-@patch("icai.algorithm.voting.icai.models.get_model")
-@patch("icai.algorithm.voting.random.choice")
+@patch("inverse_cai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.random.choice")
 def test_get_preference_vote_for_single_text_invalid_vote(
     mock_random_choice, mock_get_model
 ):
@@ -75,7 +75,7 @@ def test_get_preference_vote_for_single_text_invalid_vote(
     assert return_val == {1: "invalid", 2: None}
 
 
-@patch("icai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.icai.models.get_model")
 def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
     """Test preference voting when invalid JSON is returned."""
     mock_model = MagicMock()
@@ -94,7 +94,7 @@ def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
     ), "Expected all votes to be None due to invalid JSON"
 
 
-@patch("icai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.icai.models.get_model")
 def test_get_preference_vote_for_single_text_all_keys_present(mock_get_model):
     """Test that all summary keys are present in the preference voting result."""
     mock_model = MagicMock()
@@ -127,7 +127,7 @@ def test_clean_vote_json():
     ), "The clean_vote_json function did not clean the JSON as expected"
 
 
-@patch("icai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.icai.models.get_model")
 def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model):
     """Test to ensure unexpected vote values are counted as invalid in preference voting."""
     mock_model = MagicMock()

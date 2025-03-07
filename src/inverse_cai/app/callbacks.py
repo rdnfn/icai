@@ -6,10 +6,10 @@ import gradio as gr
 import pandas as pd
 from loguru import logger
 
-from icai.app.loader import get_votes_df
-import icai.app.plotting
-from icai.app.constants import NONE_SELECTED_VALUE
-from icai.app.builtin_datasets import (
+from inverse_cai.app.loader import get_votes_df
+import inverse_cai.app.plotting
+from inverse_cai.app.constants import NONE_SELECTED_VALUE
+from inverse_cai.app.builtin_datasets import (
     get_config_from_name,
     get_dataset_from_name,
     BuiltinDataset,
@@ -110,7 +110,7 @@ def generate_callbacks(inp: dict, state: dict, out: dict) -> dict:
             )
             raise gr.Error(error_msg)
 
-        fig = icai.app.plotting.generate_plot(
+        fig = inverse_cai.app.plotting.generate_plot(
             votes_df,
             unfiltered_df=unfiltered_df,
             show_examples=show_individual_prefs,

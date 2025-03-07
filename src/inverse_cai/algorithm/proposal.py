@@ -5,10 +5,10 @@ import tqdm
 from loguru import logger
 import numpy as np
 
-import icai as icai
-from icai.data.utils import get_preferred_text, get_rejected_text
-from icai.experiment.config import ExpConfig
-import icai.algorithm.utils
+import inverse_cai as icai
+from inverse_cai.data.utils import get_preferred_text, get_rejected_text
+from inverse_cai.experiment.config import ExpConfig
+import inverse_cai.algorithm.utils
 
 
 def generate_principles_from_feedback(
@@ -173,7 +173,7 @@ def generate_principles_from_single_ranking(
     principles: list = []
 
     for prompt in config.alg_prompts.generator_prompts:
-        messages = icai.algorithm.utils.parse_prompt(
+        messages = inverse_cai.algorithm.utils.parse_prompt(
             prompt_str=prompt,
             prompt_kwargs=dict(
                 preferred_sample=preferred_text,
@@ -242,7 +242,7 @@ def generate_principles_from_multiple_rankings(
     )
 
     for prompt in config.alg_prompts.generator_prompts:
-        messages = icai.algorithm.utils.parse_prompt(
+        messages = inverse_cai.algorithm.utils.parse_prompt(
             prompt_str=prompt,
             prompt_kwargs=dict(
                 rankings=rankings_str,

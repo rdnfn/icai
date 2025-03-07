@@ -5,9 +5,9 @@ from loguru import logger
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import OpenAIEmbeddings
 
-import icai as icai
-from icai.experiment.config import ExpConfig
-import icai.algorithm.utils
+import inverse_cai as icai
+from inverse_cai.experiment.config import ExpConfig
+import inverse_cai.algorithm.utils
 
 
 def cluster_principles(
@@ -129,7 +129,7 @@ def summarize_cluster(
     Given a cluster of principles, summarize the cluster.
     """
 
-    messages = icai.algorithm.utils.parse_prompt(
+    messages = inverse_cai.algorithm.utils.parse_prompt(
         prompt_str=config.alg_prompts.cluster_summary_prompt,
         prompt_kwargs=dict(
             principles="\n\n".join(single_cluster_principles),

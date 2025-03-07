@@ -1,3 +1,3 @@
-import icai.experiment.config.main as main
-from icai.experiment.config.main import ExpConfig
-import icai.experiment.config.default_principles as default_principles
+import inverse_cai.experiment.config.main as main
+from inverse_cai.experiment.config.main import ExpConfig
+import inverse_cai.experiment.config.default_principles as default_principles

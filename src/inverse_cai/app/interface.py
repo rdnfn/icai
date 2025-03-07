@@ -1,17 +1,17 @@
 import gradio as gr
 import pandas as pd
 
-from icai.app.callbacks import generate_callbacks, attach_callbacks
-from icai.app.constants import (
+from inverse_cai.app.callbacks import generate_callbacks, attach_callbacks
+from inverse_cai.app.constants import (
     NONE_SELECTED_VALUE,
     VERSION,
     ALLOW_LOCAL_RESULTS,
     DEFAULT_DATASET_PATH,
 )
-from icai.app.builtin_datasets import BUILTIN_DATASETS
-from icai.app.info_texts import METHOD_INFO_TEXT, METHOD_INFO_HEADING, TLDR_TEXT
-from icai.app.metrics import METRIC_COL_OPTIONS
-from icai.app.styling import CUSTOM_CSS, THEME
+from inverse_cai.app.builtin_datasets import BUILTIN_DATASETS
+from inverse_cai.app.info_texts import METHOD_INFO_TEXT, METHOD_INFO_HEADING, TLDR_TEXT
+from inverse_cai.app.metrics import METRIC_COL_OPTIONS
+from inverse_cai.app.styling import CUSTOM_CSS, THEME
 
 
 def add_title_row(title: str):

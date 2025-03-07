@@ -1,7 +1,7 @@
 import gradio.themes.utils.fonts
 
-import icai.app.interface as interface
-from icai.app.constants import USERNAME, PASSWORD
+import inverse_cai.app.interface as interface
+from inverse_cai.app.constants import USERNAME, PASSWORD
 
 # make gradio work offline
 gradio.themes.utils.fonts.GoogleFont.stylesheet = lambda self: None

@@ -10,12 +10,14 @@ from loguru import logger
 import pandas as pd
 import alpaca_eval.main
 
-from icai.experiment.config.main import ExpConfig
+from inverse_cai.experiment.config.main import ExpConfig
 
 # get default annotators from alpacaeval_annotator_configs assets
 DEFAULT_ANNOTATORS = {
     path.name: path
-    for path in resources.files("icai.assets.alpacaeval_annotator_configs").iterdir()
+    for path in resources.files(
+        "inverse_cai.assets.alpacaeval_annotator_configs"
+    ).iterdir()
     if path.is_dir()
 }
 

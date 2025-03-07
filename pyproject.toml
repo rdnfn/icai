@@ -1,5 +1,5 @@
 [project]
-name = "icai"
+name = "inverse-cai"
 version = "0.1.0"
 authors = [
   { name="rdnfn", email="hi@arduin.io" },

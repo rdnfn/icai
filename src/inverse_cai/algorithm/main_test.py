@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 import pandas as pd
-from icai.experiment.config import ExpConfig
-from icai.algorithm.main import run
+from inverse_cai.experiment.config import ExpConfig
+from inverse_cai.algorithm.main import run
 
 
 @pytest.fixture
@@ -29,13 +29,13 @@ def mock_save_path(tmp_path):
     return tmp_path
 
 
-@patch("icai.algorithm.main.generate_principles_from_feedback")
-@patch("icai.algorithm.main.cluster_principles")
-@patch("icai.algorithm.main.get_cluster_summaries")
-@patch("icai.algorithm.main.get_votes_for_principles")
-@patch("icai.algorithm.main.filter_according_to_votes")
-@patch("icai.algorithm.main.save_to_json")
-@patch("icai.algorithm.main.print_clusters")
+@patch("inverse_cai.algorithm.main.generate_principles_from_feedback")
+@patch("inverse_cai.algorithm.main.cluster_principles")
+@patch("inverse_cai.algorithm.main.get_cluster_summaries")
+@patch("inverse_cai.algorithm.main.get_votes_for_principles")
+@patch("inverse_cai.algorithm.main.filter_according_to_votes")
+@patch("inverse_cai.algorithm.main.save_to_json")
+@patch("inverse_cai.algorithm.main.print_clusters")
 @patch("pathlib.Path.mkdir")  # Mock directory creation
 @patch("pandas.DataFrame.to_csv")  # Mock CSV writing
 def test_run_full_workflow(
@@ -134,10 +134,10 @@ def test_run_full_workflow(
     assert result["constitution"].startswith("1. ")
 
 
-@patch("icai.algorithm.main.generate_principles_from_feedback")
-@patch("icai.algorithm.main.cluster_principles")
-@patch("icai.algorithm.main.get_cluster_summaries")
-@patch("icai.algorithm.main.save_to_json")
+@patch("inverse_cai.algorithm.main.generate_principles_from_feedback")
+@patch("inverse_cai.algorithm.main.cluster_principles")
+@patch("inverse_cai.algorithm.main.get_cluster_summaries")
+@patch("inverse_cai.algorithm.main.save_to_json")
 def test_run_skip_voting(
     mock_save_to_json,
     mock_get_summaries,
@@ -190,8 +190,8 @@ def test_run_skip_voting(
     assert len(result["final_principles"]) == 2  # Should match max_principles
 
 
-@patch("icai.models.get_model")
-@patch("icai.algorithm.voting.random.choice")  # Add mock for random.choice
+@patch("inverse_cai.models.get_model")
+@patch("inverse_cai.algorithm.voting.random.choice")  # Add mock for random.choice
 def test_run_integration(
     mock_random_choice, mock_get_model, mock_feedback_df, mock_config, mock_save_path
 ):

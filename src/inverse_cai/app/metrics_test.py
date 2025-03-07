@@ -4,7 +4,7 @@ Tests for the metrics module.
 
 import pandas as pd
 import numpy as np
-from icai.app.metrics import (
+from inverse_cai.app.metrics import (
     get_agreement,
     get_acc,
     get_relevance,

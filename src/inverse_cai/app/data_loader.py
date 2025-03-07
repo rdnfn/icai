@@ -2,7 +2,7 @@ import subprocess
 import pathlib
 from loguru import logger
 
-from icai.app.constants import GITHUB_TOKEN
+from inverse_cai.app.constants import GITHUB_TOKEN
 
 
 DATA_DIR = pathlib.Path("icai-tmp-data")

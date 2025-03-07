@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import gradio as gr
 
-import icai.app.metrics
+import inverse_cai.app.metrics
 
 
 def _plot_multiple_values(
@@ -38,7 +38,7 @@ def _plot_multiple_values(
     HEIGHT_PER_PRINCIPLE = 200
     COLOR_LIST = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
 
-    full_metrics = icai.app.metrics.compute_metrics(votes_df)
+    full_metrics = inverse_cai.app.metrics.compute_metrics(votes_df)
     principles = full_metrics["principles"]
     # Create subplot layout
     fig = go.Figure()
@@ -52,7 +52,7 @@ def _plot_multiple_values(
     col_metrics = {}
     for plot_col_value in plot_col_values:
         col_df = votes_df[votes_df[plot_col_name] == plot_col_value]
-        col_metrics[plot_col_value] = icai.app.metrics.compute_metrics(col_df)[
+        col_metrics[plot_col_value] = inverse_cai.app.metrics.compute_metrics(col_df)[
             "metrics"
         ]
         col_metrics[plot_col_value]["data_count"] = len(

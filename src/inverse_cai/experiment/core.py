@@ -14,8 +14,8 @@ import numpy as np
 import langchain.cache
 import langchain.globals
 
-import icai
-from icai.experiment.config.main import ExpConfig
+import inverse_cai
+from inverse_cai.experiment.config.main import ExpConfig
 
 
 cs = ConfigStore.instance()
@@ -94,7 +94,7 @@ def setup_data(
     data_start_index: int,
 ) -> pd.DataFrame:
 
-    data = icai.data.loader.standard.load(data_path, switch_labels=invert_labels)
+    data = inverse_cai.data.loader.standard.load(data_path, switch_labels=invert_labels)
 
     # Limit the number of samples
     if data_len is None:
@@ -222,7 +222,7 @@ def run(cfg: DictConfig):
         num_principles_per_sampling_step = cfg.s1_num_principles_per_sampling_step
 
     if cfg.generate_constitution:
-        results = icai.algorithm.run(
+        results = inverse_cai.algorithm.run(
             save_path=results_path,
             feedback=data,
             num_principles_per_sampling_step=num_principles_per_sampling_step,
@@ -266,7 +266,7 @@ def run(cfg: DictConfig):
         logger.info("Running LLM annotation stage")
 
         if not cfg.annotator.alpaca_eval.test_data_only:
-            annotation_results = icai.annotators.alpaca_eval.annotate(
+            annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
                 config=cfg,
                 data=data,
                 constitution=constitution,
@@ -282,7 +282,7 @@ def run(cfg: DictConfig):
                     logger.info(
                         f"Running LLM annotation on test data {i}/{len(test_data)}"
                     )
-                    test_annotation_results = icai.annotators.alpaca_eval.annotate(
+                    test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
                         config=cfg,
                         data=test_data_single,
                         constitution=constitution,
@@ -297,7 +297,7 @@ def run(cfg: DictConfig):
                     )
             else:
                 logger.info("Running LLM annotation on test data")
-                test_annotation_results = icai.annotators.alpaca_eval.annotate(
+                test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
                     config=cfg,
                     data=test_data,
                     constitution=constitution,
