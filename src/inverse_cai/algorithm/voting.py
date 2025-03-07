@@ -7,11 +7,11 @@ from pathlib import Path
 from loguru import logger
 from joblib import Parallel, delayed
 
-import inverse_cai as icai
-from inverse_cai.data.utils import get_preferred_text, get_rejected_text
-from inverse_cai.experiment.config import ExpConfig
-import inverse_cai.algorithm.utils
-from inverse_cai.algorithm.cache import VoteCache
+import icai as icai
+from icai.data.utils import get_preferred_text, get_rejected_text
+from icai.experiment.config import ExpConfig
+import icai.algorithm.utils
+from icai.algorithm.cache import VoteCache
 
 
 def get_votes_for_principles(
@@ -165,7 +165,7 @@ def get_preference_vote_for_single_text(
     summary_key_mapping = {i: k for i, k in enumerate(summaries.keys())}
     integer_summaries = {i: v for i, v in enumerate(summaries.values())}
 
-    messages = inverse_cai.algorithm.utils.parse_prompt(
+    messages = icai.algorithm.utils.parse_prompt(
         prompt_str=config.alg_prompts.voting_prompt,
         prompt_kwargs=dict(
             sample_a=sample_a,

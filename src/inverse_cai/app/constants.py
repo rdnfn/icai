@@ -5,7 +5,7 @@ import os
 # App/package version
 import importlib.metadata
 
-VERSION = importlib.metadata.version("inverse_cai")
+VERSION = importlib.metadata.version("icai")
 
 DEFAULT_DATASET_PATH = "exp/outputs/prism_v2"
 

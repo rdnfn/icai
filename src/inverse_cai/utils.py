@@ -1,4 +1,4 @@
-""" Utility functions for inverse_cai module. """
+"""Utility functions for icai module."""
 
 import pathlib
 import sys

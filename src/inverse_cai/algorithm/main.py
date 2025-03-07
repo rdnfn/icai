@@ -4,19 +4,19 @@ import random
 import shutil
 from pathlib import Path
 
-from inverse_cai.algorithm.clustering import (
+from icai.algorithm.clustering import (
     get_cluster_summaries,
     print_clusters,
     cluster_principles,
 )
-from inverse_cai.algorithm.proposal import generate_principles_from_feedback
-from inverse_cai.algorithm.voting import get_votes_for_principles
-from inverse_cai.algorithm.filter import filter_according_to_votes
-from inverse_cai.utils import save_to_json
-from inverse_cai.experiment.config import ExpConfig
-from inverse_cai.experiment.config.default_principles import DEFAULT_PRINCIPLES
-import inverse_cai.visualisation
-import inverse_cai.experiment
+from icai.algorithm.proposal import generate_principles_from_feedback
+from icai.algorithm.voting import get_votes_for_principles
+from icai.algorithm.filter import filter_according_to_votes
+from icai.utils import save_to_json
+from icai.experiment.config import ExpConfig
+from icai.experiment.config.default_principles import DEFAULT_PRINCIPLES
+import icai.visualisation
+import icai.experiment
 
 
 def run(
@@ -167,7 +167,7 @@ def run(
 
         try:
             # visualise
-            inverse_cai.visualisation.plot_approval_bars(
+            icai.visualisation.plot_approval_bars(
                 categories=list(summaries.values()),
                 votes=list(combined_votes.values()),
                 path=save_path / "042_principle_approval_votes.png",

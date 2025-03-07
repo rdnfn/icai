@@ -1,7 +1,7 @@
 """Tests for the filtering module."""
 
 import pytest
-from inverse_cai.algorithm.filter import filter_according_to_votes
+from icai.algorithm.filter import filter_according_to_votes
 
 
 @pytest.fixture

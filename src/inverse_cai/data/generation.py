@@ -6,7 +6,7 @@ import pandas as pd
 from loguru import logger
 from langchain_core.messages import HumanMessage, SystemMessage
 
-import inverse_cai as icai
+import icai as icai
 
 DIVERSITY_LIST = [
     "cup",

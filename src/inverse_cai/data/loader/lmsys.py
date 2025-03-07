@@ -1,4 +1,4 @@
-"""Parse and process data for inverse_cai."""
+"""Parse and process data for icai."""
 
 import ast
 import pandas as pd

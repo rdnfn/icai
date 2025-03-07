@@ -1,3 +1,3 @@
-import inverse_cai.data.loader.anthropic as anthropic
-import inverse_cai.data.loader.lmsys as lmsys
-import inverse_cai.data.loader.standard as standard
+import icai.data.loader.anthropic as anthropic
+import icai.data.loader.lmsys as lmsys
+import icai.data.loader.standard as standard

@@ -2,8 +2,8 @@
 
 import plotly.graph_objects as go
 
-from inverse_cai.app.constants import COLORS_DICT
-from inverse_cai.app.plotting.utils import (
+from icai.app.constants import COLORS_DICT
+from icai.app.plotting.utils import (
     get_string_with_breaks,
     merge_into_columns,
     HOVER_TEMPLATE,

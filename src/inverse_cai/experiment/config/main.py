@@ -6,8 +6,8 @@ from hydra.core.hydra_config import HydraConfig
 import pandas as pd
 from loguru import logger
 
-import inverse_cai
-from inverse_cai.experiment.config.prompts import PromptConfig
+import icai
+from icai.experiment.config.prompts import PromptConfig
 
 UPDATED_HYDRA_DEFAULTS = {
     "job_logging": {
@@ -32,7 +32,7 @@ class AlpacaEvalAnnotatorConfig:
         None  # constitution to use for AI judgment
     )
     is_single_annotator: bool = False  # whether to use a single annotator (or four)
-    # for available default annotators, see inverse_cai/assets/alpacaeval_annotator_configs,
+    # for available default annotators, see icai/assets/alpacaeval_annotator_configs,
     # for these you can just use the name of the annotator, e.g.
     # "gpt4omini_fn_constitutional_base_neutral_v2"
     # for custom annotators, you can use the path to the annotator config file, e.g.

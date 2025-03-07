@@ -1,10 +1,10 @@
 import pytest
 import numpy as np
 from unittest.mock import Mock, patch
-from inverse_cai.models import get_token_probs, NULL_LOGPROB_VALUE
+from icai.models import get_token_probs, NULL_LOGPROB_VALUE
 
 
-@patch("inverse_cai.models.logger")
+@patch("icai.models.logger")
 def test_get_token_probs(mock_logger):
     # Mock the model's generate method
     mock_model = Mock()
@@ -44,7 +44,7 @@ def test_get_token_probs(mock_logger):
     assert errors == []
 
 
-@patch("inverse_cai.models.logger")
+@patch("icai.models.logger")
 def test_get_token_probs_with_missing_token(mock_logger):
     # Mock the model's generate method
     mock_model = Mock()

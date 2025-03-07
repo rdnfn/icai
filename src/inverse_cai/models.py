@@ -5,7 +5,7 @@ import numpy as np
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_community.callbacks import get_openai_callback
-import inverse_cai.local_secrets
+import icai.local_secrets
 from loguru import logger
 
 NULL_LOGPROB_VALUE = -1000000

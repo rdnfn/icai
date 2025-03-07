@@ -5,8 +5,8 @@ import plotly.graph_objects as go
 import pandas as pd
 from loguru import logger
 
-import inverse_cai.app.metrics
-from inverse_cai.app.constants import (
+import icai.app.metrics
+from icai.app.constants import (
     NONE_SELECTED_VALUE,
     PRINCIPLE_SHORT_LENGTH,
     FIG_PROPORTIONS_X,
@@ -19,8 +19,8 @@ from inverse_cai.app.constants import (
     PLOTLY_MODEBAR_POSSIBLE_VALUES,
     get_fig_proportions_y,
 )
-from inverse_cai.app.plotting.single import _plot_examples, _plot_aggregated
-from inverse_cai.app.plotting.multiple import _plot_multiple_values
+from icai.app.plotting.single import _plot_examples, _plot_aggregated
+from icai.app.plotting.multiple import _plot_multiple_values
 
 # based on official plotly example
 # https://plotly.com/python/horizontal-bar-charts/
@@ -83,8 +83,8 @@ def _generate_hbar_chart(
         ]
 
     logger.debug("Computing metrics...")
-    full_metrics: dict = inverse_cai.app.metrics.compute_metrics(unfiltered_df)
-    metrics: dict = inverse_cai.app.metrics.compute_metrics(
+    full_metrics: dict = icai.app.metrics.compute_metrics(unfiltered_df)
+    metrics: dict = icai.app.metrics.compute_metrics(
         votes_df, baseline_metrics=full_metrics
     )
     principles = metrics["principles"]
@@ -172,7 +172,7 @@ def _generate_hbar_chart(
             value,
             label,
             hovertext,
-        ) in inverse_cai.app.metrics.get_metric_cols_by_principle(
+        ) in icai.app.metrics.get_metric_cols_by_principle(
             principle,
             metrics,
             shown_metric_names,
@@ -244,7 +244,7 @@ def _generate_hbar_chart(
 
     # add sorting menu
     update_method = "relayout"  # "update"  # or "relayout"
-    options = inverse_cai.app.metrics.get_ordering_options(
+    options = icai.app.metrics.get_ordering_options(
         metrics, shown_metric_names, initial=default_ordering_metric
     )
     fig.update_layout(
