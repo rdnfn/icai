@@ -6,7 +6,7 @@ authors = [
   { name="timokau" },
 ]
 description = "Inverse Constitutional AI"
-readme = "README.md"
+readme = "docs/pypi_readme.md"
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
