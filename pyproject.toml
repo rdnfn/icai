@@ -1,6 +1,6 @@
 [project]
 name = "inverse-cai"
-version = "0.1.0"
+version = "0.1.3"
 authors = [
   { name="rdnfn", email="hi@arduin.io" },
   { name="timokau" },
@@ -34,6 +34,7 @@ dependencies = [
 dev = [
     "pytest >=6.0",
     "black ==24.10.0",
+    "bump-my-version",
 ]
 app = [
     "gradio",
@@ -67,3 +68,25 @@ markers = [
 [tool.black]
 line-length = 88
 target-version = ['py311']
+
+[tool.bumpversion]
+current_version = "0.1.3"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+serialize = ["{major}.{minor}.{patch}"]
+search = "{current_version}"
+replace = "{new_version}"
+regex = false
+ignore_missing_version = false
+ignore_missing_files = false
+tag = true
+sign_tags = false
+tag_name = "v{new_version}"
+tag_message = "Bump version: {current_version} → {new_version}"
+allow_dirty = false
+commit = true
+message = "Bump version: {current_version} → {new_version}"
+moveable_tags = []
+commit_args = ""
+setup_hooks = []
+pre_commit_hooks = []
+post_commit_hooks = []
