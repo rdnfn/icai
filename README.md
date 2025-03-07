@@ -16,7 +16,7 @@ This repository contains the official implementation of the *Inverse Constitutio
 
 1. Pip install the package (for development installation see [here](#dev-installation))
     ```
-    pip install inverse_cai
+    pip install inverse-cai
     ```
 2. Set up API secrets: inside the main directory of the cloned repo (or wherever you like really) set up a `secrets.toml` file like below. You only need to include keys for APIs you want to use.
     ```toml
