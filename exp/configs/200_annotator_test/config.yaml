@@ -1,0 +1,10 @@
+data_path: "data/processed/example/example.csv"
+
+annotator:
+  alpaca_eval:
+    skip: true
+  fn_annotators:
+    - function: "inverse_cai.annotators.dummy.annotate_perfectly"
+      function_module_to_import: "inverse_cai.annotators.dummy"
+      function_kwargs: {}
+    - function: "inverse_cai.annotators.dummy.annotate_perfectly"

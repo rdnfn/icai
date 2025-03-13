@@ -6,7 +6,7 @@ import pandas as pd
 from loguru import logger
 from langchain_core.messages import HumanMessage, SystemMessage
 
-import inverse_cai as icai
+import inverse_cai.models
 
 DIVERSITY_LIST = [
     "cup",
@@ -73,7 +73,7 @@ def generate_data_set(
         columns=["preferred_text", "rejected_text", "tie", "ground_truth_principle"]
     )
 
-    model = icai.models.get_model(model_name)
+    model = inverse_cai.models.get_model(model_name)
 
     for _ in tqdm.tqdm(range(num_comparisons // len(principles))):
         for principle in principles:

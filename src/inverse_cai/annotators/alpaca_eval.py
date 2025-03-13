@@ -137,6 +137,9 @@ def generate_tmp_annotator_config(
 def create_tmp_data_file(data: pd.DataFrame, tmp_files_path: str):
     """Create temporary data file of output data to annotate in AlpacaEval format."""
 
+    # ensure tmp_files_path exists
+    pathlib.Path(tmp_files_path).mkdir(parents=True, exist_ok=True)
+
     tmp_data_path = pathlib.Path(tmp_files_path) / "alpaca_style_data.json"
 
     # generating a data frame with columns: "instruction", "output_1",
@@ -252,4 +255,11 @@ def annotate(
 
     logger.info("All annotations completed.")
 
-    return evaluator_results
+    # create standard annotator df from evaluator_results
+    standard_results = evaluator_results.copy()
+    standard_results.rename(columns={"Human agreement": "agreement"}, inplace=True)
+    standard_results["annotator"] = standard_results.index
+    standard_results = standard_results[["annotator", "agreement"]]
+    standard_results.reset_index(drop=True, inplace=True)
+
+    return standard_results, evaluator_results

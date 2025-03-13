@@ -5,7 +5,7 @@ from loguru import logger
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import OpenAIEmbeddings
 
-import inverse_cai as icai
+import inverse_cai.models
 from inverse_cai.experiment.config import ExpConfig
 import inverse_cai.algorithm.utils
 
@@ -136,7 +136,7 @@ def summarize_cluster(
         ),
     )
 
-    model = icai.models.get_model(model_name)
+    model = inverse_cai.models.get_model(model_name)
 
     summary = model.invoke(messages).content
     return summary

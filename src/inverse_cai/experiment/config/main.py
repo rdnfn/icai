@@ -49,7 +49,19 @@ class AlpacaEvalAnnotatorConfig:
             # non-constitutionalannotators to test against
         ]
     )
-    test_data_only: bool = False  # whether to only annotate the test data
+
+
+@dataclass
+class FunctionAnnotatorConfig:
+    """Configuration for a annotator based on a Python function."""
+
+    function: Optional[str] = (
+        None  # string of the function path, e.g. "package.my_function"
+    )
+    function_module_to_import: Optional[str] = (
+        None  # string of the module to import, e.g. "package", if None will use the function path as the module
+    )
+    function_kwargs: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -59,7 +71,64 @@ class AnnotatorConfig:
     alpaca_eval: AlpacaEvalAnnotatorConfig = field(
         default_factory=AlpacaEvalAnnotatorConfig
     )
-    skip: bool = False  # whether to skip the AI judgment stage
+    fn_annotators: list[FunctionAnnotatorConfig] = field(default_factory=list)
+    skip: bool = False  # whether to skip the AI judgment stage entirely
+    test_data_only: bool = False  # whether to only annotate the test data
+
+    # DEPRECATED ALPACA EVAL CONFIG
+    # TODO: remove these after v0.3.0
+    create_other_annotator_tmp_configs: bool = True
+    constitution: Optional[Union[str, bool]] = None
+    is_single_annotator: bool = False
+    base_constitutional_annotator_configs: list[str] = field(default_factory=lambda: [])
+    other_annotator_configs: list[str] = field(default_factory=lambda: [])
+
+    def __post_init__(self):
+        """Check if deprecated config values are being used."""
+        self._check_deprecated_config()
+
+    def _check_deprecated_config(self):
+        """Check if deprecated configuration options are set to non-default values."""
+        # Map of deprecated fields to their default values and replacements
+        deprecated_fields = {
+            "create_other_annotator_tmp_configs": (
+                True,
+                "alpaca_eval.create_other_annotator_tmp_configs",
+            ),
+            "constitution": (None, "alpaca_eval.constitution"),
+            "is_single_annotator": (False, "alpaca_eval.is_single_annotator"),
+            "base_constitutional_annotator_configs": (
+                [],
+                "alpaca_eval.base_constitutional_annotator_configs",
+            ),
+            "other_annotator_configs": ([], "alpaca_eval.other_annotator_configs"),
+        }
+
+        warnings = []
+
+        # Check each deprecated field
+        for field, (default_value, replacement) in deprecated_fields.items():
+            current_value = getattr(self, field)
+
+            # Check if this is a list that should be empty
+            if isinstance(default_value, list) and current_value != default_value:
+                warnings.append(f"{field} is deprecated, use {replacement} instead")
+            # Check other types of values
+            elif not isinstance(default_value, list) and current_value != default_value:
+                warnings.append(
+                    f"annotator.{field} is deprecated, use annotator.{replacement} instead."
+                )
+
+        # Log warnings if any deprecated config options are being used
+        if warnings:
+            for warning in warnings:
+                logger.error(f"DEPRECATED CONFIG: {warning}")
+            logger.error(
+                "These deprecated config options do not have any effect anymore and will be removed in the future."
+            )
+            raise ValueError(
+                "These deprecated config options found, please update your config file as suggested in Error log above."
+            )
 
 
 @dataclass
@@ -96,7 +165,7 @@ class ExpConfig:
 
     ## Algorithm config
     # general
-    alg_model: str = "openai/gpt-3.5-turbo-0125"  # model to use for the algorithm
+    alg_model: str = "openai/gpt-4o-mini-2024-07-18"  # model to use for the algorithm
     alg_model_cache: bool = False  # whether to use the cache for the model
     generate_constitution: bool = (
         True  # whether to generate a constitution using the algorithm

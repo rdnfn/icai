@@ -12,7 +12,7 @@ from inverse_cai.algorithm.voting import (
 from inverse_cai.experiment.core import ExpConfig
 
 
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
 @patch("inverse_cai.algorithm.voting.random.choice")
 def test_get_preference_vote_for_single_text_flipped(
     mock_random_choice, mock_get_model
@@ -29,12 +29,13 @@ def test_get_preference_vote_for_single_text_flipped(
         "rejected_sample",
         {1: "suma", 2: "sumb"},
         config=ExpConfig(),
+        model_name="openai/gpt-4o-mini-2024-07-18",
     )
 
     assert result == {1: False, 2: True}
 
 
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
 @patch("inverse_cai.algorithm.voting.random.choice")
 def test_get_preference_vote_for_single_text_not_flipped(
     mock_random_choice, mock_get_model
@@ -50,12 +51,13 @@ def test_get_preference_vote_for_single_text_not_flipped(
         "rejected_sample",
         {1: "suma", 2: "sumb"},
         config=ExpConfig(),
+        model_name="openai/gpt-4o-mini-2024-07-18",
     )
 
     assert result == {1: True, 2: False}
 
 
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
 @patch("inverse_cai.algorithm.voting.random.choice")
 def test_get_preference_vote_for_single_text_invalid_vote(
     mock_random_choice, mock_get_model
@@ -71,11 +73,12 @@ def test_get_preference_vote_for_single_text_invalid_vote(
         "rejected_sample",
         {1: "suma", 2: "sumb"},
         config=ExpConfig(),
+        model_name="openai/gpt-4o-mini-2024-07-18",
     )
     assert return_val == {1: "invalid", 2: None}
 
 
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
 def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
     """Test preference voting when invalid JSON is returned."""
     mock_model = MagicMock()
@@ -87,6 +90,7 @@ def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
         "rejected_sample",
         {1: "suma", 2: "sumb"},
         config=ExpConfig(),
+        model_name="openai/gpt-4o-mini-2024-07-18",
     )
 
     assert all(
@@ -94,7 +98,7 @@ def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
     ), "Expected all votes to be None due to invalid JSON"
 
 
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
 def test_get_preference_vote_for_single_text_all_keys_present(mock_get_model):
     """Test that all summary keys are present in the preference voting result."""
     mock_model = MagicMock()
@@ -107,6 +111,7 @@ def test_get_preference_vote_for_single_text_all_keys_present(mock_get_model):
         "rejected_sample",
         summaries,
         config=ExpConfig(),
+        model_name="openai/gpt-4o-mini-2024-07-18",
     )
 
     assert set(result.keys()) == set(
@@ -127,7 +132,7 @@ def test_clean_vote_json():
     ), "The clean_vote_json function did not clean the JSON as expected"
 
 
-@patch("inverse_cai.algorithm.voting.icai.models.get_model")
+@patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
 def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model):
     """Test to ensure unexpected vote values are counted as invalid in preference voting."""
     mock_model = MagicMock()
@@ -139,6 +144,7 @@ def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model):
         "rejected_sample",
         {1: "suma", 2: "sumb"},
         config=ExpConfig(),
+        model_name="openai/gpt-4o-mini-2024-07-18",
     )
 
     assert all(

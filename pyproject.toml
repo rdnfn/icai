@@ -1,12 +1,12 @@
 [project]
 name = "inverse-cai"
-version = "0.1.3"
+version = "0.2.0"
 authors = [
   { name="rdnfn", email="hi@arduin.io" },
-  { name="timokau" },
+  { name="timokau", email="" },
 ]
-description = "Inverse Constitutional AI"
-readme = "README.md"
+description = "Inverse Constitutional AI (ICAI) pipeline for interpreting pairwise preferences"
+readme = "docs/pypi_readme.md"
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -70,7 +70,7 @@ line-length = 88
 target-version = ['py311']
 
 [tool.bumpversion]
-current_version = "0.1.3"
+current_version = "0.2.0"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 search = "{current_version}"
@@ -78,7 +78,7 @@ replace = "{new_version}"
 regex = false
 ignore_missing_version = false
 ignore_missing_files = false
-tag = true
+tag = false
 sign_tags = false
 tag_name = "v{new_version}"
 tag_message = "Bump version: {current_version} → {new_version}"
