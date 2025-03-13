@@ -53,13 +53,27 @@ class AlpacaEvalAnnotatorConfig:
 
 
 @dataclass
+class FunctionAnnotatorConfig:
+    """Configuration for a annotator based on a Python function."""
+
+    function: Optional[str] = (
+        None  # string of the function path, e.g. "package.my_function"
+    )
+    function_module_to_import: Optional[str] = (
+        None  # string of the module to import, e.g. "package", if None will use the function path as the module
+    )
+    function_kwargs: dict = field(default_factory=dict)
+
+
+@dataclass
 class AnnotatorConfig:
     """Configuration for the AI annotator."""
 
     alpaca_eval: AlpacaEvalAnnotatorConfig = field(
         default_factory=AlpacaEvalAnnotatorConfig
     )
-    skip: bool = False  # whether to skip the AI judgment stage
+    fn_annotators: list[FunctionAnnotatorConfig] = field(default_factory=list)
+    skip: bool = False  # whether to skip the AI judgment stage entirely
 
 
 @dataclass
