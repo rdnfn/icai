@@ -11,7 +11,7 @@ import pytest
         [
             "s0_added_principles_to_test=[test_principle1,test_principle2]",
             "s0_added_standard_principles_to_test=[v1,v2]",
-            "annotator.fn_annotators=\"[{function:'inverse_cai.annotators.dummy.annotate_perfectly'}]\"",
+            "annotator.fn_annotators=[{function:'inverse_cai.annotators.dummy.annotate_perfectly'}]",
         ],
     ],
 )
