@@ -255,4 +255,11 @@ def annotate(
 
     logger.info("All annotations completed.")
 
-    return evaluator_results
+    # create standard annotator df from evaluator_results
+    standard_results = evaluator_results.copy()
+    standard_results.rename(columns={"Human agreement": "agreement"}, inplace=True)
+    standard_results["annotator"] = standard_results.index
+    standard_results = standard_results[["annotator", "agreement"]]
+    standard_results.reset_index(drop=True, inplace=True)
+
+    return standard_results, evaluator_results

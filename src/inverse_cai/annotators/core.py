@@ -27,44 +27,47 @@ def annotate(
         results_path (pathlib.Path): The path to the results.
     """
     if not cfg.annotator.alpaca_eval.test_data_only:
-        annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
-            config=cfg,
-            data=data,
-            constitution=constitution,
-            is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
-            tmp_files_path=tmp_path / "trainset",
+        annotation_results, alpaca_eval_results = (
+            inverse_cai.annotators.alpaca_eval.annotate(
+                config=cfg,
+                data=data,
+                constitution=constitution,
+                is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
+                tmp_files_path=tmp_path / "trainset",
+            )
         )
 
         logger.info(f"Results table (training data):\n{annotation_results}")
-        annotation_results.to_csv(results_path / "092_results_training.csv")
+        alpaca_eval_results.to_csv(
+            results_path / "092_full_alpacaeval_results_training.csv"
+        )
+
+        annotation_results.to_csv(results_path / "094_results_training.csv")
     if test_data is not None:
-        if isinstance(test_data, list):
-            for i, test_data_single in enumerate(test_data):
-                logger.info(f"Running LLM annotation on test data {i}/{len(test_data)}")
-                test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
+        # ensure we can iterate over the test data, even if it's a single dataframe
+        if not isinstance(test_data, list):
+            test_data = [test_data]
+
+        for i, test_data_single in enumerate(test_data):
+            logger.info(f"Running LLM annotation on test data {i}/{len(test_data)}")
+            test_annotation_results, alpaca_eval_results = (
+                inverse_cai.annotators.alpaca_eval.annotate(
                     config=cfg,
                     data=test_data_single,
                     constitution=constitution,
                     is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
                     tmp_files_path=tmp_path / f"testset_{i}",
                 )
-                logger.info(
-                    f"Results table (test data {i}/{len(test_data)}):\n{test_annotation_results}"
-                )
-                test_annotation_results.to_csv(
-                    results_path / f"093_results_testset_{i}.csv"
-                )
-        else:
-            logger.info("Running LLM annotation on test data")
-            test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
-                config=cfg,
-                data=test_data,
-                constitution=constitution,
-                is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
-                tmp_files_path=tmp_path / "testset",
             )
-            logger.info(f"Results table (test data):\n{test_annotation_results}")
-            test_annotation_results.to_csv(results_path / "093_results_testset.csv")
+            logger.info(
+                f"Results table (test data {i}/{len(test_data)}):\n{test_annotation_results}"
+            )
+            alpaca_eval_results.to_csv(
+                results_path / f"093_full_alpacaeval_results_testset_{i}.csv"
+            )
+            test_annotation_results.to_csv(
+                results_path / f"095_results_testset_{i}.csv"
+            )
     else:
         if cfg.annotator.alpaca_eval.test_data_only:
             logger.warning(
