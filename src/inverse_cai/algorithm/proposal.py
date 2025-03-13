@@ -5,7 +5,7 @@ import tqdm
 from loguru import logger
 import numpy as np
 
-import inverse_cai as icai
+import inverse_cai.models
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
 from inverse_cai.experiment.config import ExpConfig
 import inverse_cai.algorithm.utils
@@ -169,7 +169,7 @@ def generate_principles_from_single_ranking(
     assert num_principles > 0, "Number of principles must be greater than 0"
 
     # get the model
-    model = icai.models.get_model(model_name)
+    model = inverse_cai.models.get_model(model_name)
     principles: list = []
 
     for prompt in config.alg_prompts.generator_prompts:
@@ -229,7 +229,7 @@ def generate_principles_from_multiple_rankings(
     assert len(preferred_texts) > 0, "At least one ranking must be provided"
 
     # get the model
-    model = icai.models.get_model(model_name)
+    model = inverse_cai.models.get_model(model_name)
     principles: list = []
 
     rankings_str = "\n".join(
