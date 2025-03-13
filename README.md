@@ -129,7 +129,7 @@ pytest ./src
 This doesn't do any meaningful experimental work but allows running the experiment script for testing purposes.
 
 ```
-icai-exp generate_constitution=false annotator.constitution=null annotator.other_annotator_configs="[]"
+icai-exp generate_constitution=false annotator.alpaca_eval.constitution=null annotator.alpaca_eval.other_annotator_configs="[]"
 ```
 
 ### Creating a new release
