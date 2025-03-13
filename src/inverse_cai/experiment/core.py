@@ -269,6 +269,7 @@ def run(cfg: DictConfig):
         inverse_cai.annotators.annotate(
             cfg=cfg,
             data=data,
+            icai_results_dict=results,
             test_data=test_data,
             constitution=constitution,
             tmp_path=tmp_path,

@@ -49,7 +49,6 @@ class AlpacaEvalAnnotatorConfig:
             # non-constitutionalannotators to test against
         ]
     )
-    test_data_only: bool = False  # whether to only annotate the test data
 
 
 @dataclass
@@ -74,6 +73,7 @@ class AnnotatorConfig:
     )
     fn_annotators: list[FunctionAnnotatorConfig] = field(default_factory=list)
     skip: bool = False  # whether to skip the AI judgment stage entirely
+    test_data_only: bool = False  # whether to only annotate the test data
 
 
 @dataclass
