@@ -93,6 +93,31 @@ icai-exp -cd ./exp/configs/001_synthetic_orthogonal
 > **To re-run paper experiments**:
 > Look at the README file inside the `exp/configs`. This file gives detailed instructions on which configurations to run, and how to generate the corresponding plots.
 
+### Adding your own annotator functions
+
+This implementation supports adding your own annotator functions. The functions should have the following kwargs and outputs:
+
+```python
+def some_annotator(data: pd.DataFrame, icai_results_dict: dict) -> pd.DataFrame:
+    """Annotate the data using some method.
+
+    Args:
+        data (pd.DataFrame): The data to annotate. At least has columns "text_a", "text_b", "preferred_text"
+        icai_results_dict (dict): The results of the ICAI algorithm. Dictionary with the following keys:
+            - "feedback": pd.DataFrame, original data
+            - "clusters": dict, the clusters
+            - "summaries": dict, the cluster names (summaries)
+            - "combined_votes": pd.DataFrame, the combined votes from the annotator
+            - "filtered_principles": list, the filtered principles from the ICAI algorithm
+            - "final_principles": list, the final principles from the ICAI algorithm
+            - "constitution": str, the constitution
+    Returns:
+        pd.DataFrame: The annotated data with column "annotation" added, column with values "text_a", "text_b", "tie", "irrelevant", or "invalid".
+    """
+```
+
+
+
 ### Using cache to continue aborted experiment
 
 **[Experimental feature]** Sometimes long-running (expensive) ICAI experiments get interrupted. Instead of requiring a full re-run, the ICAI package supports continuing certain experiments after they were interupted. This feature is only available for the voting stage of experiments: only for experiments that do not generate principles but use a pre-existing principle list to test.
