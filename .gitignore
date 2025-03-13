@@ -193,3 +193,5 @@ wandb/
 results_evaluators
 .langchain.db
 client_configs/client_configs.yaml
+
+pairrm_cache
