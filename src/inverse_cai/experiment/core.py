@@ -16,6 +16,7 @@ import langchain.globals
 
 import inverse_cai
 from inverse_cai.experiment.config.main import ExpConfig
+import inverse_cai.annotators
 
 
 cs = ConfigStore.instance()
@@ -265,53 +266,14 @@ def run(cfg: DictConfig):
     else:
         logger.info("Running LLM annotation stage")
 
-        if not cfg.annotator.alpaca_eval.test_data_only:
-            annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
-                config=cfg,
-                data=data,
-                constitution=constitution,
-                is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
-                tmp_files_path=tmp_path / "trainset",
-            )
-
-            logger.info(f"Results table (training data):\n{annotation_results}")
-            annotation_results.to_csv(results_path / "092_results_training.csv")
-        if test_data is not None:
-            if isinstance(test_data, list):
-                for i, test_data_single in enumerate(test_data):
-                    logger.info(
-                        f"Running LLM annotation on test data {i}/{len(test_data)}"
-                    )
-                    test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
-                        config=cfg,
-                        data=test_data_single,
-                        constitution=constitution,
-                        is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
-                        tmp_files_path=tmp_path / f"testset_{i}",
-                    )
-                    logger.info(
-                        f"Results table (test data {i}/{len(test_data)}):\n{test_annotation_results}"
-                    )
-                    test_annotation_results.to_csv(
-                        results_path / f"093_results_testset_{i}.csv"
-                    )
-            else:
-                logger.info("Running LLM annotation on test data")
-                test_annotation_results = inverse_cai.annotators.alpaca_eval.annotate(
-                    config=cfg,
-                    data=test_data,
-                    constitution=constitution,
-                    is_single_annotator=cfg.annotator.alpaca_eval.is_single_annotator,
-                    tmp_files_path=tmp_path / "testset",
-                )
-                logger.info(f"Results table (test data):\n{test_annotation_results}")
-                test_annotation_results.to_csv(results_path / "093_results_testset.csv")
-        else:
-            if cfg.annotator.alpaca_eval.test_data_only:
-                logger.warning(
-                    "No test data provided, but `test_data_only` is set to True. "
-                    "No test data will be annotated."
-                )
+        inverse_cai.annotators.annotate(
+            cfg=cfg,
+            data=data,
+            constitution=constitution,
+            tmp_path=tmp_path,
+            test_data=test_data,
+            results_path=results_path,
+        )
 
     logger.warning(
         "Usage guidance: ICAI can only provide information about specific preference "
