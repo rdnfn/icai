@@ -1,21 +1,28 @@
-data_path: "./data/processed/anthropic/anthropic_helpful_base_train_10000canonrand_balanced.csv"
+data_path: ./data/processed/anthropic/anthropic_helpful_base_train_10000canonrand_balanced.csv
 data_len: 100
 test_data_path:
-  - "./data/processed/anthropic/anthropic_harmless_base_train_10000canonrand_balanced.csv"
-  - "./data/processed/anthropic/anthropic_helpful_base_train_10000canonrand_balanced.csv"
-test_data_len: [1000, 1000]
-test_data_invert_labels: [false, false]
-test_data_start_index: [100, 100]
-alg_model: "openai/gpt-4o-mini-2024-07-18"
+- ./data/processed/anthropic/anthropic_harmless_base_train_10000canonrand_balanced.csv
+- ./data/processed/anthropic/anthropic_helpful_base_train_10000canonrand_balanced.csv
+test_data_len:
+- 1000
+- 1000
+test_data_invert_labels:
+- false
+- false
+test_data_start_index:
+- 100
+- 100
+alg_model: openai/gpt-4o-mini-2024-07-18
 s1_num_principles_per_instance: 2
 s2_num_clusters: 160
 s3_max_principles: 5
 annotator:
-  is_single_annotator: true
-  base_constitutional_annotator_configs:
+  alpaca_eval:
+    is_single_annotator: true
+    base_constitutional_annotator_configs:
     - data/annotator_configs/gpt4omini_fn_constitutional_base_neutral_v2
     - data/annotator_configs/gpt4omini_fn_constitutional_base_neutral_v3_mt
-  other_annotator_configs:
+    other_annotator_configs:
     - data/annotator_configs/alpaca_eval_gpt4omini_fn_noinstruction
     - data/annotator_configs/alpaca_eval_gpt4omini_fn_noinstruction_v2_mt
 alg_prompts:

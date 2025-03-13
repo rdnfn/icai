@@ -7,10 +7,10 @@ from pathlib import Path
 from loguru import logger
 from joblib import Parallel, delayed
 
-import inverse_cai as icai
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
 from inverse_cai.experiment.config import ExpConfig
 import inverse_cai.algorithm.utils
+import inverse_cai.models
 from inverse_cai.algorithm.cache import VoteCache
 
 
@@ -143,7 +143,7 @@ def get_preference_vote_for_single_text(
     rejected_sample,
     summaries,
     config: ExpConfig,
-    model_name="openai/gpt-3.5-turbo",
+    model_name: str,
 ):
     """
     Given a dataframe of conversations, let the model votes according to each proposed principles.
@@ -174,7 +174,7 @@ def get_preference_vote_for_single_text(
         ),
     )
 
-    model = icai.models.get_model(model_name)
+    model = inverse_cai.models.get_model(model_name)
 
     try:
         vote = model.invoke(messages).content

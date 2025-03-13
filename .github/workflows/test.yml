@@ -4,6 +4,10 @@ on:
   pull_request:
     branches:
       - main
+  workflow_call:
+      secrets:
+        OPENAI_API_KEY:
+          required: true
 
 jobs:
   test:

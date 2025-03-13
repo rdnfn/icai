@@ -16,7 +16,7 @@ This repository contains the official implementation of the *Inverse Constitutio
 
 1. Pip install the package (for development installation see [here](#dev-installation))
     ```
-    pip install git+https://github.com/rdnfn/icai.git
+    pip install inverse-cai
     ```
 2. Set up API secrets: inside the main directory of the cloned repo (or wherever you like really) set up a `secrets.toml` file like below. You only need to include keys for APIs you want to use.
     ```toml
@@ -49,8 +49,8 @@ By default all experiment results are saved in the `./outputs/<DATE>_<TIME>` dir
 
 ```text
 ./outputs
-└── 2024-03-14
-    └── 16-09-43
+└── 2045-03-07
+    └── 12-09-43
         ├── api_calls.jsonl
         ├── core.log
         ├── main.log
@@ -92,6 +92,31 @@ icai-exp -cd ./exp/configs/001_synthetic_orthogonal
 >[!NOTE]
 > **To re-run paper experiments**:
 > Look at the README file inside the `exp/configs`. This file gives detailed instructions on which configurations to run, and how to generate the corresponding plots.
+
+### Adding your own annotator functions
+
+This implementation supports adding your own annotator functions. The functions should have the following kwargs and outputs:
+
+```python
+def some_annotator(data: pd.DataFrame, icai_results_dict: dict) -> pd.DataFrame:
+    """Annotate the data using some method.
+
+    Args:
+        data (pd.DataFrame): The data to annotate. At least has columns "text_a", "text_b", "preferred_text"
+        icai_results_dict (dict): The results of the ICAI algorithm. Dictionary with the following keys:
+            - "feedback": pd.DataFrame, original data
+            - "clusters": dict, the clusters
+            - "summaries": dict, the cluster names (summaries)
+            - "combined_votes": pd.DataFrame, the combined votes from the annotator
+            - "filtered_principles": list, the filtered principles from the ICAI algorithm
+            - "final_principles": list, the final principles from the ICAI algorithm
+            - "constitution": str, the constitution
+    Returns:
+        pd.DataFrame: The annotated data with column "annotation" added, column with values "text_a", "text_b", "tie", "irrelevant", or "invalid".
+    """
+```
+
+
 
 ### Using cache to continue aborted experiment
 
@@ -137,8 +162,17 @@ pytest ./src
 This doesn't do any meaningful experimental work but allows running the experiment script for testing purposes.
 
 ```
-icai-exp generate_constitution=false annotator.constitution=null annotator.other_annotator_configs="[]"
+icai-exp generate_constitution=false annotator.alpaca_eval.constitution=null annotator.alpaca_eval.other_annotator_configs="[]"
 ```
+
+### Creating a new release
+
+Ensure that the current branch is up-to-date with main, and then bump the version (using `patch`, `minor`, or `major`):
+```
+bump-my-version bump patch
+```
+
+Then on the GitHub website create a new release named after the new version (e.g. "v0.1.2"). As part of this release in the GitHub interface, create a new tag with the updated version. This release will trigger a GitHub action to build and upload the PyPI package.
 
 # Background
 

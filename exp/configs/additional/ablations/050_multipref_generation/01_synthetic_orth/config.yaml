@@ -1,15 +1,16 @@
-data_path: "./data/processed/synthetic/synthetic_data_orthogonal_adcbg.csv"
+data_path: ./data/processed/synthetic/synthetic_data_orthogonal_adcbg.csv
 alg_model: openai/gpt-3.5-turbo-0125
 s2_num_clusters: 40
 s1_num_principles_per_instance: 10
-s1_num_rankings_per_sampling_step: 5 # ablation: IMPORTANT DIFFERENCE
+s1_num_rankings_per_sampling_step: 5
 s3_max_principles: 5
 annotator:
-  is_single_annotator: true
-  base_constitutional_annotator_configs:
+  alpaca_eval:
+    is_single_annotator: true
+    base_constitutional_annotator_configs:
     - data/annotator_configs/chatgpt_fn_constitutional_base_neutral_v1
     - data/annotator_configs/gpt4o_fn_constitutional_base_neutral_v1
-  other_annotator_configs:
+    other_annotator_configs:
     - data/annotator_configs/chatgpt_fn_noinstruction
     - data/annotator_configs/alpaca_eval_gpt4o_fn_noinstruction
 alg_prompts:
@@ -28,8 +29,8 @@ alg_prompts:
     Given the data above, why do you think the annotator selected the given samples
     over the other samples? Reply with {num_principles} most likely rules that may
     explain the selections, each in 10 words or less. Be specific and focus on the
-    differences between the pairs, for example in content, subjects, traits,
-    writing style or topic.
+    differences between the pairs, for example in content, subjects, traits, writing
+    style or topic.
 
     Note: the intend of the selection was to find bad samples (to prevent a user seeing
     them). Always suggest as rule that starts with ''Select the response that...<bad
@@ -61,9 +62,9 @@ alg_prompts:
     Given the data above, why do you think the annotator selected the given samples
     over the other samples? Reply with {num_principles} most likely rules that may
     explain the selections, each in 10 words or less. Be specific and focus on the
-    differences between the pairs, for example in content, subjects, traits,
-    writing style or topic.  Always suggest as rule that starts with ''Select the
-    response that...''.
+    differences between the pairs, for example in content, subjects, traits, writing
+    style or topic.  Always suggest as rule that starts with ''Select the response
+    that...''.
 
 
     Reply as a json similar to: {{"principles": ["<YOUR PRINCIPLE TEXT>", "<YOUR NEXT
