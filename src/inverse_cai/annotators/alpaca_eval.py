@@ -137,6 +137,9 @@ def generate_tmp_annotator_config(
 def create_tmp_data_file(data: pd.DataFrame, tmp_files_path: str):
     """Create temporary data file of output data to annotate in AlpacaEval format."""
 
+    # ensure tmp_files_path exists
+    pathlib.Path(tmp_files_path).mkdir(parents=True, exist_ok=True)
+
     tmp_data_path = pathlib.Path(tmp_files_path) / "alpaca_style_data.json"
 
     # generating a data frame with columns: "instruction", "output_1",
