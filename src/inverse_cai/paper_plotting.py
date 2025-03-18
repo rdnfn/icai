@@ -45,8 +45,14 @@ def get_results_from_paths(
             constitution = None
 
         df = pd.read_csv(path)
-        df["annotator"] = df["Unnamed: 0"]
-        df = df.drop(columns=["Unnamed: 0"])
+
+        # make adaptable to old and new results files
+        if "annotator" not in df.columns:
+            df["annotator"] = df["Unnamed: 0"]
+            df = df.drop(columns=["Unnamed: 0"])
+
+        if "Human agreement" not in df.columns:
+            df.rename(columns={"agreement": "Human agreement"}, inplace=True)
 
         # for annotators with "constitution" in their name, add the constitution
         if constitution:
