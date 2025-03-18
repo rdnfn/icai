@@ -45,7 +45,7 @@ def _evaluate_annotations(annotated_data: pd.DataFrame):
     agreement = (
         annotated_data["preferred_text"] == annotated_data["annotation"]
     ).mean()
-    return agreement
+    return agreement * 100
 
 
 def _run_annotation_pipeline(
@@ -57,6 +57,7 @@ def _run_annotation_pipeline(
     alpaca_results_csv_path: pathlib.Path,
     final_results_csv_path: pathlib.Path,
     dataset_name: str,
+    results_path: pathlib.Path,
 ):
     """Run the annotation pipeline on a dataset.
 
@@ -109,8 +110,12 @@ def _run_annotation_pipeline(
 
             try:
                 annotator_fn = _import_annotator_function(annotator)
+                annotator_kwargs = annotator.function_kwargs
                 annotated_data = annotator_fn(
-                    data=data, icai_results_dict=icai_results_dict
+                    data=data,
+                    icai_results_dict=icai_results_dict,
+                    results_path=results_path,
+                    **annotator_kwargs,
                 )
                 agreement = _evaluate_annotations(annotated_data)
 
@@ -171,6 +176,7 @@ def annotate(
             / "092_full_alpacaeval_results_training.csv",
             final_results_csv_path=results_path / "094_results_training.csv",
             dataset_name="training data",
+            results_path=results_path,
         )
 
     # Process test data if provided
@@ -190,6 +196,7 @@ def annotate(
                 / f"093_full_alpacaeval_results_testset_{i}.csv",
                 final_results_csv_path=results_path / f"095_results_testset_{i}.csv",
                 dataset_name=f"test data {i}/{len(test_data)}",
+                results_path=results_path,
             )
     elif cfg.annotator.test_data_only:
         logger.warning(

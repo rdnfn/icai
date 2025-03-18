@@ -111,6 +111,7 @@ def some_annotator(data: pd.DataFrame, icai_results_dict: dict) -> pd.DataFrame:
             - "filtered_principles": list, the filtered principles from the ICAI algorithm
             - "final_principles": list, the final principles from the ICAI algorithm
             - "constitution": str, the constitution
+            - "results_path": pathlib.Path, path where ICAI results are stored.
     Returns:
         pd.DataFrame: The annotated data with column "annotation" added, column with values "text_a", "text_b", "tie", "irrelevant", or "invalid".
     """

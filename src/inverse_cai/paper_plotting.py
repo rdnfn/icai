@@ -10,7 +10,11 @@ import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor, CellExecutionError
 
 
-def get_results_from_paths(results_path, dataset):
+def get_results_from_paths(
+    results_path,
+    dataset: str | None = None,
+    csv_name: str | None = None,
+):
     results_paths = [p for p in results_path.iterdir() if p.is_dir()]
     results_dfs = {}
 
@@ -18,17 +22,20 @@ def get_results_from_paths(results_path, dataset):
     for seed, path in enumerate(results_paths):
         complete_results_path = pathlib.Path(path) / "results"
 
-        # check if old path
-        if os.path.exists(complete_results_path / "092_results.csv"):
-            path = complete_results_path / "092_results.csv"
-        elif dataset == "train":
-            path = complete_results_path / "092_results_training.csv"
-        elif dataset == "test":
-            path = complete_results_path / "093_results_testset.csv"
-        elif dataset.startswith("testset"):
-            path = complete_results_path / f"093_results_{dataset}.csv"
+        if csv_name is None:
+            # check if old path
+            if os.path.exists(complete_results_path / "092_results.csv"):
+                path = complete_results_path / "092_results.csv"
+            elif dataset == "train":
+                path = complete_results_path / "092_results_training.csv"
+            elif dataset == "test":
+                path = complete_results_path / "093_results_testset.csv"
+            elif dataset.startswith("testset"):
+                path = complete_results_path / f"093_results_{dataset}.csv"
+            else:
+                logger.error(f"Could not find results files for dataset {dataset}.")
         else:
-            logger.error(f"Could not find results files for dataset {dataset}.")
+            path = complete_results_path / csv_name
 
         constitution_path = complete_results_path / "060_constitution.json"
         if os.path.exists(constitution_path):
@@ -38,8 +45,14 @@ def get_results_from_paths(results_path, dataset):
             constitution = None
 
         df = pd.read_csv(path)
-        df["annotator"] = df["Unnamed: 0"]
-        df = df.drop(columns=["Unnamed: 0"])
+
+        # make adaptable to old and new results files
+        if "annotator" not in df.columns:
+            df["annotator"] = df["Unnamed: 0"]
+            df = df.drop(columns=["Unnamed: 0"])
+
+        if "Human agreement" not in df.columns:
+            df.rename(columns={"agreement": "Human agreement"}, inplace=True)
 
         # for annotators with "constitution" in their name, add the constitution
         if constitution:
@@ -71,7 +84,11 @@ def parse_avg_df_to_dict(avg_df):
     return out_dict
 
 
-def get_metrics_dict(results_path, dataset: str = "test"):
+def get_metrics_dict(
+    results_path,
+    dataset: str | None = None,
+    csv_name: str | None = None,
+):
     """Given a dictionary of results paths, return the average values for each annotator.
 
     Args:
@@ -107,7 +124,16 @@ def get_metrics_dict(results_path, dataset: str = "test"):
                 "median_constitution": str
                     Constitution closest to the median agreement for the annotator.
     """
-    results_dfs = get_results_from_paths(results_path, dataset)
+
+    # sanity checks
+    if csv_name is None and dataset is None:
+        raise ValueError("Either csv_name or dataset must be provided.")
+    if csv_name is not None and dataset is not None:
+        raise ValueError("Only one of csv_name or dataset must be provided.")
+
+    results_dfs = get_results_from_paths(
+        results_path=results_path, dataset=dataset, csv_name=csv_name
+    )
     combined_df = pd.concat([df for df in results_dfs.values()])
     average_results = (
         combined_df.groupby("annotator")["Human agreement"].mean().reset_index()
