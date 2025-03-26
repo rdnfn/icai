@@ -80,6 +80,16 @@ def get_model(
     temp: float = 0.0,
     enable_logprobs: bool = False,
 ) -> Any:
+    """Get a language model instance.
+
+    Args:
+        name: Model name with provider prefix (e.g. "openai/gpt-4o-2024-05-13")
+        temp: Temperature for generation (default: 0.0)
+        enable_logprobs: Whether to enable logprobs for token probabilities (default: False)
+
+    Returns:
+        LogWrapper-wrapped language model instance
+    """
     if enable_logprobs:
         model_kwargs = {"logprobs": True, "top_logprobs": 10}
     else:
