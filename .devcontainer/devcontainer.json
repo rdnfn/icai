@@ -19,6 +19,12 @@
 		"gpu": "optional"
 	},
 
+	"remoteEnv": {
+		"OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+		"ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+		"OPENROUTER_API_KEY": "${localEnv:OPENROUTER_API_KEY}"
+	},
+
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
