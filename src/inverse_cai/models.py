@@ -79,6 +79,7 @@ def get_model(
     name: str,
     temp: float = 0.0,
     enable_logprobs: bool = False,
+    max_tokens: int = 1000,
 ) -> Any:
     """Get a language model instance.
 
@@ -86,6 +87,7 @@ def get_model(
         name: Model name with provider prefix (e.g. "openai/gpt-4o-2024-05-13")
         temp: Temperature for generation (default: 0.0)
         enable_logprobs: Whether to enable logprobs for token probabilities (default: False)
+        max_tokens: Maximum tokens to generate (default: 1000)
 
     Returns:
         LogWrapper-wrapped language model instance
@@ -99,7 +101,7 @@ def get_model(
         return LogWrapper(
             ChatOpenAI(
                 model=name.split("/")[1],
-                max_tokens=1000,
+                max_tokens=max_tokens,
                 temperature=temp,
                 model_kwargs=model_kwargs,
             )
@@ -108,7 +110,7 @@ def get_model(
         return LogWrapper(
             ChatAnthropic(
                 model=name.split("/")[1],
-                max_tokens=1000,
+                max_tokens=max_tokens,
                 temperature=temp,
                 model_kwargs=model_kwargs,
             )
