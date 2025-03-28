@@ -29,7 +29,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "pip install -e .",
+	"postCreateCommand": "pip install -e '.[dev]'",
 	"customizations": {
 		"vscode": {
 			"extensions": [
