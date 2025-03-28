@@ -167,6 +167,9 @@ class ExpConfig:
     # general
     alg_model: str = "openai/gpt-4o-mini-2024-07-18"  # model to use for the algorithm
     alg_model_cache: bool = False  # whether to use the cache for the model
+    alg_use_openrouter: bool = (
+        False  # whether to use OpenRouter for the model (prepends "openrouter/" to model path)
+    )
     generate_constitution: bool = (
         True  # whether to generate a constitution using the algorithm
     )

@@ -1,4 +1,4 @@
-"""Compute metrics """
+"""Compute metrics"""
 
 import pandas as pd
 

@@ -1,6 +1,7 @@
 from typing import Any
 import json
 import numpy as np
+import os
 
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
@@ -79,7 +80,19 @@ def get_model(
     name: str,
     temp: float = 0.0,
     enable_logprobs: bool = False,
+    max_tokens: int = 1000,
 ) -> Any:
+    """Get a language model instance.
+
+    Args:
+        name: Model name with provider prefix (e.g. "openai/gpt-4o-2024-05-13")
+        temp: Temperature for generation (default: 0.0)
+        enable_logprobs: Whether to enable logprobs for token probabilities (default: False)
+        max_tokens: Maximum tokens to generate (default: 1000)
+
+    Returns:
+        LogWrapper-wrapped language model instance
+    """
     if enable_logprobs:
         model_kwargs = {"logprobs": True, "top_logprobs": 10}
     else:
@@ -89,7 +102,7 @@ def get_model(
         return LogWrapper(
             ChatOpenAI(
                 model=name.split("/")[1],
-                max_tokens=1000,
+                max_tokens=max_tokens,
                 temperature=temp,
                 model_kwargs=model_kwargs,
             )
@@ -98,8 +111,47 @@ def get_model(
         return LogWrapper(
             ChatAnthropic(
                 model=name.split("/")[1],
-                max_tokens=1000,
+                max_tokens=max_tokens,
                 temperature=temp,
+                model_kwargs=model_kwargs,
+            )
+        )
+    if name.startswith("openrouter"):
+        # Custom OpenRouter headers
+        # https://openrouter.ai/docs/api-reference/overview#headers
+        custom_headers = {
+            "X-Title": "ICAI",
+            # We need to set HTTP-Referer in addition to X-Title since otherwise openrouter does
+            # not show an App name in the activity overview. If we set both, it shows the X-Title
+            # and links to HTTP-Referer.
+            "HTTP-Referer": "https://github.com/rdnfn/icai",
+        }
+
+        # Extract the actual model from openrouter/provider/model format
+        parts = name.split("/", 2)
+        if len(parts) < 3:
+            raise ValueError(
+                "OpenRouter model format should be 'openrouter/provider/model'"
+            )
+
+        # Use the provider/model as the model name for OpenRouter
+        model_id = "/".join(parts[1:])
+
+        # Get the OpenRouter API key from environment variable
+        openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
+        if not openrouter_api_key:
+            raise ValueError(
+                "OPENROUTER_API_KEY environment variable must be set for OpenRouter models"
+            )
+
+        return LogWrapper(
+            ChatOpenAI(
+                model=model_id,
+                max_tokens=max_tokens,
+                temperature=temp,
+                openai_api_key=openrouter_api_key,  # Use the OpenRouter API key
+                openai_api_base="https://openrouter.ai/api/v1",
+                default_headers=custom_headers,
                 model_kwargs=model_kwargs,
             )
         )
