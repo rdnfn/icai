@@ -67,13 +67,13 @@ def test_votes_to_annotations():
 
     # Verify results
     assert (
-        result[honest_id] == "text_a"
+        result[honest_id]["pref"] == "text_a"
     ), "Principle with vote True should get reference_preference"
     assert (
-        result[helpful_id] == "text_b"
+        result[helpful_id]["pref"] == "text_b"
     ), "Principle with vote False should get opposite of reference_preference"
     assert (
-        result[concise_id] == "not_applicable"
+        result[concise_id]["pref"] == "not_applicable"
     ), "Principle with vote None should get not_applicable"
 
     # Test with only some active principles
@@ -90,7 +90,7 @@ def test_votes_to_annotations():
         votes, principle_index_to_text, active_principles, reference_preference
     )
     assert (
-        result[honest_id] == "text_b"
+        result[honest_id]["pref"] == "text_b"
     ), "With text_b as reference, True vote should be text_b"
 
 
@@ -202,9 +202,11 @@ def test_create_annotated_pairs():
     annotations = comparison["annotations"]
     assert human_annotator_id in annotations, "Human annotator should be in annotations"
     assert (
-        annotations[human_annotator_id] == "text_a"
+        annotations[human_annotator_id]["pref"] == "text_a"
     ), "Human annotation should match preferred_text"
 
     honest_id = hash_string("Be honest")
     assert honest_id in annotations, "Principle annotator should be in annotations"
-    assert annotations[honest_id] == "text_a", "Principle annotation should be correct"
+    assert (
+        annotations[honest_id]["pref"] == "text_a"
+    ), "Principle annotation should be correct"

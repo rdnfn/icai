@@ -39,7 +39,7 @@ def votes_to_annotations(
     principle_index_to_text: Mapping[int, str],
     active_principles: Sequence[str],
     reference_preference: str,
-) -> Dict[str, str]:
+) -> Dict[str, Dict[str, str]]:
     """Convert principle votes to annotations in the standardized format.
 
     Args:
@@ -49,7 +49,7 @@ def votes_to_annotations(
         reference_preference: The reference preference (text_a or text_b)
 
     Returns:
-        Dictionary mapping principle IDs (hashed) to annotations
+        Dictionary mapping principle IDs (hashed) to dictionaries with preferences
     """
     annotations = {}
 
@@ -62,15 +62,15 @@ def votes_to_annotations(
 
             # Convert vote to text_a, text_b or not_applicable
             if vote is None:
-                annotations[principle_id] = "not_applicable"
+                annotations[principle_id] = {"pref": "not_applicable"}
             elif vote is True:
                 # Principle agrees with reference preference
-                annotations[principle_id] = reference_preference
+                annotations[principle_id] = {"pref": reference_preference}
             else:  # vote is False
                 # Principle disagrees with reference preference
-                annotations[principle_id] = (
-                    "text_b" if reference_preference == "text_a" else "text_a"
-                )
+                annotations[principle_id] = {
+                    "pref": "text_b" if reference_preference == "text_a" else "text_a"
+                }
 
     return annotations
 
@@ -165,7 +165,7 @@ def create_annotated_pairs(
         # Initialize annotations dict with human annotation
         annotations = {}
         reference_preference = row["preferred_text"]
-        annotations[human_annotator_id] = reference_preference
+        annotations[human_annotator_id] = {"pref": reference_preference}
 
         # Add principle annotations based on votes
         votes = comparison_votes[idx]
