@@ -195,6 +195,16 @@ def run(cfg: DictConfig):
         )
         np.random.seed(123)
 
+    # Handle OpenRouter flag
+    if cfg.alg_use_openrouter:
+        # Only modify if not already an OpenRouter model
+        if not cfg.alg_model.startswith("openrouter/"):
+            orig_model = cfg.alg_model
+            cfg.alg_model = f"openrouter/{orig_model}"
+            logger.info(
+                f"Using OpenRouter: Changed model from '{orig_model}' to '{cfg.alg_model}'"
+            )
+
     logger.info("Starting experiment with config: \n" + OmegaConf.to_yaml(cfg))
 
     if cfg.annotator.alpaca_eval.constitution is not None and cfg.generate_constitution:
