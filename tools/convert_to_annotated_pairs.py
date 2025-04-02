@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Generate an annotated pairs dataset from legacy ICAI results. Note that a recent version of ICAI
-natively generates this format.
+Generate an annotated pairs dataset from legacy ICAI results (version <= 0.2.1). Note that more recent 
+versions of ICAI natively generate this format.
 
 Usage:
   # Generate annotated pairs format from ICAI results directory
