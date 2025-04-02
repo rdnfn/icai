@@ -24,12 +24,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Convert ICAI results to annotated pairs format."
     )
-    parser.add_argument(
-        "results_dir", help="Path to ICAI results directory"
-    )
-    parser.add_argument(
-        "output", help="Path to output annotated pairs JSON"
-    )
+    parser.add_argument("results_dir", help="Path to ICAI results directory")
+    parser.add_argument("output", help="Path to output annotated pairs JSON")
     parser.add_argument(
         "--dataset-name",
         "-n",
@@ -53,7 +49,9 @@ def main():
             filter_to_constitution=not args.include_all_principles,
         )
         save_annotated_pairs_to_file(annotated_pairs, args.output)
-        logger.success(f"Successfully saved {len(annotated_pairs['comparisons'])} pairs to {args.output}")
+        logger.success(
+            f"Successfully saved {len(annotated_pairs['comparisons'])} pairs to {args.output}"
+        )
     except Exception as e:
         logger.error(f"Error during conversion: {e}")
         return 1
