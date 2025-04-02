@@ -24,4 +24,4 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Check formatting with Black
-        run: black --check --version && black --check .
+        run: black --check --version && black --check . --verbose
