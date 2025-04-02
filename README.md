@@ -63,8 +63,60 @@ By default all experiment results are saved in the `./outputs/<DATE>_<TIME>` dir
             ├── 041_votes_per_cluster.json
             ├── 050_filtered_principles.json
             ├── 060_constitution.json
+            ├── 070_annotated_pairs_dataset.json
             ├── 092_results_training.csv
             └── 093_results_testset.json
+```
+
+#### Using results for further analysis: the *annotated-pairs* json format
+
+When using ICAI for downstream use-cases or further analysis, we recommend using our `annotated-pairs` json format (saved as `070_annotated_pairs_dataset.json`). This format combines the input data alongside the annotations by ICAI's principle-following annotators. An example is shown below:
+
+
+```json
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Annotated pairs dataset with annotations from ICAI",
+    "created_at": "2025-04-02T16:02:37Z",
+    "dataset_name": "ICAI Dataset - 2025-04-02_16-02-05",
+    "default_annotator": "d36860d4"
+  },
+  "annotators": {
+    "d36860d4": {
+      "name": "Human",
+      "description": "Human annotator from original dataset",
+      "type": "human"
+    },
+    "2f45a6d0": {
+      "description": "Select the response that evokes a sense of mystery.",
+      "type": "principle"
+    },
+    "435cef52": {
+      "description": "Select the response that features a more adventurous setting.",
+      "type": "principle"
+    }
+  },
+  "comparisons": [
+    {
+      "id": "2fbb184f",
+      "prompt": null,
+      "text_a": "In the heart of a bustling city, a sleek black cat named Shadow prowled the moonlit rooftops, her eyes gleaming with curiosity and mischief. She discovered a hidden garden atop an old apartment building, where she danced under the stars, chasing fireflies that glowed like tiny lanterns. As dawn painted the sky in hues of orange and pink, Shadow found her way back home, carrying the secret of the garden in her heart.",
+      "text_b": "Across the town, in a cozy neighborhood, a golden retriever named Buddy embarked on his daily adventure, tail wagging with uncontainable excitement. He found a lost toy under the bushes in the park, its colors faded and fabric worn, but to Buddy, it was a treasure untold. Returning home with his newfound prize, Buddy's joyful barks filled the air, reminding everyone in the house that happiness can be found in the simplest of things.",
+      "annotations": {
+        "d36860d4": {
+          "pref": "text_a"
+        },
+        "2f45a6d0": {
+          "pref": "text_a"
+        },
+        "435cef52": {
+          "pref": "text_a"
+        }
+      }
+    }
+  ]
+}
 ```
 
 ## Run experiment with your own data
