@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate an annotated pairs dataset from legacy ICAI results (version <= 0.2.1). Note that more recent 
+Generate an annotated pairs dataset from legacy ICAI results (version <= 0.2.1). Note that more recent
 versions of ICAI natively generate this format.
 
 Usage:
@@ -33,10 +33,11 @@ def main():
         help="Name for the dataset (default: ICAI Generated Dataset)",
     )
     parser.add_argument(
-        "--include-all-principles",
-        "-a",
+        "--only-include-constitution-principles",
+        "-c",
         action="store_true",
-        help="Include all principles, not just those in the constitution",
+        default=False,
+        help="Only include principles from the constitution (default: include all principles)",
     )
 
     args = parser.parse_args()
@@ -46,7 +47,7 @@ def main():
         annotated_pairs = results_to_annotated_pairs(
             results_dir=args.results_dir,
             dataset_name=args.dataset_name,
-            filter_to_constitution=not args.include_all_principles,
+            filter_to_constitution=args.only_include_constitution_principles,
         )
         save_annotated_pairs_to_file(annotated_pairs, args.output)
         logger.success(
@@ -54,7 +55,7 @@ def main():
         )
     except Exception as e:
         logger.error(f"Error during conversion: {e}")
-        return 1
+        raise e
 
     return 0
 
