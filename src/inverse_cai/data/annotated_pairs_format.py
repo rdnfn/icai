@@ -168,11 +168,16 @@ def create_annotated_pairs(
         annotations[human_annotator_id] = {"pref": reference_preference}
 
         # Add principle annotations based on votes
-        votes = comparison_votes[idx]
-        principle_annotations = votes_to_annotations(
-            votes, principles, active_principles, reference_preference
-        )
-        annotations.update(principle_annotations)
+        if idx in comparison_votes:
+            votes = comparison_votes[idx]
+            principle_annotations = votes_to_annotations(
+                votes, principles, active_principles, reference_preference
+            )
+            annotations.update(principle_annotations)
+        else:
+            logger.warning(
+                f"Missing votes for comparison with index {idx}, skipping principle annotations"
+            )
 
         # Create the comparison entry
         comparison = {
