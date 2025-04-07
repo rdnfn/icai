@@ -130,6 +130,14 @@ icai-exp -cd exp/configs/prior-experiment prior_cache_path='exp/outputs/prior-ex
 >[!WARNING]
 > Note that there is no strict config consistency check between cache and new experiment - thus use with caution, only using caches from prior experiments with identical configs.
 
+### Running the PairRM baseline
+
+The PairRM baseline experiment can be reproduced using the following command (assuming the processed data is in the standard location):
+
+```
+bash tools/baselines/pairrm/run.sh data/processed
+```
+
 ## Development
 
 ### Dev installation

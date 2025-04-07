@@ -17,7 +17,10 @@ import langchain.globals
 import inverse_cai
 from inverse_cai.experiment.config.main import ExpConfig
 import inverse_cai.annotators
-
+from inverse_cai.data.annotated_pairs_format import (
+    results_to_annotated_pairs,
+    save_annotated_pairs_to_file,
+)
 
 cs = ConfigStore.instance()
 cs.store(name="config", node=ExpConfig)
@@ -195,6 +198,16 @@ def run(cfg: DictConfig):
         )
         np.random.seed(123)
 
+    # Handle OpenRouter flag
+    if cfg.alg_use_openrouter:
+        # Only modify if not already an OpenRouter model
+        if not cfg.alg_model.startswith("openrouter/"):
+            orig_model = cfg.alg_model
+            cfg.alg_model = f"openrouter/{orig_model}"
+            logger.info(
+                f"Using OpenRouter: Changed model from '{orig_model}' to '{cfg.alg_model}'"
+            )
+
     logger.info("Starting experiment with config: \n" + OmegaConf.to_yaml(cfg))
 
     if cfg.annotator.alpaca_eval.constitution is not None and cfg.generate_constitution:
@@ -283,6 +296,15 @@ def run(cfg: DictConfig):
         "recommend to manually inspect ICAI's interpretable constitutions before using "
         "them for downstream tasks to avoid accidentally amplifying harmful biases."
     )
+
+    # Generate annotated pairs format
+    ap_output_file = results_path / "070_annotated_pairs_dataset.json"
+    annotated_pairs = results_to_annotated_pairs(
+        results_dir=str(results_path),
+        dataset_name=f"ICAI Dataset - {pathlib.Path(hydra_out_path).name}",
+    )
+    save_annotated_pairs_to_file(annotated_pairs, str(ap_output_file))
+    logger.info(f"Generated annotated pairs format at {ap_output_file}")
 
     logger.info(f"Experiment finished. Find results at {results_path}")
     logger.info(
