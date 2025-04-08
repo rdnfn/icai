@@ -46,6 +46,12 @@ def main():
         default=[],
         help="Additional columns from the training data to include as annotations (default: none, example: -a 'column1 column2')",
     )
+    parser.add_argument(
+        "--no-auto-detect",
+        action="store_true",
+        default=False,
+        help="Disable automatic detection of annotator columns (default: auto detection is enabled)",
+    )
 
     args = parser.parse_args()
 
@@ -56,6 +62,7 @@ def main():
             dataset_name=args.dataset_name,
             filter_to_constitution=args.only_include_constitution_principles,
             additional_columns=args.additional_columns,
+            auto_detect_annotators=not args.no_auto_detect,
         )
         save_annotated_pairs_to_file(annotated_pairs, args.output)
         logger.success(

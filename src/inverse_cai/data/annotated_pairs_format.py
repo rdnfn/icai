@@ -134,6 +134,46 @@ def add_annotators(
             }
 
 
+def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
+    """Detect columns that appear to be annotator columns in the DataFrame.
+
+    This function looks for columns that:
+    1. Contain boolean values or values that can be converted to text_a/text_b
+    2. Have a reasonable number of non-null values
+    3. Are not standard columns (text_a, text_b, input, etc.)
+
+    Args:
+        df: DataFrame to analyze
+
+    Returns:
+        List of column names that appear to be annotator columns
+    """
+    standard_columns = {
+        "text_a",
+        "text_b",
+        "model_a",
+        "model_b",
+        DEFAULT_PREFERENCE_COLUMN,
+    }
+    potential_annotators = []
+
+    for col in df.columns:
+        if col in standard_columns:
+            continue
+
+        # Check if column contains boolean values or values that can be converted to text_a/text_b
+        unique_values = df[col].dropna().unique()
+        if len(unique_values) <= 10:  # Allow for None/NA values
+            # Check if values can be interpreted as preferences
+            values_set = set(str(v).lower() for v in unique_values if pd.notna(v))
+
+            # Simply check if text_a and text_b are present
+            if "text_a" in values_set and "text_b" in values_set:
+                potential_annotators.append(col)
+
+    return potential_annotators
+
+
 def create_annotated_pairs(
     train_df: pd.DataFrame,
     principles: Mapping[int, str],
@@ -142,6 +182,7 @@ def create_annotated_pairs(
     dataset_name: str,
     filter_to_constitution: bool = True,
     additional_columns: List[str] = None,
+    auto_detect_annotators: bool = True,
 ) -> Dict:
     """Convert ICAI results to annotated pairs format using direct data inputs.
 
@@ -153,6 +194,7 @@ def create_annotated_pairs(
         dataset_name: Name for the dataset
         filter_to_constitution: Only include principles that made it to the constitution
         additional_columns: List of additional columns from the training data to include as annotations
+        auto_detect_annotators: Whether to automatically detect annotator columns in the DataFrame
 
     Returns:
         The annotated pairs format as a dictionary
@@ -169,13 +211,23 @@ def create_annotated_pairs(
         "comparisons": [],
     }
 
+    # Detect annotator columns if enabled
+    detected_columns = []
+    if auto_detect_annotators:
+        detected_columns = detect_annotator_columns(train_df)
+        if detected_columns:
+            logger.info(f"Automatically detected annotator columns: {detected_columns}")
+
+    # Combine detected columns with manually specified ones
+    all_additional_columns = list(set((additional_columns or []) + detected_columns))
+
     # Add all annotators to the output
     add_annotators(
         output,
         principles,
         filtered_principles,
         filter_to_constitution,
-        additional_columns,
+        all_additional_columns,
     )
 
     # Prepare data needed for annotations
@@ -207,8 +259,8 @@ def create_annotated_pairs(
             )
 
         # Add additional columns as annotations if specified
-        if additional_columns:
-            for col in additional_columns:
+        if all_additional_columns:
+            for col in all_additional_columns:
                 if col in row and pd.notna(row[col]):
                     # Create a unique ID for this column annotator
                     column_annotator_id = hash_string(f"column_{col}")
@@ -238,6 +290,7 @@ def results_to_annotated_pairs(
     dataset_name: str,
     filter_to_constitution: bool = True,
     additional_columns: List[str] = None,
+    auto_detect_annotators: bool = True,
 ) -> Dict[str, object]:
     """Convert ICAI results to annotated pairs format from files.
 
@@ -246,6 +299,7 @@ def results_to_annotated_pairs(
         dataset_name: Name for the dataset
         filter_to_constitution: Only include principles that made it to the constitution
         additional_columns: List of additional columns from the training data to include as annotations
+        auto_detect_annotators: Whether to automatically detect annotator columns in the DataFrame
 
     Returns:
         The annotated pairs format as a dictionary
@@ -267,6 +321,7 @@ def results_to_annotated_pairs(
         dataset_name=dataset_name,
         filter_to_constitution=filter_to_constitution,
         additional_columns=additional_columns,
+        auto_detect_annotators=auto_detect_annotators,
     )
 
     return result
