@@ -234,6 +234,19 @@ def create_annotated_pairs(
         all_additional_columns,
     )
 
+    # Identify metadata columns (columns that are not standard columns, not annotator columns, and not used for comparison content)
+    standard_columns = {"text_a", "text_b", DEFAULT_PREFERENCE_COLUMN}
+    metadata_columns = [
+        col
+        for col in train_df.columns
+        if col not in standard_columns and col not in all_additional_columns
+    ]
+
+    # Add metadata columns to the overall metadata
+    if metadata_columns:
+        output["metadata"]["available_metadata_columns"] = metadata_columns
+        logger.info(f"Available metadata columns: {metadata_columns}")
+
     # Prepare data needed for annotations
     default_annotator_id = output["metadata"]["default_annotator"]
     active_principles = (
@@ -280,12 +293,16 @@ def create_annotated_pairs(
             "prompt": row.get("input"),
             "text_a": row["text_a"],
             "text_b": row["text_b"],
-            "metadata": {
-                "model_a_name": row.get("model_a"),
-                "model_b_name": row.get("model_b"),
-            },
             "annotations": annotations,
         }
+
+        # Add all metadata columns to the comparison metadata
+        if metadata_columns:
+            comparison["metadata"] = {}
+            for col in metadata_columns:
+                if col in row and pd.notna(row[col]):
+                    comparison["metadata"][col] = str(row[col])
+
         output["comparisons"].append(comparison)
 
     return output
