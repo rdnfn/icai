@@ -17,9 +17,11 @@ from loguru import logger
 from inverse_cai.data.loader import icai
 
 # Constants
-HUMAN_ANNOTATOR_DESCRIPTION = "Human annotator from original dataset"
+DEFAULT_ANNOTATOR_DESCRIPTION = (
+    "Default annotator from original dataset (from column `preferred_text`)"
+)
 FORMAT_VERSION = "1.0"
-DEFAULT_ANNOTATOR_TYPE = "human"
+DEFAULT_ANNOTATOR_TYPE = "unknown"
 DEFAULT_PREFERENCE_KEY = "pref"
 DEFAULT_PREFERENCE_COLUMN = "preferred_text"
 
@@ -101,14 +103,14 @@ def add_annotators(
         filter_to_constitution: Only include principles that made it to the constitution
         additional_columns: List of additional columns from the training data to include as annotations
     """
-    # Create human annotator
-    human_annotator_id = hash_string(HUMAN_ANNOTATOR_DESCRIPTION)
-    output["annotators"][human_annotator_id] = {
-        "name": "Human",
-        "description": HUMAN_ANNOTATOR_DESCRIPTION,
+    # Create default annotator
+    default_annotator_id = hash_string(DEFAULT_ANNOTATOR_DESCRIPTION)
+    output["annotators"][default_annotator_id] = {
+        "name": "Default",
+        "description": DEFAULT_ANNOTATOR_DESCRIPTION,
         "type": DEFAULT_ANNOTATOR_TYPE,
     }
-    output["metadata"]["default_annotator"] = human_annotator_id
+    output["metadata"]["default_annotator"] = default_annotator_id
 
     # Determine active principles
     active_principles = (
@@ -127,10 +129,12 @@ def add_annotators(
     if additional_columns:
         for col in additional_columns:
             column_annotator_id = hash_string(f"column_{col}")
+            # Set type to "human" if "human" is in the column name, otherwise use DEFAULT_ANNOTATOR_TYPE
+            annotator_type = "human" if "human" in col.lower() else "unknown"
             output["annotators"][column_annotator_id] = {
                 "name": col,
                 "description": f"Column from original dataset: {col}",
-                "type": "column",
+                "type": annotator_type,
             }
 
 
@@ -231,7 +235,7 @@ def create_annotated_pairs(
     )
 
     # Prepare data needed for annotations
-    human_annotator_id = output["metadata"]["default_annotator"]
+    default_annotator_id = output["metadata"]["default_annotator"]
     active_principles = (
         filtered_principles if filter_to_constitution else list(principles.values())
     )
@@ -241,10 +245,12 @@ def create_annotated_pairs(
         # Create unique ID for this comparison
         comparison_id = hash_comparison(row["text_a"], row["text_b"], row.get("input"))
 
-        # Initialize annotations dict with human annotation
+        # Initialize annotations dict with default annotator annotation
         annotations = {}
         reference_preference = row[DEFAULT_PREFERENCE_COLUMN]
-        annotations[human_annotator_id] = {DEFAULT_PREFERENCE_KEY: reference_preference}
+        annotations[default_annotator_id] = {
+            DEFAULT_PREFERENCE_KEY: reference_preference
+        }
 
         # Add principle annotations based on votes
         if idx in comparison_votes:
