@@ -244,7 +244,7 @@ def create_annotated_pairs(
 
     # Add metadata columns to the overall metadata
     if metadata_columns:
-        output["metadata"]["available_metadata_columns"] = metadata_columns
+        output["metadata"]["available_metadata_keys_per_comparison"] = metadata_columns
         logger.info(f"Available metadata columns: {metadata_columns}")
 
     # Prepare data needed for annotations
