@@ -13,6 +13,9 @@ from inverse_cai.data.annotated_pairs_format import (
     votes_to_annotations,
     add_annotators,
     create_annotated_pairs,
+    HUMAN_ANNOTATOR_DESCRIPTION,
+    DEFAULT_ANNOTATOR_TYPE,
+    DEFAULT_PREFERENCE_COLUMN,
 )
 
 
@@ -108,12 +111,12 @@ def test_add_annotators():
     assert len(output["annotators"]) == 2, "Should have human + 1 principle annotator"
 
     # Compute expected human annotator ID
-    human_annotator_id = hash_string("Human annotator from original dataset")
+    human_annotator_id = hash_string(HUMAN_ANNOTATOR_DESCRIPTION)
     assert (
         human_annotator_id in output["annotators"]
     ), "Human annotator should be in output"
     assert (
-        output["annotators"][human_annotator_id]["type"] == "human"
+        output["annotators"][human_annotator_id]["type"] == DEFAULT_ANNOTATOR_TYPE
     ), "Human type should be set"
     assert (
         output["metadata"]["default_annotator"] == human_annotator_id
@@ -146,6 +149,29 @@ def test_add_annotators():
     assert honest_id in output["annotators"], "First principle should be in output"
     assert helpful_id in output["annotators"], "Second principle should be in output"
 
+    # Test with additional columns
+    output = {"annotators": {}, "metadata": {}}
+    additional_columns = ["column1", "column2"]
+    add_annotators(
+        output,
+        principles,
+        filtered_principles,
+        filter_to_constitution=True,
+        additional_columns=additional_columns,
+    )
+
+    # Verify column annotators were added
+    column1_id = hash_string("column_column1")
+    column2_id = hash_string("column_column2")
+    assert column1_id in output["annotators"], "Column1 annotator should be in output"
+    assert column2_id in output["annotators"], "Column2 annotator should be in output"
+    assert (
+        output["annotators"][column1_id]["type"] == "column"
+    ), "Column type should be set"
+    assert (
+        output["annotators"][column2_id]["type"] == "column"
+    ), "Column type should be set"
+
 
 def test_create_annotated_pairs():
     """Test the create_annotated_pairs function."""
@@ -155,7 +181,7 @@ def test_create_annotated_pairs():
             "text_a": ["Response A"],
             "text_b": ["Response B"],
             "input": ["What is the capital of France?"],
-            "preferred_text": ["text_a"],
+            DEFAULT_PREFERENCE_COLUMN: ["text_a"],
             "model_a": ["Model X"],
             "model_b": ["Model Y"],
         }
@@ -210,3 +236,80 @@ def test_create_annotated_pairs():
     assert (
         annotations[honest_id]["pref"] == "text_a"
     ), "Principle annotation should be correct"
+
+
+def test_create_annotated_pairs_with_additional_columns():
+    """Test the create_annotated_pairs function with additional columns."""
+    # Setup test data
+    train_df = pd.DataFrame(
+        {
+            "text_a": ["Response A"],
+            "text_b": ["Response B"],
+            "input": ["What is the capital of France?"],
+            DEFAULT_PREFERENCE_COLUMN: ["text_a"],
+            "model_a": ["Model X"],
+            "model_b": ["Model Y"],
+            "additional_column": ["Some value"],
+        }
+    )
+
+    principles = {1: "Be honest", 2: "Be helpful"}
+    filtered_principles = ["Be honest"]
+    comparison_votes = {0: {1: True, 2: False}}
+    dataset_name = "Test Dataset"
+    additional_columns = ["additional_column"]
+
+    # Run function
+    result = create_annotated_pairs(
+        train_df,
+        principles,
+        filtered_principles,
+        comparison_votes,
+        dataset_name,
+        additional_columns=additional_columns,
+    )
+
+    # Verify the structure
+    assert "metadata" in result, "Result should have metadata"
+    assert "annotators" in result, "Result should have annotators"
+    assert "comparisons" in result, "Result should have comparisons"
+
+    # Verify metadata
+    assert (
+        result["metadata"]["dataset_name"] == dataset_name
+    ), "Dataset name should be set"
+    assert result["metadata"]["version"] == "1.0", "Version should be set"
+
+    # Verify annotators
+    human_annotator_id = None
+    column_annotator_id = None
+    for annotator_id, annotator in result["annotators"].items():
+        if annotator["type"] == "human":
+            human_annotator_id = annotator_id
+        elif annotator["type"] == "column":
+            column_annotator_id = annotator_id
+    assert human_annotator_id is not None, "Should have a human annotator"
+    assert column_annotator_id is not None, "Should have a column annotator"
+
+    # Verify comparison
+    assert len(result["comparisons"]) == 1, "Should have 1 comparison"
+    comparison = result["comparisons"][0]
+    assert comparison["text_a"] == "Response A", "text_a should be set"
+    assert comparison["text_b"] == "Response B", "text_b should be set"
+    assert (
+        comparison["prompt"] == "What is the capital of France?"
+    ), "prompt should be set"
+
+    # Verify annotations
+    annotations = comparison["annotations"]
+    assert human_annotator_id in annotations, "Human annotator should be in annotations"
+    assert (
+        annotations[human_annotator_id]["pref"] == "text_a"
+    ), "Human annotation should match preferred_text"
+
+    assert (
+        column_annotator_id in annotations
+    ), "Column annotator should be in annotations"
+    assert (
+        annotations[column_annotator_id]["value"] == "Some value"
+    ), "Column annotation should match the value in the dataframe"

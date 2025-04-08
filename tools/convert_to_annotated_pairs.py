@@ -39,6 +39,13 @@ def main():
         default=False,
         help="Only include principles from the constitution (default: include all principles)",
     )
+    parser.add_argument(
+        "--additional-columns",
+        "-a",
+        nargs="+",
+        default=[],
+        help="Additional columns from the training data to include as annotations (default: none, example: -a 'column1 column2')",
+    )
 
     args = parser.parse_args()
 
@@ -48,6 +55,7 @@ def main():
             results_dir=args.results_dir,
             dataset_name=args.dataset_name,
             filter_to_constitution=args.only_include_constitution_principles,
+            additional_columns=args.additional_columns,
         )
         save_annotated_pairs_to_file(annotated_pairs, args.output)
         logger.success(
