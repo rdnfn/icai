@@ -102,17 +102,8 @@ def setup_data(
 
     # Limit the number of samples
     if data_len is None:
-        if len(data) < 100:
-            logger.warning(
-                "No data_len specified and the data is less than 100 samples. "
-                "Using all data."
-            )
-            data_len = len(data)
-        else:
-            logger.warning(
-                "No data_len specified, using the first 100 samples of the data."
-            )
-            data_len = 100
+        logger.warning(f"No data_len specified. Using all data.")
+        data_len = len(data)
     if data_len > len(data):
         raise ValueError(
             f"Requested data length {data_len} is "
