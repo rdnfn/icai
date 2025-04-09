@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import pandas as pd
 import regex as re
@@ -32,6 +32,9 @@ def python_dict_str_to_json_compatible(dict_str: str) -> str:
 
     # Add double quotes around keys
     dict_str = re.sub(r"({|, )(\d+):", r'\1"\2":', dict_str)
+
+    # Replace single quotes with double quotes for string values
+    dict_str = re.sub(r"(?<=: )'(.*?)'(?=,|})", r'"\1"', dict_str)
 
     return dict_str
 
@@ -76,7 +79,9 @@ def load_principles(results_path: Path) -> Dict[int, str]:
     return principles
 
 
-def load_votes_per_comparison(results_path: Path) -> Dict[int, Dict[int, bool]]:
+def load_votes_per_comparison(
+    results_path: Path,
+) -> Dict[int, Dict[int, Union[bool, str, None]]]:
     """Load comparison votes from the results directory.
 
     Args:
@@ -85,15 +90,15 @@ def load_votes_per_comparison(results_path: Path) -> Dict[int, Dict[int, bool]]:
     Returns:
         A dictionary mapping comparison IDs (matching the ones from the training
         dataset) to a mapping from principle id (as returned by load_principles) to
-        a boolean indicating whether the the comparison agrees or disagrees with the
-        principle ("the comparison votes in favor of the principle"). May be
-        None, indicating that the principle is not applicable.
+        a boolean indicating whether the comparison agrees or disagrees with the
+        principle ("the comparison votes in favor of the principle"), None for
+        not applicable votes, or the string value "invalid".
     """
     comparison_votes = {}
     votes_per_comparison_path = results_path / COMPARISON_VOTES_FILENAME
     if not votes_per_comparison_path.exists():
         raise FileNotFoundError(
-            f"Could not find COMPARISON_VOTES_FILENAME in {results_path}"
+            f"Could not find {COMPARISON_VOTES_FILENAME} in {results_path}"
         )
     votes_df = pd.read_csv(votes_per_comparison_path)
     for _, row in votes_df.iterrows():

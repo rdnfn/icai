@@ -115,7 +115,7 @@ def test_load_comparison_votes():
         # Create test data
         csv_content = """index,votes
 0,"{0: True, 1: False, 2: None}"
-1,"{0: True, 1: None, 2: None}"
+1,"{0: True, 1: None, 2: 'invalid'}"
 """
         csv_path = tmp_path / "040_votes_per_comparison.csv"
         with open(csv_path, "w", encoding="utf-8") as f:
@@ -135,13 +135,13 @@ def test_load_comparison_votes():
         assert result[0][2] is None
         assert result[1][0] is True
         assert result[1][1] is None
-        assert result[1][2] is None
+        assert result[1][2] == "invalid"
 
 
 def test_python_dict_str_to_json_compatible():
     """Test the python_dict_str_to_json_compatible utility function."""
     # Test basic conversion of Python values to JSON
-    python_str = "{1: True, 2: False, 3: None}"
+    python_str = "{1: True, 2: False, 3: None, 4: 'invalid'}"
     json_str = python_dict_str_to_json_compatible(python_str)
 
     # Verify conversion
@@ -151,10 +151,11 @@ def test_python_dict_str_to_json_compatible():
     assert "true" in json_str, "True should be converted to true"
     assert "false" in json_str, "False should be converted to false"
     assert "null" in json_str, "None should be converted to null"
+    assert '"invalid"' in json_str, "Single quotes should be converted to double quotes"
 
     # Test that the result can be parsed by json.loads
     result = json.loads(json_str)
-    assert result == {"1": True, "2": False, "3": None}
+    assert result == {"1": True, "2": False, "3": None, "4": "invalid"}
 
     # Test with more complex dictionary
     complex_str = "{1: True, 20: False, 300: None, 4000: True}"

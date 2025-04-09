@@ -53,15 +53,21 @@ def test_hash_comparison():
 def test_votes_to_annotations():
     """Test the votes_to_annotations function."""
     # Setup test data
-    votes = {1: True, 2: False, 3: None}
-    principle_index_to_text = {1: "Be honest", 2: "Be helpful", 3: "Be concise"}
-    active_principles = ["Be honest", "Be helpful", "Be concise"]
+    votes = {1: True, 2: False, 3: None, 4: "invalid"}
+    principle_index_to_text = {
+        1: "Be honest",
+        2: "Be helpful",
+        3: "Be concise",
+        4: "Be creative",
+    }
+    active_principles = ["Be honest", "Be helpful", "Be concise", "Be creative"]
     reference_preference = "text_a"
 
     # Expected hashed IDs
     honest_id = hash_string("Be honest")
     helpful_id = hash_string("Be helpful")
     concise_id = hash_string("Be concise")
+    creative_id = hash_string("Be creative")
 
     # Run function
     result = votes_to_annotations(
@@ -76,8 +82,17 @@ def test_votes_to_annotations():
         result[helpful_id]["pref"] == "text_b"
     ), "Principle with vote False should get opposite of reference_preference"
     assert (
-        result[concise_id]["pref"] == "not_applicable"
-    ), "Principle with vote None should get not_applicable"
+        result[concise_id]["pref"] is None
+    ), "Principle with vote 'not_applicable' should get None pref"
+    assert (
+        result[concise_id]["no_pref_reason"] == "not_applicable"
+    ), "Principle with vote 'not_applicable' should have 'not_applicable' reason"
+    assert (
+        result[creative_id]["pref"] is None
+    ), "Principle with vote 'invalid' should get None pref"
+    assert (
+        result[creative_id]["no_pref_reason"] == "invalid"
+    ), "Principle with vote 'invalid' should have 'invalid' reason"
 
     # Test with only some active principles
     active_principles = ["Be honest"]
@@ -95,6 +110,16 @@ def test_votes_to_annotations():
     assert (
         result[honest_id]["pref"] == "text_b"
     ), "With text_b as reference, True vote should be text_b"
+
+    # Test with unexpected vote value
+    votes_with_unexpected = {1: "unexpected_value"}
+    with pytest.raises(ValueError):
+        votes_to_annotations(
+            votes_with_unexpected,
+            principle_index_to_text,
+            active_principles,
+            reference_preference,
+        )
 
 
 def test_add_annotators():
