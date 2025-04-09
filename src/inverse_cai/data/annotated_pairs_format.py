@@ -9,7 +9,7 @@ import datetime
 import hashlib
 import json
 from pathlib import Path
-from typing import Dict, List, Mapping, Optional, Sequence
+from typing import Dict, List, Mapping, Optional, Sequence, Union
 
 import pandas as pd
 from loguru import logger
@@ -40,21 +40,28 @@ def hash_comparison(text_a: str, text_b: str, prompt: Optional[str]) -> str:
 
 
 def votes_to_annotations(
-    votes: Mapping[int, Optional[bool]],
+    votes: Mapping[int, Union[bool, str, None]],
     principle_index_to_text: Mapping[int, str],
     active_principles: Sequence[str],
     reference_preference: str,
-) -> Dict[str, Dict[str, str]]:
+) -> Dict[str, Dict[str, Optional[str]]]:
     """Convert principle votes to annotations in the standardized format.
 
     Args:
-        votes: Dictionary mapping principle IDs to their votes (True/False/None)
+        votes: Dictionary mapping principle IDs to their votes:
+            - True: Principle agrees with reference preference
+            - False: Principle disagrees with reference preference
+            - None: Principle not applicable to this comparison
+            - "invalid": Vote is invalid for technical reasons
         principle_index_to_text: Dictionary mapping principle IDs to their text
         active_principles: List of active principles to include
         reference_preference: The reference preference (text_a or text_b)
 
     Returns:
-        Dictionary mapping principle IDs (hashed) to dictionaries with preferences
+        Dictionary mapping principle IDs (hashed) to dictionaries with preference information:
+        - For True/False votes: {"pref": "text_a" or "text_b"}
+        - For None votes: {"pref": None, "no_pref_reason": "not_applicable"}
+        - For "invalid" votes: {"pref": None, "no_pref_reason": "invalid"}
     """
     annotations = {}
 
@@ -65,9 +72,12 @@ def votes_to_annotations(
         if principle_text in active_principles:
             principle_id = hash_string(principle_text)
 
-            # Convert vote to text_a, text_b or not_applicable
+            # Convert vote to text_a, text_b, or None with reason
             if vote is None:
-                annotations[principle_id] = {DEFAULT_PREFERENCE_KEY: "not_applicable"}
+                annotations[principle_id] = {
+                    DEFAULT_PREFERENCE_KEY: None,
+                    "no_pref_reason": "not_applicable",
+                }
             elif vote is True:
                 # Principle agrees with reference preference
                 annotations[principle_id] = {
@@ -79,6 +89,12 @@ def votes_to_annotations(
                     DEFAULT_PREFERENCE_KEY: (
                         "text_b" if reference_preference == "text_a" else "text_a"
                     )
+                }
+            elif vote == "invalid":
+                # Special case for invalid votes
+                annotations[principle_id] = {
+                    DEFAULT_PREFERENCE_KEY: None, 
+                    "no_pref_reason": "invalid"
                 }
             else:
                 raise ValueError(
@@ -186,7 +202,7 @@ def create_annotated_pairs(
     train_df: pd.DataFrame,
     principles: Mapping[int, str],
     filtered_principles: Sequence[str],
-    comparison_votes: Mapping[int, Dict[int, Optional[bool]]],
+    comparison_votes: Mapping[int, Dict[int, Union[bool, str, None]]],
     dataset_name: str,
     filter_to_constitution: bool = True,
     additional_columns: List[str] = None,
