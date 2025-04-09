@@ -96,6 +96,16 @@ def test_votes_to_annotations():
         result[honest_id]["pref"] == "text_b"
     ), "With text_b as reference, True vote should be text_b"
 
+    # Test with unexpected vote value
+    votes_with_unexpected = {1: "unexpected_value"}
+    with pytest.raises(ValueError):
+        votes_to_annotations(
+            votes_with_unexpected,
+            principle_index_to_text,
+            active_principles,
+            reference_preference,
+        )
+
 
 def test_add_annotators():
     """Test the add_annotators function."""

@@ -73,13 +73,17 @@ def votes_to_annotations(
                 annotations[principle_id] = {
                     DEFAULT_PREFERENCE_KEY: reference_preference
                 }
-            else:  # vote is False
+            elif vote is False:
                 # Principle disagrees with reference preference
                 annotations[principle_id] = {
                     DEFAULT_PREFERENCE_KEY: (
                         "text_b" if reference_preference == "text_a" else "text_a"
                     )
                 }
+            else:
+                raise ValueError(
+                    f"Unexpected vote value: {vote} for principle {principle_text}"
+                )
 
     return annotations
 
