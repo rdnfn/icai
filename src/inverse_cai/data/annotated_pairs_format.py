@@ -131,7 +131,7 @@ def add_annotators(
     # Create default annotator
     default_annotator_id = hash_string(DEFAULT_ANNOTATOR_DESCRIPTION)
     output["annotators"][default_annotator_id] = {
-        "name": "Default",
+        "name": DEFAULT_PREFERENCE_COLUMN,
         "description": DEFAULT_ANNOTATOR_DESCRIPTION,
         "type": DEFAULT_ANNOTATOR_TYPE,
     }
