@@ -285,7 +285,9 @@ def create_annotated_pairs(
                     column_annotator_id = hash_string(f"column_{col}")
 
                     # Add the annotation
-                    annotations[column_annotator_id] = {"value": str(row[col])}
+                    annotations[column_annotator_id] = {
+                        DEFAULT_PREFERENCE_KEY: str(row[col])
+                    }
 
         # Create the comparison entry
         comparison = {
