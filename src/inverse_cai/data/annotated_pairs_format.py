@@ -17,8 +17,13 @@ from loguru import logger
 from inverse_cai.data.loader import icai
 
 # Constants
-HUMAN_ANNOTATOR_DESCRIPTION = "Human annotator from original dataset"
+DEFAULT_ANNOTATOR_DESCRIPTION = (
+    "Default annotator from original dataset (from column `preferred_text`)"
+)
 FORMAT_VERSION = "1.0"
+DEFAULT_ANNOTATOR_TYPE = "unknown"
+DEFAULT_PREFERENCE_KEY = "pref"
+DEFAULT_PREFERENCE_COLUMN = "preferred_text"
 
 
 def hash_string(s: str) -> str:
@@ -62,14 +67,18 @@ def votes_to_annotations(
 
             # Convert vote to text_a, text_b or not_applicable
             if vote is None:
-                annotations[principle_id] = {"pref": "not_applicable"}
+                annotations[principle_id] = {DEFAULT_PREFERENCE_KEY: "not_applicable"}
             elif vote is True:
                 # Principle agrees with reference preference
-                annotations[principle_id] = {"pref": reference_preference}
+                annotations[principle_id] = {
+                    DEFAULT_PREFERENCE_KEY: reference_preference
+                }
             else:  # vote is False
                 # Principle disagrees with reference preference
                 annotations[principle_id] = {
-                    "pref": "text_b" if reference_preference == "text_a" else "text_a"
+                    DEFAULT_PREFERENCE_KEY: (
+                        "text_b" if reference_preference == "text_a" else "text_a"
+                    )
                 }
 
     return annotations
@@ -80,8 +89,9 @@ def add_annotators(
     principles: Mapping[int, str],
     filtered_principles: Sequence[str],
     filter_to_constitution: bool = True,
+    additional_columns: List[str] = None,
 ) -> None:
-    """Add human and principle annotators to the output structure.
+    """Add all annotators to the output structure.
 
     This function modifies the output dictionary in-place by adding annotator
     information to output["annotators"] and setting the default annotator.
@@ -91,15 +101,16 @@ def add_annotators(
         principles: Dictionary of principles where keys are principle IDs
         filtered_principles: List of filtered principles
         filter_to_constitution: Only include principles that made it to the constitution
+        additional_columns: List of additional columns from the training data to include as annotations
     """
-    # Create human annotator
-    human_annotator_id = hash_string(HUMAN_ANNOTATOR_DESCRIPTION)
-    output["annotators"][human_annotator_id] = {
-        "name": "Human",
-        "description": HUMAN_ANNOTATOR_DESCRIPTION,
-        "type": "human",
+    # Create default annotator
+    default_annotator_id = hash_string(DEFAULT_ANNOTATOR_DESCRIPTION)
+    output["annotators"][default_annotator_id] = {
+        "name": "Default",
+        "description": DEFAULT_ANNOTATOR_DESCRIPTION,
+        "type": DEFAULT_ANNOTATOR_TYPE,
     }
-    output["metadata"]["default_annotator"] = human_annotator_id
+    output["metadata"]["default_annotator"] = default_annotator_id
 
     # Determine active principles
     active_principles = (
@@ -114,6 +125,58 @@ def add_annotators(
             "type": "principle",
         }
 
+    # Create column annotators if additional columns are specified
+    if additional_columns:
+        for col in additional_columns:
+            column_annotator_id = hash_string(f"column_{col}")
+            # Set type to "human" if "human" is in the column name, otherwise use DEFAULT_ANNOTATOR_TYPE
+            annotator_type = "human" if "human" in col.lower() else "unknown"
+            output["annotators"][column_annotator_id] = {
+                "name": col,
+                "description": f"Column from original dataset: {col}",
+                "type": annotator_type,
+            }
+
+
+def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
+    """Detect columns that appear to be annotator columns in the DataFrame.
+
+    This function looks for columns that:
+    1. Contain boolean values or values that can be converted to text_a/text_b
+    2. Have a reasonable number of non-null values
+    3. Are not standard columns (text_a, text_b, input, etc.)
+
+    Args:
+        df: DataFrame to analyze
+
+    Returns:
+        List of column names that appear to be annotator columns
+    """
+    standard_columns = {
+        "text_a",
+        "text_b",
+        "model_a",
+        "model_b",
+        DEFAULT_PREFERENCE_COLUMN,
+    }
+    potential_annotators = []
+
+    for col in df.columns:
+        if col in standard_columns:
+            continue
+
+        # Check if column contains boolean values or values that can be converted to text_a/text_b
+        unique_values = df[col].dropna().unique()
+        if len(unique_values) <= 10:  # Allow for None/NA values
+            # Check if values can be interpreted as preferences
+            values_set = set(str(v).lower() for v in unique_values if pd.notna(v))
+
+            # Simply check if text_a and text_b are present
+            if "text_a" in values_set and "text_b" in values_set:
+                potential_annotators.append(col)
+
+    return potential_annotators
+
 
 def create_annotated_pairs(
     train_df: pd.DataFrame,
@@ -122,16 +185,20 @@ def create_annotated_pairs(
     comparison_votes: Mapping[int, Dict[int, Optional[bool]]],
     dataset_name: str,
     filter_to_constitution: bool = True,
+    additional_columns: List[str] = None,
+    auto_detect_annotators: bool = True,
 ) -> Dict:
     """Convert ICAI results to annotated pairs format using direct data inputs.
 
     Args:
-        train_df: DataFrame with training data. Must have mandatory "text_a", "text_b", and "preferred_text" rows, and an optional "input" (prompt).
+        train_df: DataFrame with training data. Must have mandatory "text_a", "text_b", and DEFAULT_PREFERENCE_COLUMN rows, and an optional "input" (prompt).
         principles: Dictionary of principles where keys are principle IDs
         filtered_principles: List of filtered principles (those that made it to the constitution)
         comparison_votes: Dictionary of comparison votes
         dataset_name: Name for the dataset
         filter_to_constitution: Only include principles that made it to the constitution
+        additional_columns: List of additional columns from the training data to include as annotations
+        auto_detect_annotators: Whether to automatically detect annotator columns in the DataFrame
 
     Returns:
         The annotated pairs format as a dictionary
@@ -148,11 +215,40 @@ def create_annotated_pairs(
         "comparisons": [],
     }
 
-    # Add annotators to the output
-    add_annotators(output, principles, filtered_principles, filter_to_constitution)
+    # Detect annotator columns if enabled
+    detected_columns = []
+    if auto_detect_annotators:
+        detected_columns = detect_annotator_columns(train_df)
+        if detected_columns:
+            logger.info(f"Automatically detected annotator columns: {detected_columns}")
+
+    # Combine detected columns with manually specified ones
+    all_additional_columns = list(set((additional_columns or []) + detected_columns))
+
+    # Add all annotators to the output
+    add_annotators(
+        output,
+        principles,
+        filtered_principles,
+        filter_to_constitution,
+        all_additional_columns,
+    )
+
+    # Identify metadata columns (columns that are not standard columns, not annotator columns, and not used for comparison content)
+    standard_columns = {"text_a", "text_b", DEFAULT_PREFERENCE_COLUMN}
+    metadata_columns = [
+        col
+        for col in train_df.columns
+        if col not in standard_columns and col not in all_additional_columns
+    ]
+
+    # Add metadata columns to the overall metadata
+    if metadata_columns:
+        output["metadata"]["available_metadata_keys_per_comparison"] = metadata_columns
+        logger.info(f"Available metadata columns: {metadata_columns}")
 
     # Prepare data needed for annotations
-    human_annotator_id = output["metadata"]["default_annotator"]
+    default_annotator_id = output["metadata"]["default_annotator"]
     active_principles = (
         filtered_principles if filter_to_constitution else list(principles.values())
     )
@@ -162,17 +258,36 @@ def create_annotated_pairs(
         # Create unique ID for this comparison
         comparison_id = hash_comparison(row["text_a"], row["text_b"], row.get("input"))
 
-        # Initialize annotations dict with human annotation
+        # Initialize annotations dict with default annotator annotation
         annotations = {}
-        reference_preference = row["preferred_text"]
-        annotations[human_annotator_id] = {"pref": reference_preference}
+        reference_preference = row[DEFAULT_PREFERENCE_COLUMN]
+        annotations[default_annotator_id] = {
+            DEFAULT_PREFERENCE_KEY: reference_preference
+        }
 
         # Add principle annotations based on votes
-        votes = comparison_votes[idx]
-        principle_annotations = votes_to_annotations(
-            votes, principles, active_principles, reference_preference
-        )
-        annotations.update(principle_annotations)
+        if idx in comparison_votes:
+            votes = comparison_votes[idx]
+            principle_annotations = votes_to_annotations(
+                votes, principles, active_principles, reference_preference
+            )
+            annotations.update(principle_annotations)
+        else:
+            logger.warning(
+                f"Missing votes for comparison with index {idx}, skipping principle annotations"
+            )
+
+        # Add additional columns as annotations if specified
+        if all_additional_columns:
+            for col in all_additional_columns:
+                if col in row and pd.notna(row[col]):
+                    # Create a unique ID for this column annotator
+                    column_annotator_id = hash_string(f"column_{col}")
+
+                    # Add the annotation
+                    annotations[column_annotator_id] = {
+                        DEFAULT_PREFERENCE_KEY: str(row[col])
+                    }
 
         # Create the comparison entry
         comparison = {
@@ -180,12 +295,16 @@ def create_annotated_pairs(
             "prompt": row.get("input"),
             "text_a": row["text_a"],
             "text_b": row["text_b"],
-            "metadata": {
-                "model_a_name": row.get("model_a"),
-                "model_b_name": row.get("model_b"),
-            },
             "annotations": annotations,
         }
+
+        # Add all metadata columns to the comparison metadata
+        if metadata_columns:
+            comparison["metadata"] = {}
+            for col in metadata_columns:
+                if col in row and pd.notna(row[col]):
+                    comparison["metadata"][col] = str(row[col])
+
         output["comparisons"].append(comparison)
 
     return output
@@ -195,6 +314,8 @@ def results_to_annotated_pairs(
     results_dir: str,
     dataset_name: str,
     filter_to_constitution: bool = True,
+    additional_columns: List[str] = None,
+    auto_detect_annotators: bool = True,
 ) -> Dict[str, object]:
     """Convert ICAI results to annotated pairs format from files.
 
@@ -202,6 +323,8 @@ def results_to_annotated_pairs(
         results_dir: Path to ICAI results directory
         dataset_name: Name for the dataset
         filter_to_constitution: Only include principles that made it to the constitution
+        additional_columns: List of additional columns from the training data to include as annotations
+        auto_detect_annotators: Whether to automatically detect annotator columns in the DataFrame
 
     Returns:
         The annotated pairs format as a dictionary
@@ -222,6 +345,8 @@ def results_to_annotated_pairs(
         comparison_votes=comparison_votes,
         dataset_name=dataset_name,
         filter_to_constitution=filter_to_constitution,
+        additional_columns=additional_columns,
+        auto_detect_annotators=auto_detect_annotators,
     )
 
     return result

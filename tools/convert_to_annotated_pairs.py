@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate an annotated pairs dataset from legacy ICAI results (version <= 0.2.1). Note that more recent 
+Generate an annotated pairs dataset from legacy ICAI results (version <= 0.2.1). Note that more recent
 versions of ICAI natively generate this format.
 
 Usage:
@@ -33,10 +33,24 @@ def main():
         help="Name for the dataset (default: ICAI Generated Dataset)",
     )
     parser.add_argument(
-        "--include-all-principles",
-        "-a",
+        "--only-include-constitution-principles",
+        "-c",
         action="store_true",
-        help="Include all principles, not just those in the constitution",
+        default=False,
+        help="Only include principles from the constitution (default: include all principles)",
+    )
+    parser.add_argument(
+        "--additional-columns",
+        "-a",
+        nargs="+",
+        default=[],
+        help="Additional columns from the training data to include as annotations (default: none, example: -a 'column1 column2')",
+    )
+    parser.add_argument(
+        "--no-auto-detect",
+        action="store_true",
+        default=False,
+        help="Disable automatic detection of annotator columns (default: auto detection is enabled)",
     )
 
     args = parser.parse_args()
@@ -46,7 +60,9 @@ def main():
         annotated_pairs = results_to_annotated_pairs(
             results_dir=args.results_dir,
             dataset_name=args.dataset_name,
-            filter_to_constitution=not args.include_all_principles,
+            filter_to_constitution=args.only_include_constitution_principles,
+            additional_columns=args.additional_columns,
+            auto_detect_annotators=not args.no_auto_detect,
         )
         save_annotated_pairs_to_file(annotated_pairs, args.output)
         logger.success(
@@ -54,7 +70,7 @@ def main():
         )
     except Exception as e:
         logger.error(f"Error during conversion: {e}")
-        return 1
+        raise e
 
     return 0
 

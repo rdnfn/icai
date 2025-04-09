@@ -1,0 +1,9 @@
+data_path: "./data/processed/allenai/multipref_gpt4_human_merged.csv"
+data_start_index: 0
+data_len: 10000
+alg_model: "openai/gpt-4o-mini-2024-07-18"
+s0_skip_principle_generation: true
+s0_added_standard_principles_to_test:
+  - v2
+annotator:
+  skip: true
