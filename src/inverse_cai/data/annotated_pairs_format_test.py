@@ -315,7 +315,7 @@ def test_create_annotated_pairs_with_additional_columns():
     ), "Default annotator should be in annotations"
     assert (
         annotations[default_annotator_id]["pref"] == "text_a"
-    ), f"Default annotation should match preferred_text ({DEFAULT_PREFERENCE_COLUMN}, {annotations[default_annotator_id]['pref']} != text_a)"
+    ), "Default annotation should match preferred_text"
 
     assert (
         unknown_annotator_id in annotations
