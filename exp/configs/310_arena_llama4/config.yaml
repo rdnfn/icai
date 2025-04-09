@@ -1,0 +1,7 @@
+data_path: "./data/processed/lmsys/chatbot_arena_llama4_notie.csv"
+alg_model: "openai/gpt-4o-mini-2024-07-18"
+s0_skip_principle_generation: true
+s0_added_standard_principles_to_test:
+  - v2
+annotator:
+  skip: true
