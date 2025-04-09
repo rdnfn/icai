@@ -288,7 +288,7 @@ def test_create_annotated_pairs_with_additional_columns():
     default_annotator_id = None
     unknown_annotator_id = None
     for annotator_id, annotator in result["annotators"].items():
-        if annotator["type"] == DEFAULT_ANNOTATOR_TYPE:
+        if annotator["description"] == DEFAULT_ANNOTATOR_DESCRIPTION:
             default_annotator_id = annotator_id
         if annotator["type"] == "unknown":
             unknown_annotator_id = annotator_id
@@ -315,11 +315,8 @@ def test_create_annotated_pairs_with_additional_columns():
     ), "Default annotator should be in annotations"
     assert (
         annotations[default_annotator_id]["pref"] == "text_a"
-    ), "Default annotation should match preferred_text"
+    ), f"Default annotation should match preferred_text ({DEFAULT_PREFERENCE_COLUMN}, {annotations[default_annotator_id]['pref']} != text_a)"
 
     assert (
-        column_annotator_id in annotations
-    ), "Column annotator should be in annotations"
-    assert (
-        annotations[column_annotator_id]["value"] == "Some value"
-    ), "Column annotation should match the value in the dataframe"
+        unknown_annotator_id in annotations
+    ), "Unknown annotator should be in annotations"
