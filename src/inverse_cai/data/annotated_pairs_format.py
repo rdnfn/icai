@@ -63,6 +63,11 @@ def votes_to_annotations(
         - For None votes: {"pref": None, "no_pref_reason": "not_applicable"}
         - For "invalid" votes: {"pref": None, "no_pref_reason": "invalid"}
     """
+    assert reference_preference in [
+        "text_a",
+        "text_b",
+    ], f"Invalid reference preference: {reference_preference} (should be 'text_a' or 'text_b')"
+
     annotations = {}
 
     for principle_idx, vote in votes.items():
@@ -93,8 +98,8 @@ def votes_to_annotations(
             elif vote == "invalid":
                 # Special case for invalid votes
                 annotations[principle_id] = {
-                    DEFAULT_PREFERENCE_KEY: None, 
-                    "no_pref_reason": "invalid"
+                    DEFAULT_PREFERENCE_KEY: None,
+                    "no_pref_reason": "invalid",
                 }
             else:
                 raise ValueError(
