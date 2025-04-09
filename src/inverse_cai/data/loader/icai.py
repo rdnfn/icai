@@ -93,7 +93,7 @@ def load_votes_per_comparison(results_path: Path) -> Dict[int, Dict[int, bool]]:
     votes_per_comparison_path = results_path / COMPARISON_VOTES_FILENAME
     if not votes_per_comparison_path.exists():
         raise FileNotFoundError(
-            f"Could not find COMPARISON_VOTES_FILENAME in {results_path}"
+            f"Could not find {COMPARISON_VOTES_FILENAME} in {results_path}"
         )
     votes_df = pd.read_csv(votes_per_comparison_path)
     for _, row in votes_df.iterrows():
