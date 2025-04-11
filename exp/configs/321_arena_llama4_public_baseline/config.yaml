@@ -1,0 +1,7 @@
+data_path: "./data/processed/lmsys/llama4_mav_arena_nonarena_merged_v2.csv"
+alg_model: "openai/gpt-4o-mini-2024-07-18"
+s0_skip_principle_generation: true
+s0_added_standard_principles_to_test:
+  - v2
+annotator:
+  skip: true
