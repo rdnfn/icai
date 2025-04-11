@@ -197,7 +197,7 @@ def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
             values_set = set(str(v).lower() for v in unique_values if pd.notna(v))
 
             # Simply check if text_a and text_b are present
-            if "text_a" in values_set and "text_b" in values_set:
+            if "text_a" in values_set or "text_b" in values_set:
                 potential_annotators.append(col)
 
     return potential_annotators
