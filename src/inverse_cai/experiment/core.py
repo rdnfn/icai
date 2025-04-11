@@ -212,6 +212,14 @@ def run(cfg: DictConfig):
     dotenv.load_dotenv(cfg.secrets_path, verbose=True)
 
     data = setup_train_data(cfg)
+    has_preferred_text = "preferred_text" in data.columns
+    added_pseudo_preferred_text = False
+    if not has_preferred_text:
+        logger.warning(
+            "Data has no preferred_text column, this may cause issues for some functionalities. Adding pseudo preferred_text column that always selects the first text (text_a)."
+        )
+        data["preferred_text"] = "text_a"
+        added_pseudo_preferred_text = True
     data.to_csv(results_path / "000_train_data.csv", index=True, index_label="index")
     test_data = setup_test_data(cfg)
     assert_no_identical_rows(data, test_data)
@@ -287,6 +295,15 @@ def run(cfg: DictConfig):
         "recommend to manually inspect ICAI's interpretable constitutions before using "
         "them for downstream tasks to avoid accidentally amplifying harmful biases."
     )
+
+    if added_pseudo_preferred_text:
+        logger.warning(
+            "Used synthetic preferred_text column. Since no ground-truth reference provided, "
+            "the results should be interpreted with caution, e.g. constitutions and "
+            "per-principle approval votes are based on synthetic data. Per-principle votes "
+            "still make sense, as long as they are considered relative to the synthetic "
+            "preferred_text column (always preferring text_a)."
+        )
 
     # Generate annotated pairs format
     ap_output_file = results_path / "070_annotated_pairs_dataset.json"
