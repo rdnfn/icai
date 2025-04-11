@@ -310,6 +310,7 @@ def run(cfg: DictConfig):
     annotated_pairs = results_to_annotated_pairs(
         results_dir=str(results_path),
         dataset_name=f"ICAI Dataset - {pathlib.Path(hydra_out_path).name}",
+        filter_to_constitution=False,
     )
     save_annotated_pairs_to_file(annotated_pairs, str(ap_output_file))
     logger.info(f"Generated annotated pairs format at {ap_output_file}")
