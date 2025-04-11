@@ -131,7 +131,7 @@ def add_annotators(
     # Create default annotator
     default_annotator_id = hash_string(DEFAULT_ANNOTATOR_DESCRIPTION)
     output["annotators"][default_annotator_id] = {
-        "name": "Default",
+        "name": DEFAULT_PREFERENCE_COLUMN,
         "description": DEFAULT_ANNOTATOR_DESCRIPTION,
         "type": DEFAULT_ANNOTATOR_TYPE,
     }
@@ -197,7 +197,7 @@ def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
             values_set = set(str(v).lower() for v in unique_values if pd.notna(v))
 
             # Simply check if text_a and text_b are present
-            if "text_a" in values_set and "text_b" in values_set:
+            if "text_a" in values_set or "text_b" in values_set:
                 potential_annotators.append(col)
 
     return potential_annotators

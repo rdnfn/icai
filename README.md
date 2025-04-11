@@ -113,6 +113,9 @@ When using ICAI for downstream use-cases or further analysis, we recommend using
         "435cef52": {
           "pref": "text_a"
         }
+      },
+      "metadata": {
+        "index": "0",
       }
     }
   ]

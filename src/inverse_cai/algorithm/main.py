@@ -59,7 +59,11 @@ def run(
 
     ### checking inputs
     # make sure data without ties
-    assert not feedback["preferred_text"].str.contains("tie").any()
+    contains_ties = feedback["preferred_text"].str.contains("tie").any()
+    if contains_ties:
+        logger.warning(
+            "Preferred text column contains ties, this may cause issues for some functionalities."
+        )
 
     if not config.s0_skip_principle_generation:
         ### STAGE 1: Generate principles from feedback
