@@ -260,7 +260,7 @@ def create_annotated_pairs(
     )
 
     # Identify metadata columns (columns that are not standard columns, not annotator columns, and not used for comparison content)
-    standard_columns = {"text_a", "text_b", DEFAULT_PREFERENCE_COLUMN}
+    standard_columns = {"text_a", "text_b", "input", DEFAULT_PREFERENCE_COLUMN}
     metadata_columns = [
         col
         for col in train_df.columns
