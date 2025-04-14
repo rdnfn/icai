@@ -9,7 +9,7 @@ import datetime
 import hashlib
 import json
 from pathlib import Path
-from typing import Dict, List, Mapping, Optional, Sequence, Union
+from typing import Dict, List, Mapping, Optional, Sequence, Union, Any
 
 import pandas as pd
 from loguru import logger
@@ -20,10 +20,17 @@ from inverse_cai.data.loader import icai
 DEFAULT_ANNOTATOR_DESCRIPTION = (
     "Default annotator from original dataset (from column `preferred_text`)"
 )
-FORMAT_VERSION = "1.0"
+FORMAT_VERSION = "2.0"
 DEFAULT_ANNOTATOR_TYPE = "unknown"
 DEFAULT_PREFERENCE_KEY = "pref"
 DEFAULT_PREFERENCE_COLUMN = "preferred_text"
+
+PREFERENCE_ALIAS_MAPPING = {
+    "a": "a",
+    "b": "b",
+    "text_a": "a",
+    "text_b": "a",
+}
 
 
 def hash_string(s: str) -> str:
@@ -31,9 +38,17 @@ def hash_string(s: str) -> str:
     return hashlib.md5(s.encode("utf-8")).hexdigest()[:8]
 
 
-def hash_comparison(text_a: str, text_b: str, prompt: Optional[str]) -> str:
-    """Create a hash ID for a comparison based on its content."""
-    combined = f"{text_a}|{text_b}|"
+def hash_comparison(
+    response_a: Dict[str, Any], response_b: Dict[str, Any], prompt: Optional[str]
+) -> str:
+    """Create a hash ID for a comparison based on its content.
+
+    Args:
+        response_a: A dictionary with at least a 'text' key
+        response_b: A dictionary with at least a 'text' key
+        prompt: An optional prompt string
+    """
+    combined = f"{response_a['text']}|{response_b['text']}|"
     if prompt is not None:
         combined = f"{prompt}|{combined}"
     return hash_string(combined)
@@ -55,19 +70,14 @@ def votes_to_annotations(
             - "invalid": Vote is invalid for technical reasons
         principle_index_to_text: Dictionary mapping principle IDs to their text
         active_principles: List of active principles to include
-        reference_preference: The reference preference (text_a or text_b)
+        reference_preference: The reference preference ("a" or "b")
 
     Returns:
         Dictionary mapping principle IDs (hashed) to dictionaries with preference information:
-        - For True/False votes: {"pref": "text_a" or "text_b"}
+        - For True/False votes: {"pref": "a" or "b"}
         - For None votes: {"pref": None, "no_pref_reason": "not_applicable"}
         - For "invalid" votes: {"pref": None, "no_pref_reason": "invalid"}
     """
-    assert reference_preference in [
-        "text_a",
-        "text_b",
-    ], f"Invalid reference preference: {reference_preference} (should be 'text_a' or 'text_b')"
-
     annotations = {}
 
     for principle_idx, vote in votes.items():
@@ -77,7 +87,7 @@ def votes_to_annotations(
         if principle_text in active_principles:
             principle_id = hash_string(principle_text)
 
-            # Convert vote to text_a, text_b, or None with reason
+            # Convert vote to a, b, or None with reason
             if vote is None:
                 annotations[principle_id] = {
                     DEFAULT_PREFERENCE_KEY: None,
@@ -92,7 +102,7 @@ def votes_to_annotations(
                 # Principle disagrees with reference preference
                 annotations[principle_id] = {
                     DEFAULT_PREFERENCE_KEY: (
-                        "text_b" if reference_preference == "text_a" else "text_a"
+                        "b" if reference_preference == "a" else "a"
                     )
                 }
             elif vote == "invalid":
@@ -167,7 +177,7 @@ def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
     """Detect columns that appear to be annotator columns in the DataFrame.
 
     This function looks for columns that:
-    1. Contain boolean values or values that can be converted to text_a/text_b
+    1. Contain boolean values or values that can be converted to a/b
     2. Have a reasonable number of non-null values
     3. Are not standard columns (text_a, text_b, input, etc.)
 
@@ -190,7 +200,7 @@ def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
         if col in standard_columns:
             continue
 
-        # Check if column contains boolean values or values that can be converted to text_a/text_b
+        # Check if column contains boolean values or values that can be converted to a/b
         unique_values = df[col].dropna().unique()
         if len(unique_values) <= 10:  # Allow for None/NA values
             # Check if values can be interpreted as preferences
@@ -260,7 +270,14 @@ def create_annotated_pairs(
     )
 
     # Identify metadata columns (columns that are not standard columns, not annotator columns, and not used for comparison content)
-    standard_columns = {"text_a", "text_b", "input", DEFAULT_PREFERENCE_COLUMN}
+    standard_columns = {
+        "text_a",
+        "text_b",
+        "model_a",
+        "model_b",
+        "input",
+        DEFAULT_PREFERENCE_COLUMN,
+    }
     metadata_columns = [
         col
         for col in train_df.columns
@@ -280,12 +297,34 @@ def create_annotated_pairs(
 
     # Process each comparison
     for idx, row in train_df.iterrows():
+        # Extract model information for response_a and response_b
+        response_a = {"text": row["text_a"]}
+        response_b = {"text": row["text_b"]}
+
+        # Add model information if available
+        if "model_a" in row and pd.notna(row["model_a"]):
+            response_a["model"] = row["model_a"]
+        if "model_b" in row and pd.notna(row["model_b"]):
+            response_b["model"] = row["model_b"]
+
         # Create unique ID for this comparison
-        comparison_id = hash_comparison(row["text_a"], row["text_b"], row.get("input"))
+        comparison_id = hash_comparison(response_a, response_b, row.get("input"))
 
         # Initialize annotations dict with default annotator annotation
         annotations = {}
         reference_preference = row[DEFAULT_PREFERENCE_COLUMN]
+        # Map aliases to standard format
+        assert (
+            reference_preference in PREFERENCE_ALIAS_MAPPING.keys()
+        ), f"Invalid reference preference: {reference_preference}"
+        reference_preference = PREFERENCE_ALIAS_MAPPING[reference_preference]
+
+        # Validate that the preference is in the correct format
+        assert reference_preference in [
+            "a",
+            "b",
+        ], f"Invalid preference value: {reference_preference}. Should be 'a' or 'b'."
+
         annotations[default_annotator_id] = {
             DEFAULT_PREFERENCE_KEY: reference_preference
         }
@@ -318,8 +357,8 @@ def create_annotated_pairs(
         comparison = {
             "id": comparison_id,
             "prompt": row.get("input"),
-            "text_a": row["text_a"],
-            "text_b": row["text_b"],
+            "response_a": response_a,
+            "response_b": response_b,
             "annotations": annotations,
         }
 
