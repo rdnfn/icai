@@ -68,7 +68,7 @@ By default all experiment results are saved in the `./outputs/<DATE>_<TIME>` dir
             └── 093_results_testset.json
 ```
 
-#### Using results for further analysis: the *annotated-pairs* json format
+#### Using results for further analysis: the *annotated-pairs* json format (v2.0)
 
 When using ICAI for downstream use-cases or further analysis, we recommend using our `annotated-pairs` json format (saved as `070_annotated_pairs_dataset.json`). This format combines the input data alongside the annotations by ICAI's principle-following annotators. An example is shown below:
 
@@ -76,7 +76,7 @@ When using ICAI for downstream use-cases or further analysis, we recommend using
 ```json
 {
   "metadata": {
-    "version": "1.0",
+    "version": "2.0",
     "description": "Annotated pairs dataset with annotations from ICAI",
     "created_at": "2025-04-02T16:02:37Z",
     "dataset_name": "ICAI Dataset - 2025-04-02_16-02-05",
@@ -99,23 +99,29 @@ When using ICAI for downstream use-cases or further analysis, we recommend using
   },
   "comparisons": [
     {
-      "id": "2fbb184f",
-      "prompt": null,
-      "text_a": "In the heart of a bustling city, a sleek black cat named Shadow prowled the moonlit rooftops, her eyes gleaming with curiosity and mischief. She discovered a hidden garden atop an old apartment building, where she danced under the stars, chasing fireflies that glowed like tiny lanterns. As dawn painted the sky in hues of orange and pink, Shadow found her way back home, carrying the secret of the garden in her heart.",
-      "text_b": "Across the town, in a cozy neighborhood, a golden retriever named Buddy embarked on his daily adventure, tail wagging with uncontainable excitement. He found a lost toy under the bushes in the park, its colors faded and fabric worn, but to Buddy, it was a treasure untold. Returning home with his newfound prize, Buddy's joyful barks filled the air, reminding everyone in the house that happiness can be found in the simplest of things.",
+      "id": "4b49a6e7",
+      "prompt": "Write a short story about a pet.",
+      "response_a": {
+        "text": "In the heart of a bustling city, a sleek black cat named Shadow prowled the moonlit rooftops, her eyes gleaming with curiosity and mischief. She discovered a hidden garden atop an old apartment building, where she danced under the stars, chasing fireflies that glowed like tiny lanterns. As dawn painted the sky in hues of orange and pink, Shadow found her way back home, carrying the secret of the garden in her heart.",
+        "model": "Model X"
+      },
+      "response_b": {
+        "text": "Across the town, in a cozy neighborhood, a golden retriever named Buddy embarked on his daily adventure, tail wagging with uncontainable excitement. He found a lost toy under the bushes in the park, its colors faded and fabric worn, but to Buddy, it was a treasure untold. Returning home with his newfound prize, Buddy's joyful barks filled the air, reminding everyone in the house that happiness can be found in the simplest of things.",
+        "model": "Model Y"
+      },
       "annotations": {
         "d36860d4": {
-          "pref": "text_a"
+          "pref": "a"
         },
         "2f45a6d0": {
-          "pref": "text_a"
+          "pref": "a"
         },
         "435cef52": {
-          "pref": "text_a"
+          "pref": "a"
         }
       },
       "metadata": {
-        "index": "0",
+        "index": "0"
       }
     }
   ]
@@ -124,7 +130,17 @@ When using ICAI for downstream use-cases or further analysis, we recommend using
 
 ## Run experiment with your own data
 
-To run ICAI on your dataset, you first need to convert it to a `csv` file with the following three columns: `text_a`,`text_b`,`preferred_text`. The first two should be strings. Note that the ICAI implementation currently uses no separate "prompt" column. If such a column exists in your dataset, you likely want to add the prompt to each response column (`text_a`,`text_b`) such that the ICAI algorithm can understand the full context of the preference label. Entries in the column `preferred_text` should take one of two values: `"text_a"` or `"text_b"`. Ties or other annotation values are currently not used by the algorithm. To run ICAI on you prepared dataset, simply use:
+To run ICAI on your dataset, you first need to convert it to a `csv` file with the following required columns:
+- `text_a`, `text_b`: The text responses to compare
+- `preferred_text`: The preferred response, must be one of `"text_a"` or `"text_b"`
+
+Optional columns that will be included in the annotated pairs output:
+- `input`: The prompt or question that elicited the responses
+- `model_a`, `model_b`: The model names that generated each response
+
+The text columns should be strings. If your dataset has a separate "prompt" or "input" column, you can include it as an `input` column in your CSV, and it will be properly included in the annotated pairs output. Entries in the column `preferred_text` should take one of two values: `"text_a"` or `"text_b"`. Ties or other annotation values are currently not used by the algorithm.
+
+To run ICAI on your prepared dataset, simply use:
 
 ```
 icai-exp data_path="<path/to/your-data.csv>"
