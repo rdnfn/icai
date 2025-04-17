@@ -321,53 +321,6 @@ def create_annotated_pairs(
     return output
 
 
-def results_to_annotated_pairs(
-    results_dir: str | Path,
-    dataset_name: str,
-    dataset: pd.DataFrame | None = None,
-    principles: Mapping[int, str] | None = None,
-    comparison_votes: Mapping[int, Dict[int, Union[bool, str, None]]] | None = None,
-    additional_columns: List[str] = None,
-    auto_detect_annotators: bool = True,
-) -> Dict[str, object]:
-    """Convert ICAI results to annotated pairs format from files.
-
-    Args:
-        results_dir: Path to ICAI results directory
-        dataset_name: Name for the dataset
-        additional_columns: List of additional columns from the training data to include as annotations
-        auto_detect_annotators: Whether to automatically detect annotator columns in the DataFrame
-
-    Returns:
-        The annotated pairs format as a dictionary
-    """
-    results_path = Path(results_dir)
-
-    # Load all required data using the icai loader module
-    if not dataset:
-        train_df = icai.load_train_data(results_path)
-    else:
-        train_df = dataset
-
-    if not principles:
-        principles = icai.load_principles(results_path)
-
-    if not comparison_votes:
-        comparison_votes = icai.load_votes_per_comparison(results_path)
-
-    # Call the core implementation with loaded data
-    result = create_annotated_pairs(
-        train_df=train_df,
-        principles=principles,
-        comparison_votes=comparison_votes,
-        dataset_name=dataset_name,
-        additional_columns=additional_columns,
-        auto_detect_annotators=auto_detect_annotators,
-    )
-
-    return result
-
-
 def save_annotated_pairs_to_file(
     annotated_pairs: Dict, output_file: str | Path
 ) -> None:
