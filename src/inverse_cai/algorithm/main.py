@@ -266,6 +266,7 @@ def run(
         "feedback": feedback,
         "clusters": clusters,
         "summaries": summaries,
+        "raw_votes": raw_votes,
         "combined_votes": combined_votes,
         "filtered_plinciples": filtered_principles,
         "final_principles": final_principles,
