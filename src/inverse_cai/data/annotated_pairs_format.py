@@ -112,8 +112,6 @@ def votes_to_annotations(
 def add_annotators(
     output: Dict,
     principles: Mapping[int, str],
-    filtered_principles: Sequence[str],
-    filter_to_constitution: bool = True,
     additional_columns: List[str] = None,
 ) -> None:
     """Add all annotators to the output structure.
@@ -124,8 +122,6 @@ def add_annotators(
     Args:
         output: The output dataset dictionary to modify in-place
         principles: Dictionary of principles where keys are principle IDs
-        filtered_principles: List of filtered principles
-        filter_to_constitution: Only include principles that made it to the constitution
         additional_columns: List of additional columns from the training data to include as annotations
     """
     # Create default annotator
@@ -138,9 +134,7 @@ def add_annotators(
     output["metadata"]["default_annotator"] = default_annotator_id
 
     # Determine active principles
-    active_principles = (
-        filtered_principles if filter_to_constitution else list(principles.values())
-    )
+    active_principles = list(principles.values())
 
     # Create principle annotators
     for principle in active_principles:
@@ -206,10 +200,8 @@ def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
 def create_annotated_pairs(
     train_df: pd.DataFrame,
     principles: Mapping[int, str],
-    filtered_principles: Sequence[str],
     comparison_votes: Mapping[int, Dict[int, Union[bool, str, None]]],
     dataset_name: str,
-    filter_to_constitution: bool = True,
     additional_columns: List[str] = None,
     auto_detect_annotators: bool = True,
 ) -> Dict:
@@ -218,10 +210,8 @@ def create_annotated_pairs(
     Args:
         train_df: DataFrame with training data. Must have mandatory "text_a", "text_b", and DEFAULT_PREFERENCE_COLUMN rows, and an optional "input" (prompt).
         principles: Dictionary of principles where keys are principle IDs
-        filtered_principles: List of filtered principles (those that made it to the constitution)
         comparison_votes: Dictionary of comparison votes
         dataset_name: Name for the dataset
-        filter_to_constitution: Only include principles that made it to the constitution
         additional_columns: List of additional columns from the training data to include as annotations
         auto_detect_annotators: Whether to automatically detect annotator columns in the DataFrame
 
@@ -254,8 +244,6 @@ def create_annotated_pairs(
     add_annotators(
         output,
         principles,
-        filtered_principles,
-        filter_to_constitution,
         all_additional_columns,
     )
 
@@ -274,9 +262,7 @@ def create_annotated_pairs(
 
     # Prepare data needed for annotations
     default_annotator_id = output["metadata"]["default_annotator"]
-    active_principles = (
-        filtered_principles if filter_to_constitution else list(principles.values())
-    )
+    active_principles = list(principles.values())
 
     # Process each comparison
     for idx, row in train_df.iterrows():
@@ -336,9 +322,11 @@ def create_annotated_pairs(
 
 
 def results_to_annotated_pairs(
-    results_dir: str,
+    results_dir: str | Path,
     dataset_name: str,
-    filter_to_constitution: bool = True,
+    dataset: pd.DataFrame | None = None,
+    principles: Mapping[int, str] | None = None,
+    comparison_votes: Mapping[int, Dict[int, Union[bool, str, None]]] | None = None,
     additional_columns: List[str] = None,
     auto_detect_annotators: bool = True,
 ) -> Dict[str, object]:
@@ -347,7 +335,6 @@ def results_to_annotated_pairs(
     Args:
         results_dir: Path to ICAI results directory
         dataset_name: Name for the dataset
-        filter_to_constitution: Only include principles that made it to the constitution
         additional_columns: List of additional columns from the training data to include as annotations
         auto_detect_annotators: Whether to automatically detect annotator columns in the DataFrame
 
@@ -357,19 +344,23 @@ def results_to_annotated_pairs(
     results_path = Path(results_dir)
 
     # Load all required data using the icai loader module
-    train_df = icai.load_train_data(results_path)
-    principles = icai.load_principles(results_path)
-    filtered_principles = icai.load_filtered_principles(results_path)
-    comparison_votes = icai.load_votes_per_comparison(results_path)
+    if not dataset:
+        train_df = icai.load_train_data(results_path)
+    else:
+        train_df = dataset
+
+    if not principles:
+        principles = icai.load_principles(results_path)
+
+    if not comparison_votes:
+        comparison_votes = icai.load_votes_per_comparison(results_path)
 
     # Call the core implementation with loaded data
     result = create_annotated_pairs(
         train_df=train_df,
         principles=principles,
-        filtered_principles=filtered_principles,
         comparison_votes=comparison_votes,
         dataset_name=dataset_name,
-        filter_to_constitution=filter_to_constitution,
         additional_columns=additional_columns,
         auto_detect_annotators=auto_detect_annotators,
     )
@@ -377,13 +368,16 @@ def results_to_annotated_pairs(
     return result
 
 
-def save_annotated_pairs_to_file(annotated_pairs: Dict, output_file: str) -> None:
+def save_annotated_pairs_to_file(
+    annotated_pairs: Dict, output_file: str | Path
+) -> None:
     """Save the annotated pairs to a JSON file.
 
     Args:
         annotated_pairs: The annotated pairs dataset to save
         output_file: Path to the output file
     """
+    output_file = Path(output_file)
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(annotated_pairs, f, ensure_ascii=False, indent=2)
     logger.info(f"Created annotated pairs format dataset: {output_file}")
