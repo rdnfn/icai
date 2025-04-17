@@ -49,6 +49,22 @@ def test_hash_comparison():
         hash_comparison(response_b, response_a, None) != result
     ), "Swapping response_a and response_b should change the hash"
 
+    # Test that model information affects the hash
+    response_a_different_model = {"text": "response A", "model": "Model Z"}
+    assert (
+        hash_comparison(response_a_different_model, response_b, None) != result
+    ), "Changing model information should change the hash"
+
+    # Test with additional response information
+    response_a_with_extra = {
+        "text": "response A",
+        "model": "Model X",
+        "metadata": {"timestamp": "2023-01-01"},
+    }
+    assert (
+        hash_comparison(response_a_with_extra, response_b, None) != result
+    ), "Adding extra response information should change the hash"
+
 
 def test_votes_to_annotations():
     """Test the votes_to_annotations function."""

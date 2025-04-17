@@ -48,7 +48,11 @@ def hash_comparison(
         response_b: A dictionary with at least a 'text' key
         prompt: An optional prompt string
     """
-    combined = f"{response_a['text']}|{response_b['text']}|"
+    # Serialize each response dictionary to JSON to include all fields
+    response_a_str = json.dumps(response_a, sort_keys=True)
+    response_b_str = json.dumps(response_b, sort_keys=True)
+
+    combined = f"{response_a_str}|{response_b_str}"
     if prompt is not None:
         combined = f"{prompt}|{combined}"
     return hash_string(combined)
