@@ -198,7 +198,7 @@ def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
 
 
 def create_annotated_pairs(
-    train_df: pd.DataFrame,
+    df: pd.DataFrame,
     principles: Mapping[int, str],
     comparison_votes: Mapping[int, Dict[int, Union[bool, str, None]]],
     dataset_name: str,
@@ -208,7 +208,7 @@ def create_annotated_pairs(
     """Convert ICAI results to annotated pairs format using direct data inputs.
 
     Args:
-        train_df: DataFrame with training data. Must have mandatory "text_a", "text_b", and DEFAULT_PREFERENCE_COLUMN rows, and an optional "input" (prompt).
+        df: DataFrame with preference data pairs. Must have mandatory "text_a", "text_b", and DEFAULT_PREFERENCE_COLUMN rows, and an optional "input" (prompt).
         principles: Dictionary of principles where keys are principle IDs
         comparison_votes: Dictionary of comparison votes
         dataset_name: Name for the dataset
@@ -230,10 +230,15 @@ def create_annotated_pairs(
         "comparisons": [],
     }
 
+    df = df.copy()
+
+    # ensure all columns are hashable
+    df = df.applymap(str)
+
     # Detect annotator columns if enabled
     detected_columns = []
     if auto_detect_annotators:
-        detected_columns = detect_annotator_columns(train_df)
+        detected_columns = detect_annotator_columns(df)
         if detected_columns:
             logger.info(f"Automatically detected annotator columns: {detected_columns}")
 
@@ -251,7 +256,7 @@ def create_annotated_pairs(
     standard_columns = {"text_a", "text_b", DEFAULT_PREFERENCE_COLUMN}
     metadata_columns = [
         col
-        for col in train_df.columns
+        for col in df.columns
         if col not in standard_columns and col not in all_additional_columns
     ]
 
@@ -265,7 +270,7 @@ def create_annotated_pairs(
     active_principles = list(principles.values())
 
     # Process each comparison
-    for idx, row in train_df.iterrows():
+    for idx, row in df.iterrows():
         # Create unique ID for this comparison
         comparison_id = hash_comparison(row["text_a"], row["text_b"], row.get("input"))
 
