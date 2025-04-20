@@ -28,26 +28,42 @@ def test_hash_string():
 
 
 def test_hash_comparison():
-    # Test with two texts and no prompt
-    text_a = "response A"
-    text_b = "response B"
-    result = hash_comparison(text_a, text_b, None)
+    # Test with two response dictionaries and no prompt
+    response_a = {"text": "response A", "model": "Model X"}
+    response_b = {"text": "response B", "model": "Model Y"}
+    result = hash_comparison(response_a, response_b, None)
 
     # The hash should be deterministic
     assert (
-        hash_comparison(text_a, text_b, None) == result
+        hash_comparison(response_a, response_b, None) == result
     ), "Same inputs should produce same hash"
 
     # Test with prompt
     prompt = "What is the capital of France?"
     assert (
-        hash_comparison(text_a, text_b, prompt) != result
+        hash_comparison(response_a, response_b, prompt) != result
     ), "Adding a prompt should change the hash"
 
     # Order matters
     assert (
-        hash_comparison(text_b, text_a, None) != result
-    ), "Swapping text_a and text_b should change the hash"
+        hash_comparison(response_b, response_a, None) != result
+    ), "Swapping response_a and response_b should change the hash"
+
+    # Test that model information affects the hash
+    response_a_different_model = {"text": "response A", "model": "Model Z"}
+    assert (
+        hash_comparison(response_a_different_model, response_b, None) != result
+    ), "Changing model information should change the hash"
+
+    # Test with additional response information
+    response_a_with_extra = {
+        "text": "response A",
+        "model": "Model X",
+        "metadata": {"timestamp": "2023-01-01"},
+    }
+    assert (
+        hash_comparison(response_a_with_extra, response_b, None) != result
+    ), "Adding extra response information should change the hash"
 
 
 def test_votes_to_annotations():
@@ -61,7 +77,7 @@ def test_votes_to_annotations():
         4: "Be creative",
     }
     active_principles = ["Be honest", "Be helpful", "Be concise", "Be creative"]
-    reference_preference = "text_a"
+    reference_preference = "a"
 
     # Expected hashed IDs
     honest_id = hash_string("Be honest")
@@ -76,10 +92,10 @@ def test_votes_to_annotations():
 
     # Verify results
     assert (
-        result[honest_id]["pref"] == "text_a"
+        result[honest_id]["pref"] == "a"
     ), "Principle with vote True should get reference_preference"
     assert (
-        result[helpful_id]["pref"] == "text_b"
+        result[helpful_id]["pref"] == "b"
     ), "Principle with vote False should get opposite of reference_preference"
     assert (
         result[concise_id]["pref"] is None
@@ -102,14 +118,14 @@ def test_votes_to_annotations():
     assert len(result) == 1, "Only active principles should be included"
     assert honest_id in result, "Only the active principle should be included"
 
-    # Test with reference_preference = text_b
-    reference_preference = "text_b"
+    # Test with reference_preference = b
+    reference_preference = "b"
     result = votes_to_annotations(
         votes, principle_index_to_text, active_principles, reference_preference
     )
     assert (
-        result[honest_id]["pref"] == "text_b"
-    ), "With text_b as reference, True vote should be text_b"
+        result[honest_id]["pref"] == "b"
+    ), "With b as reference, True vote should be b"
 
     # Test with unexpected vote value
     votes_with_unexpected = {1: "unexpected_value"}
@@ -208,7 +224,7 @@ def test_create_annotated_pairs():
             "text_a": ["Response A"],
             "text_b": ["Response B"],
             "input": ["What is the capital of France?"],
-            DEFAULT_PREFERENCE_COLUMN: ["text_a"],
+            DEFAULT_PREFERENCE_COLUMN: ["a"],
             "model_a": ["Model X"],
             "model_b": ["Model Y"],
         }
@@ -233,7 +249,7 @@ def test_create_annotated_pairs():
     assert (
         result["metadata"]["dataset_name"] == dataset_name
     ), "Dataset name should be set"
-    assert result["metadata"]["version"] == "1.0", "Version should be set"
+    assert result["metadata"]["version"] == "2.0", "Version should be set"
 
     # Verify annotators
     default_annotator_id = None
@@ -245,8 +261,22 @@ def test_create_annotated_pairs():
     # Verify comparison
     assert len(result["comparisons"]) == 1, "Should have 1 comparison"
     comparison = result["comparisons"][0]
-    assert comparison["text_a"] == "Response A", "text_a should be set"
-    assert comparison["text_b"] == "Response B", "text_b should be set"
+
+    # Check response_a and response_b format
+    assert "response_a" in comparison, "response_a should be present"
+    assert "response_b" in comparison, "response_b should be present"
+    assert (
+        comparison["response_a"]["text"] == "Response A"
+    ), "response_a.text should be set"
+    assert (
+        comparison["response_b"]["text"] == "Response B"
+    ), "response_b.text should be set"
+    assert (
+        comparison["response_a"]["model"] == "Model X"
+    ), "response_a.model should be set"
+    assert (
+        comparison["response_b"]["model"] == "Model Y"
+    ), "response_b.model should be set"
     assert (
         comparison["prompt"] == "What is the capital of France?"
     ), "prompt should be set"
@@ -257,14 +287,14 @@ def test_create_annotated_pairs():
         default_annotator_id in annotations
     ), "Default annotator should be in annotations"
     assert (
-        annotations[default_annotator_id]["pref"] == "text_a"
-    ), "Default annotation should match preferred_text"
+        annotations[default_annotator_id]["pref"] == "a"
+    ), "Default annotation should be converted to 'a'"
 
     honest_id = hash_string("Be honest")
     assert honest_id in annotations, "Principle annotator should be in annotations"
     assert (
-        annotations[honest_id]["pref"] == "text_a"
-    ), "Principle annotation should be correct"
+        annotations[honest_id]["pref"] == "a"
+    ), "Principle annotation should be correct and use 'a'"
 
 
 def test_create_annotated_pairs_with_additional_columns():
@@ -275,7 +305,7 @@ def test_create_annotated_pairs_with_additional_columns():
             "text_a": ["Response A"],
             "text_b": ["Response B"],
             "input": ["What is the capital of France?"],
-            DEFAULT_PREFERENCE_COLUMN: ["text_a"],
+            DEFAULT_PREFERENCE_COLUMN: ["a"],
             "model_a": ["Model X"],
             "model_b": ["Model Y"],
             "additional_column": ["Some value"],
@@ -307,7 +337,7 @@ def test_create_annotated_pairs_with_additional_columns():
     assert (
         result["metadata"]["dataset_name"] == dataset_name
     ), "Dataset name should be set"
-    assert result["metadata"]["version"] == "1.0", "Version should be set"
+    assert result["metadata"]["version"] == "2.0", "Version should be set"
 
     # Verify annotators
     default_annotator_id = None
@@ -327,8 +357,16 @@ def test_create_annotated_pairs_with_additional_columns():
     # Verify comparison
     assert len(result["comparisons"]) == 1, "Should have 1 comparison"
     comparison = result["comparisons"][0]
-    assert comparison["text_a"] == "Response A", "text_a should be set"
-    assert comparison["text_b"] == "Response B", "text_b should be set"
+
+    # Check response_a and response_b format
+    assert "response_a" in comparison, "response_a should be present"
+    assert "response_b" in comparison, "response_b should be present"
+    assert (
+        comparison["response_a"]["text"] == "Response A"
+    ), "response_a.text should be set"
+    assert (
+        comparison["response_b"]["text"] == "Response B"
+    ), "response_b.text should be set"
     assert (
         comparison["prompt"] == "What is the capital of France?"
     ), "prompt should be set"
@@ -339,8 +377,8 @@ def test_create_annotated_pairs_with_additional_columns():
         default_annotator_id in annotations
     ), "Default annotator should be in annotations"
     assert (
-        annotations[default_annotator_id]["pref"] == "text_a"
-    ), "Default annotation should match preferred_text"
+        annotations[default_annotator_id]["pref"] == "a"
+    ), "Default annotation should be 'a'"
 
     assert (
         unknown_annotator_id in annotations
