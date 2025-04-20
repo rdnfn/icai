@@ -326,6 +326,44 @@ def create_annotated_pairs(
     return output
 
 
+def results_to_annotated_pairs(
+    results_dir: str,
+    dataset_name: str,
+    additional_columns: List[str] = None,
+    auto_detect_annotators: bool = True,
+) -> Dict[str, object]:
+    """Convert ICAI results to annotated pairs format from files.
+
+    Args:
+        results_dir: Path to ICAI results directory
+        dataset_name: Name for the dataset
+        filter_to_constitution: Only include principles that made it to the constitution
+        additional_columns: List of additional columns from the training data to include as annotations
+        auto_detect_annotators: Whether to automatically detect annotator columns in the DataFrame
+
+    Returns:
+        The annotated pairs format as a dictionary
+    """
+    results_path = Path(results_dir)
+
+    # Load all required data using the icai loader module
+    train_df = icai.load_train_data(results_path)
+    principles = icai.load_principles(results_path)
+    comparison_votes = icai.load_votes_per_comparison(results_path)
+
+    # Call the core implementation with loaded data
+    result = create_annotated_pairs(
+        df=train_df,
+        principles=principles,
+        comparison_votes=comparison_votes,
+        dataset_name=dataset_name,
+        additional_columns=additional_columns,
+        auto_detect_annotators=auto_detect_annotators,
+    )
+
+    return result
+
+
 def save_annotated_pairs_to_file(
     annotated_pairs: Dict, output_file: str | Path
 ) -> None:
