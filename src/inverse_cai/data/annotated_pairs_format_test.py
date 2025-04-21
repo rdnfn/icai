@@ -215,13 +215,12 @@ def test_create_annotated_pairs():
     )
 
     principles = {1: "Be honest", 2: "Be helpful"}
-    filtered_principles = ["Be honest"]
     comparison_votes = {0: {1: True, 2: False}}
     dataset_name = "Test Dataset"
 
     # Run function
     result = create_annotated_pairs(
-        train_df, principles, filtered_principles, comparison_votes, dataset_name
+        train_df, principles, comparison_votes, dataset_name
     )
 
     # Verify the structure
