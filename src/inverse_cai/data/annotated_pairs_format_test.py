@@ -139,13 +139,14 @@ def test_add_annotators():
     # Setup test data
     output = {"annotators": {}, "metadata": {}}
     principles = {1: "Be honest", 2: "Be helpful"}
-    filtered_principles = ["Be honest"]
 
     # Run function with filter_to_constitution=True
-    add_annotators(output, principles, filtered_principles)
+    add_annotators(output, principles)
 
     # Verify results
-    assert len(output["annotators"]) == 2, "Should have default + 1 principle annotator"
+    assert (
+        len(output["annotators"]) == 3
+    ), "Should have default + 2 principle annotators"
 
     # Compute expected default annotator ID
     default_annotator_id = hash_string(DEFAULT_ANNOTATOR_DESCRIPTION)
@@ -170,14 +171,6 @@ def test_add_annotators():
     assert (
         output["annotators"][principle_id]["type"] == "principle"
     ), "Principle type should be set"
-
-    output = {"annotators": {}, "metadata": {}}
-    add_annotators(output, principles, filtered_principles)
-
-    # Verify all principles are included when not filtering
-    assert (
-        len(output["annotators"]) == 3
-    ), "Should have default + 2 principle annotators"
 
     # Verify both principles were added
     honest_id = hash_string("Be honest")
