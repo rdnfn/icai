@@ -249,6 +249,7 @@ def run(
         logger.warning("Skipping voting stage")
         combined_votes = None
         filtered_principles = None
+        raw_votes = None
 
         # randomly sample from all principles instead of voting
         available_principles = list(summaries.values())

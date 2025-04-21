@@ -123,6 +123,7 @@ def test_run_full_workflow(
         "feedback",
         "clusters",
         "summaries",
+        "raw_votes",
         "combined_votes",
         "filtered_plinciples",
         "final_principles",
