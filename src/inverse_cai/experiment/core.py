@@ -21,8 +21,8 @@ from inverse_cai.data.annotated_pairs_format import (
     save_annotated_pairs_to_file,
     create_annotated_pairs,
 )
+import inverse_cai.data.loader.icai as icai_loader
 from inverse_cai.algorithm.voting import get_votes_for_principles
-from inverse_cai.utils import save_to_json
 
 cs = ConfigStore.instance()
 cs.store(name="config", node=ExpConfig)
@@ -264,10 +264,11 @@ def run(cfg: DictConfig):
 
         # Generate annotated pairs format
         ap_output_file = results_path / "070_annotated_pairs_dataset.json"
+        parsed_votes = icai_loader.parse_raw_votes(results["raw_votes"])
         annotated_pairs = create_annotated_pairs(
             df=data,
             principles=results["summaries"],
-            comparison_votes=results["raw_votes"],
+            comparison_votes=parsed_votes,
             dataset_name=f"ICAI Training Dataset - {pathlib.Path(hydra_out_path).name}",
             auto_detect_annotators=True,
         )
@@ -300,10 +301,11 @@ def run(cfg: DictConfig):
             config=cfg,
         )
         raw_votes.to_csv(test_annotation_cache_path, index=True, index_label="index")
+        parsed_votes = icai_loader.parse_raw_votes(raw_votes)
         annotated_pairs = create_annotated_pairs(
             df=test_data,
             principles=results["summaries"],
-            comparison_votes=raw_votes,
+            comparison_votes=parsed_votes,
             dataset_name=f"ICAI Test Dataset - {pathlib.Path(hydra_out_path).name}",
             auto_detect_annotators=True,
         )
@@ -314,7 +316,6 @@ def run(cfg: DictConfig):
 
     if cfg.annotator.skip:
         logger.warning("Skipping LLM annotation stage")
-        annotation_results = pd.DataFrame()
         if not cfg.generate_constitution:
             logger.error(
                 "You have just done nothing. Neither a "

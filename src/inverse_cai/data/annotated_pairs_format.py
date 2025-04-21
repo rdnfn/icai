@@ -117,7 +117,7 @@ def votes_to_annotations(
                 }
             else:
                 raise ValueError(
-                    f"Unexpected vote value: {vote} for principle {principle_text}"
+                    f"Unexpected vote value: {vote} (type: {type(vote)}) for principle {principle_text}.\n\nTaken from votes: {votes} (type: {type(votes)})"
                 )
 
     return annotations
@@ -214,7 +214,7 @@ def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
 def create_annotated_pairs(
     df: pd.DataFrame,
     principles: Mapping[int, str],
-    comparison_votes: Mapping[int, Dict[int, Union[bool, str, None]]],
+    comparison_votes: Mapping[int, Dict[int, Union[bool, str, None]]] | pd.Series,
     dataset_name: str,
     additional_columns: List[str] = None,
     auto_detect_annotators: bool = True,
@@ -245,9 +245,7 @@ def create_annotated_pairs(
     }
 
     df = df.copy()
-
-    # ensure all columns are hashable
-    df = df.applymap(str)
+    df = df.applymap(str)  # ensure all columns are hashable
 
     # Detect annotator columns if enabled
     detected_columns = []
