@@ -33,13 +33,6 @@ def main():
         help="Name for the dataset (default: ICAI Generated Dataset)",
     )
     parser.add_argument(
-        "--only-include-constitution-principles",
-        "-c",
-        action="store_true",
-        default=False,
-        help="Only include principles from the constitution (default: include all principles)",
-    )
-    parser.add_argument(
         "--additional-columns",
         "-a",
         nargs="+",
@@ -60,7 +53,6 @@ def main():
         annotated_pairs = results_to_annotated_pairs(
             results_dir=args.results_dir,
             dataset_name=args.dataset_name,
-            filter_to_constitution=args.only_include_constitution_principles,
             additional_columns=args.additional_columns,
             auto_detect_annotators=not args.no_auto_detect,
         )

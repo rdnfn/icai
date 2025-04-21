@@ -101,12 +101,41 @@ def load_votes_per_comparison(
             f"Could not find {COMPARISON_VOTES_FILENAME} in {results_path}"
         )
     votes_df = pd.read_csv(votes_per_comparison_path)
-    for _, row in votes_df.iterrows():
+    return parse_raw_votes(votes_df)
+
+
+def parse_raw_votes(
+    raw_votes: pd.Series | pd.DataFrame,
+) -> Dict[int, Dict[int, Union[bool, str, None]]]:
+    """Parse raw votes from a pandas Series or DataFrame.
+
+    For parsing raw votes which either were loaded from a json or
+    directly passed as raw votes inside the ICAI pipeline.
+
+    Args:
+        votes_series: A pandas Series or DataFrame containing the raw votes.
+
+    Returns:
+        A dictionary mapping comparison IDs to a mapping from principle id to vote value.
+    """
+    comparison_votes = {}
+    if isinstance(raw_votes, pd.Series):
+        raw_votes = raw_votes.to_frame(name="votes")
+        raw_votes["index"] = raw_votes.index
+
+    assert "index" in raw_votes.columns, "Index column must be present"
+
+    for _, row in raw_votes.iterrows():
         idx = row["index"]
-        # votes_str is a string representation of a dictionary, e.g.,
-        # "{1: True, 2: False, 3: None}"
-        votes_str = row["votes"]
-        votes_dict = json.loads(python_dict_str_to_json_compatible(votes_str))
+        votes_value = row["votes"]
+        if isinstance(votes_value, str):
+            votes_dict = json.loads(python_dict_str_to_json_compatible(votes_value))
+        elif isinstance(votes_value, dict):
+            votes_dict = votes_value
+        else:
+            raise ValueError(
+                f"Unexpected vote value: {votes_value} (type: {type(votes_value)})"
+            )
         comparison_votes[idx] = {int(k): v for k, v in votes_dict.items()}
     return comparison_votes
 

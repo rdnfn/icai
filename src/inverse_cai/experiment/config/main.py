@@ -1,12 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Any, Union
-import os
-from hydra.core.config_store import ConfigStore
-from hydra.core.hydra_config import HydraConfig
-import pandas as pd
 from loguru import logger
 
-import inverse_cai
 from inverse_cai.experiment.config.prompts import PromptConfig
 
 UPDATED_HYDRA_DEFAULTS = {
@@ -157,6 +152,7 @@ class ExpConfig:
     test_data_len: Any = None
     test_data_start_index: Any = 0
     test_data_invert_labels: Any = False
+    test_data_annotate_with_principles: bool = False
 
     # Cache config
     prior_cache_path: str | None = (

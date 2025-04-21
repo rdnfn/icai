@@ -1,9 +1,5 @@
 """Tests for the annotated pairs format module."""
 
-import datetime
-import json
-from pathlib import Path
-
 import pandas as pd
 import pytest
 
@@ -143,13 +139,14 @@ def test_add_annotators():
     # Setup test data
     output = {"annotators": {}, "metadata": {}}
     principles = {1: "Be honest", 2: "Be helpful"}
-    filtered_principles = ["Be honest"]
 
     # Run function with filter_to_constitution=True
-    add_annotators(output, principles, filtered_principles, filter_to_constitution=True)
+    add_annotators(output, principles)
 
     # Verify results
-    assert len(output["annotators"]) == 2, "Should have default + 1 principle annotator"
+    assert (
+        len(output["annotators"]) == 3
+    ), "Should have default + 2 principle annotators"
 
     # Compute expected default annotator ID
     default_annotator_id = hash_string(DEFAULT_ANNOTATOR_DESCRIPTION)
@@ -175,17 +172,6 @@ def test_add_annotators():
         output["annotators"][principle_id]["type"] == "principle"
     ), "Principle type should be set"
 
-    # Run function with filter_to_constitution=False
-    output = {"annotators": {}, "metadata": {}}
-    add_annotators(
-        output, principles, filtered_principles, filter_to_constitution=False
-    )
-
-    # Verify all principles are included when not filtering
-    assert (
-        len(output["annotators"]) == 3
-    ), "Should have default + 2 principle annotators"
-
     # Verify both principles were added
     honest_id = hash_string("Be honest")
     helpful_id = hash_string("Be helpful")
@@ -198,8 +184,6 @@ def test_add_annotators():
     add_annotators(
         output,
         principles,
-        filtered_principles,
-        filter_to_constitution=True,
         additional_columns=additional_columns,
     )
 
@@ -231,13 +215,12 @@ def test_create_annotated_pairs():
     )
 
     principles = {1: "Be honest", 2: "Be helpful"}
-    filtered_principles = ["Be honest"]
     comparison_votes = {0: {1: True, 2: False}}
     dataset_name = "Test Dataset"
 
     # Run function
     result = create_annotated_pairs(
-        train_df, principles, filtered_principles, comparison_votes, dataset_name
+        train_df, principles, comparison_votes, dataset_name
     )
 
     # Verify the structure
@@ -313,7 +296,6 @@ def test_create_annotated_pairs_with_additional_columns():
     )
 
     principles = {1: "Be honest", 2: "Be helpful"}
-    filtered_principles = ["Be honest"]
     comparison_votes = {0: {1: True, 2: False}}
     dataset_name = "Test Dataset"
     additional_columns = ["additional_column"]
@@ -322,7 +304,6 @@ def test_create_annotated_pairs_with_additional_columns():
     result = create_annotated_pairs(
         train_df,
         principles,
-        filtered_principles,
         comparison_votes,
         dataset_name,
         additional_columns=additional_columns,

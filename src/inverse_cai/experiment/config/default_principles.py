@@ -112,7 +112,7 @@ _PRINCIPLES_DATA_V3 = [
             "more directly follows instructions",
             "more strictly follows the requested output format",
             "is more polite",
-            "has a more friendly tone",
+            "has a friendlier tone",
             "uses more casual language",
             "uses more formal language",
             "provides more detailed explanations",
@@ -152,7 +152,7 @@ _PRINCIPLES_DATA_V3 = [
         "info": "Based on public discussion of Llama-4-Maverick-03-26-Experimental results on Chatbot Arena.",
         "principles_short_version": [
             "uses more emojis",
-            "complements the user's question or prompt",
+            "compliments the user's question or prompt",
         ],
     },
 ]

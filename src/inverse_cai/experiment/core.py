@@ -18,9 +18,11 @@ import inverse_cai
 from inverse_cai.experiment.config.main import ExpConfig
 import inverse_cai.annotators
 from inverse_cai.data.annotated_pairs_format import (
-    results_to_annotated_pairs,
     save_annotated_pairs_to_file,
+    create_annotated_pairs,
 )
+import inverse_cai.data.loader.icai as icai_loader
+from inverse_cai.algorithm.voting import get_votes_for_principles
 
 cs = ConfigStore.instance()
 cs.store(name="config", node=ExpConfig)
@@ -224,6 +226,11 @@ def run(cfg: DictConfig):
     test_data = setup_test_data(cfg)
     assert_no_identical_rows(data, test_data)
 
+    if test_data is not None:
+        test_data.to_csv(
+            results_path / "001_test_data.csv", index=True, index_label="index"
+        )
+
     # TODO: remove this in a future version once s1_num_principles_per_instance is removed
     if cfg.s1_num_principles_per_instance is not None:
         logger.warning(
@@ -254,6 +261,19 @@ def run(cfg: DictConfig):
             config=cfg,
         )
         constitution = results["constitution"]
+
+        # Generate annotated pairs format
+        ap_output_file = results_path / "070_annotated_pairs_dataset.json"
+        parsed_votes = icai_loader.parse_raw_votes(results["raw_votes"])
+        annotated_pairs = create_annotated_pairs(
+            df=data,
+            principles=results["summaries"],
+            comparison_votes=parsed_votes,
+            dataset_name=f"ICAI Training Dataset - {pathlib.Path(hydra_out_path).name}",
+            auto_detect_annotators=True,
+        )
+        save_annotated_pairs_to_file(annotated_pairs, ap_output_file)
+        logger.info(f"Generated annotated pairs format at {ap_output_file}")
     else:
         logger.warning(
             "Running LLM annotation on dataset without generating a new constitution"
@@ -266,9 +286,36 @@ def run(cfg: DictConfig):
             )
         constitution = cfg.annotator.alpaca_eval.constitution
 
+    if cfg.test_data_annotate_with_principles:
+        test_annotation_cache_path = (
+            results_path / "043_votes_per_comparison_testset.csv"
+        )
+
+        logger.info("Annotating test data by principle-following annotators")
+        raw_votes, _ = get_votes_for_principles(
+            feedback_df=test_data,
+            summaries=results["summaries"],
+            max_votes_in_single_prompt=cfg.s3_filter_max_votes_in_single_prompt,
+            model_name=cfg.alg_model,
+            cache_path=test_annotation_cache_path,
+            config=cfg,
+        )
+        raw_votes.to_csv(test_annotation_cache_path, index=True, index_label="index")
+        parsed_votes = icai_loader.parse_raw_votes(raw_votes)
+        annotated_pairs = create_annotated_pairs(
+            df=test_data,
+            principles=results["summaries"],
+            comparison_votes=parsed_votes,
+            dataset_name=f"ICAI Test Dataset - {pathlib.Path(hydra_out_path).name}",
+            auto_detect_annotators=True,
+        )
+        save_annotated_pairs_to_file(
+            annotated_pairs,
+            str(results_path / "071_testset_annotated_pairs_dataset.json"),
+        )
+
     if cfg.annotator.skip:
         logger.warning("Skipping LLM annotation stage")
-        annotation_results = pd.DataFrame()
         if not cfg.generate_constitution:
             logger.error(
                 "You have just done nothing. Neither a "
@@ -304,16 +351,6 @@ def run(cfg: DictConfig):
             "still make sense, as long as they are considered relative to the synthetic "
             "preferred_text column (always preferring text_a)."
         )
-
-    # Generate annotated pairs format
-    ap_output_file = results_path / "070_annotated_pairs_dataset.json"
-    annotated_pairs = results_to_annotated_pairs(
-        results_dir=str(results_path),
-        dataset_name=f"ICAI Dataset - {pathlib.Path(hydra_out_path).name}",
-        filter_to_constitution=False,
-    )
-    save_annotated_pairs_to_file(annotated_pairs, str(ap_output_file))
-    logger.info(f"Generated annotated pairs format at {ap_output_file}")
 
     logger.info(f"Experiment finished. Find results at {results_path}")
     logger.info(
