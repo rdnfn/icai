@@ -252,12 +252,12 @@ def annotate(
                 ap_data=test_ap_single,
                 icai_results_dict=icai_results_dict,
                 constitution=constitution,
-                tmp_files_path=tmp_path / f"testset{i}",
+                tmp_files_path=tmp_path / f"testset-{i}",
                 alpaca_results_csv_path=results_path
-                / f"093_full_alpacaeval_results_testset{i}.csv",
+                / f"093_full_alpacaeval_results_testset-{i}.csv",
                 annotations_ap_path=results_path
                 / f"071_annotations_testset-{i}_ap.json",
-                final_results_csv_path=results_path / f"095_results_testset{i}.csv",
+                final_results_csv_path=results_path / f"095_results_testset-{i}.csv",
                 dataset_name=f"test data {i+1}/{len(test_data)}",
                 results_path=results_path,
             )
