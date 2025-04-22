@@ -235,8 +235,7 @@ def annotate(
         )
 
     # Process test data if provided
-    if test_data is not None:
-
+    if test_data:
         if len(test_ap_data) == 0:
             logger.warning(
                 "No AnnotatedPairs data available for test sets. Annotating without AP data."

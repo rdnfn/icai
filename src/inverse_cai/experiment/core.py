@@ -44,7 +44,7 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
         logger.info(
             "No test data path specified. Only using training data for testing."
         )
-        return None
+        return []
     else:
         if isinstance(cfg.test_data_path, list):
             assert isinstance(
@@ -231,7 +231,7 @@ def run(cfg: DictConfig):
     assert_no_identical_rows(data, test_data)
     assert isinstance(test_data, list)
 
-    if test_data is not None:
+    if test_data:
         for i, test_df in enumerate(test_data):
             test_df.to_csv(
                 results_path / f"001_test_data_{i}.csv", index=True, index_label="index"
