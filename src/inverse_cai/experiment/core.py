@@ -170,6 +170,8 @@ def run(cfg: DictConfig):
     for path in [results_path, tmp_path]:
         path.mkdir(parents=True, exist_ok=True)
 
+    ap_paths = []
+
     # Enable running of cfg checks defined in __post_init__ method above.
     # (from https://github.com/facebookresearch/hydra/issues/981)
     cfg: ExpConfig = OmegaConf.to_object(cfg)
@@ -277,6 +279,7 @@ def run(cfg: DictConfig):
             auto_detect_annotators=True,
         )
         save_annotated_pairs_to_file(train_annotated_pairs, ap_output_file)
+        ap_paths.append(ap_output_file)
         logger.info(f"Generated annotated pairs format at {ap_output_file}")
     else:
         logger.warning(
@@ -317,10 +320,10 @@ def run(cfg: DictConfig):
                 dataset_name=f"ICAI Test Dataset - {pathlib.Path(hydra_out_path).name}",
                 auto_detect_annotators=True,
             )
-            save_annotated_pairs_to_file(
-                test_annotated_pairs,
-                str(results_path / f"071_annotations_testset-{i}_ap.json"),
-            )
+            ap_path = results_path / f"071_annotations_testset-{i}_ap.json"
+            save_annotated_pairs_to_file(test_annotated_pairs, ap_path)
+            ap_paths.append(ap_path)
+            logger.info(f"Generated annotated pairs format at {ap_path}")
             test_ap_data.append(test_annotated_pairs)
 
     if cfg.annotator.skip:
@@ -364,10 +367,14 @@ def run(cfg: DictConfig):
         )
 
     logger.info(f"Experiment finished. Find results at {results_path}")
+    ap_commands = []
+    for ap_path in ap_paths:
+        ap_commands.append(f"feedback-forensics -d {ap_path}")
     logger.info(
         "🔍 You can use Feedback Forensics to inspect the results "
-        f"via the following command: \n\nfeedback-forensics -d {results_path.parent}\n\n"
-        "Follow the instructions in the Feedback Forensics repo to install it (https://github.com/rdnfn/feedback-forensics)."
+        f"for the different datasets via the following commands: \n\n"
+        + "\n\n".join(ap_commands)
+        + "\n\nFollow the instructions in the Feedback Forensics repo to install it (https://github.com/rdnfn/feedback-forensics)."
     )
     logger.info("All done! ✨")
 
