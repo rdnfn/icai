@@ -267,7 +267,7 @@ def run(cfg: DictConfig):
         constitution = results["constitution"]
 
         # Generate annotated pairs format
-        ap_output_file = results_path / "070_annotated_pairs_dataset.json"
+        ap_output_file = results_path / "070_annotations_train_ap.json"
         parsed_votes = icai_loader.parse_raw_votes(results["raw_votes"])
         train_annotated_pairs = create_annotated_pairs(
             df=data,
@@ -319,7 +319,7 @@ def run(cfg: DictConfig):
             )
             save_annotated_pairs_to_file(
                 test_annotated_pairs,
-                str(results_path / f"071_testset{i}_annotated_pairs_dataset.json"),
+                str(results_path / f"071_annotations_testset-{i}_ap.json"),
             )
             test_ap_data.append(test_annotated_pairs)
 
