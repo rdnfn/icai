@@ -454,7 +454,9 @@ def load_annotated_pairs_from_file(annotated_pairs_file: str | Path) -> Dict:
     return json.load(open(annotated_pairs_file, "r", encoding="utf-8"))
 
 
-def merge_annotated_pairs(annotated_pairs_list: List[Dict]) -> Dict:
+def merge_annotated_pairs(
+    annotated_pairs_list: List[Dict], merged_metadata: Dict
+) -> Dict:
     """Merge a list of annotated pairs datasets into a single annotated pairs dataset.
 
     Args:
@@ -490,15 +492,20 @@ def merge_annotated_pairs(annotated_pairs_list: List[Dict]) -> Dict:
 
     # Initialize merged dataset with metadata from the first dataset
     merged = {
-        "metadata": {
+        "metadata": {},
+        "annotators": {},
+        "comparisons": [],
+    }
+
+    if merged_metadata:
+        merged["metadata"].update(merged_metadata)
+    else:
+        merged["metadata"] = {
             "version": FORMAT_VERSION,
             "description": f"Merged annotated pairs dataset from multiple datasets ({', '.join(dataset_names)}). Original descriptions: {', '.join(original_descriptions)}",
             "created_at": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "dataset_name": "merged_dataset",
-        },
-        "annotators": {},
-        "comparisons": [],
-    }
+        }
 
     if dataset_names:
         merged["metadata"]["dataset_name"] = "_".join(dataset_names)

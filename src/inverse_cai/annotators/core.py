@@ -166,6 +166,8 @@ def _run_annotation_pipeline(
         f"Annotation results for dataset '{dataset_name}':\n{annotation_results}"
     )
 
+    # save annotations of function annotators to AnnotatedPairs format
+    # TODO: potentially support alpacaeval annotations here as well
     annotated_pairs = create_annotated_pairs(
         df=individual_annotations,
         dataset_name=f"Dataset with annotations by evaluated annotators - {dataset_name}",
@@ -174,8 +176,14 @@ def _run_annotation_pipeline(
     if annotations_ap_path.exists():
         # merge with existing annotated pairs
         existing_annotated_pairs = load_annotated_pairs_from_file(annotations_ap_path)
+        merged_metadata = existing_annotated_pairs["metadata"].copy()
+        merged_metadata["description"] = (
+            merged_metadata["description"]
+            + "\n\nIncluding annotations by function annotators."
+        )
         annotated_pairs = merge_annotated_pairs(
-            [existing_annotated_pairs, annotated_pairs]
+            [existing_annotated_pairs, annotated_pairs],
+            merged_metadata=merged_metadata,
         )
     save_annotated_pairs_to_file(
         annotated_pairs,
