@@ -51,6 +51,7 @@ def _evaluate_annotations(annotated_data: pd.DataFrame):
 def _run_annotation_pipeline(
     cfg: ExpConfig,
     data: pd.DataFrame,
+    ap_data: dict,
     icai_results_dict: dict,
     constitution: list[str],
     tmp_files_path: pathlib.Path,
@@ -113,6 +114,7 @@ def _run_annotation_pipeline(
                 annotator_kwargs = annotator.function_kwargs
                 annotated_data = annotator_fn(
                     data=data,
+                    ap_data=ap_data,
                     icai_results_dict=icai_results_dict,
                     results_path=results_path,
                     **annotator_kwargs,
@@ -148,10 +150,12 @@ def _run_annotation_pipeline(
 def annotate(
     cfg: ExpConfig,
     data: pd.DataFrame,
+    ap_data: dict,
     icai_results_dict: dict,
     constitution: list[str],
     tmp_path: pathlib.Path,
-    test_data: pd.DataFrame | None,
+    test_data: list[pd.DataFrame] | None,
+    test_ap_data: list[dict] | None,
     results_path: pathlib.Path,
 ):
     """Annotate the data using the annotator specified in the config.
@@ -159,9 +163,12 @@ def annotate(
     Args:
         cfg (ExpConfig): The experiment configuration.
         data (pd.DataFrame): The data to annotate.
+        ap_data (list[dict]): Data to annotate in AnnotatedPairs format.
+            This can be used to access per-principle votes by annotator.
         constitution (list[str]): The constitution to use for the annotation.
         tmp_path (pathlib.Path): The path to the temporary files.
-        test_data (pd.DataFrame | None): The test data to annotate.
+        test_data (list[pd.DataFrame] | None): The test data to annotate.
+        test_ap_data (list[dict] | None): Data to annotate in AnnotatedPairs format.
         results_path (pathlib.Path): The path to the results.
     """
     # Process training data if not skipped
@@ -169,6 +176,7 @@ def annotate(
         _run_annotation_pipeline(
             cfg=cfg,
             data=data,
+            ap_data=ap_data,
             icai_results_dict=icai_results_dict,
             constitution=constitution,
             tmp_files_path=tmp_path / "trainset",
@@ -181,14 +189,20 @@ def annotate(
 
     # Process test data if provided
     if test_data is not None:
-        # Ensure we can iterate over the test data, even if it's a single dataframe
-        if not isinstance(test_data, list):
-            test_data = [test_data]
 
-        for i, test_data_single in enumerate(test_data):
+        if len(test_ap_data) == 0:
+            logger.warning(
+                "No AnnotatedPairs data available for test sets. Annotating without AP data."
+            )
+            test_ap_data = [None] * len(test_data)
+
+        test_data_forms = zip(test_data, test_ap_data)
+
+        for i, (test_df_single, test_ap_single) in enumerate(test_data_forms):
             _run_annotation_pipeline(
                 cfg=cfg,
-                data=test_data_single,
+                data=test_df_single,
+                ap_data=test_ap_single,
                 icai_results_dict=icai_results_dict,
                 constitution=constitution,
                 tmp_files_path=tmp_path / f"testset_{i}",
