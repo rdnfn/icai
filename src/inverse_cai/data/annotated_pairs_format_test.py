@@ -221,7 +221,10 @@ def test_create_annotated_pairs():
 
     # Run function
     result = create_annotated_pairs(
-        train_df, principles, comparison_votes, dataset_name
+        df=train_df,
+        principles=principles,
+        comparison_votes=comparison_votes,
+        dataset_name=dataset_name,
     )
 
     # Verify the structure
@@ -315,10 +318,10 @@ def test_create_annotated_pairs_with_additional_columns():
 
     # Run function
     result = create_annotated_pairs(
-        train_df,
-        principles,
-        comparison_votes,
-        dataset_name,
+        df=train_df,
+        principles=principles,
+        comparison_votes=comparison_votes,
+        dataset_name=dataset_name,
         additional_columns=additional_columns,
     )
 
