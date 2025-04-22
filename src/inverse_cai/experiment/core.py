@@ -81,12 +81,14 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
             assert isinstance(
                 cfg.test_data_invert_labels, bool
             ), "test_data_invert_labels must be a bool if test_data_path is a string"
-            return setup_data(
-                data_path=cfg.test_data_path,
-                invert_labels=cfg.test_data_invert_labels,
-                data_len=cfg.test_data_len,
-                data_start_index=cfg.test_data_start_index,
-            )
+            return [
+                setup_data(
+                    data_path=cfg.test_data_path,
+                    invert_labels=cfg.test_data_invert_labels,
+                    data_len=cfg.test_data_len,
+                    data_start_index=cfg.test_data_start_index,
+                )
+            ]
         else:
             raise ValueError(
                 f"test_data_path must be a string or a list of strings (given '{cfg.test_data_path}')"
@@ -225,11 +227,13 @@ def run(cfg: DictConfig):
     data.to_csv(results_path / "000_train_data.csv", index=True, index_label="index")
     test_data = setup_test_data(cfg)
     assert_no_identical_rows(data, test_data)
+    assert isinstance(test_data, list)
 
     if test_data is not None:
-        test_data.to_csv(
-            results_path / "001_test_data.csv", index=True, index_label="index"
-        )
+        for i, test_df in enumerate(test_data):
+            test_df.to_csv(
+                results_path / f"001_test_data_{i}.csv", index=True, index_label="index"
+            )
 
     # TODO: remove this in a future version once s1_num_principles_per_instance is removed
     if cfg.s1_num_principles_per_instance is not None:
@@ -265,14 +269,14 @@ def run(cfg: DictConfig):
         # Generate annotated pairs format
         ap_output_file = results_path / "070_annotated_pairs_dataset.json"
         parsed_votes = icai_loader.parse_raw_votes(results["raw_votes"])
-        annotated_pairs = create_annotated_pairs(
+        train_annotated_pairs = create_annotated_pairs(
             df=data,
             principles=results["summaries"],
             comparison_votes=parsed_votes,
             dataset_name=f"ICAI Training Dataset - {pathlib.Path(hydra_out_path).name}",
             auto_detect_annotators=True,
         )
-        save_annotated_pairs_to_file(annotated_pairs, ap_output_file)
+        save_annotated_pairs_to_file(train_annotated_pairs, ap_output_file)
         logger.info(f"Generated annotated pairs format at {ap_output_file}")
     else:
         logger.warning(
@@ -286,33 +290,38 @@ def run(cfg: DictConfig):
             )
         constitution = cfg.annotator.alpaca_eval.constitution
 
+    test_ap_data = []
     if cfg.test_data_annotate_with_principles:
-        test_annotation_cache_path = (
-            results_path / "043_votes_per_comparison_testset.csv"
-        )
+        for i, test_df in enumerate(test_data):
+            test_annotation_cache_path = (
+                results_path / "043_votes_per_comparison_testset.csv"
+            )
 
-        logger.info("Annotating test data by principle-following annotators")
-        raw_votes, _ = get_votes_for_principles(
-            feedback_df=test_data,
-            summaries=results["summaries"],
-            max_votes_in_single_prompt=cfg.s3_filter_max_votes_in_single_prompt,
-            model_name=cfg.alg_model,
-            cache_path=test_annotation_cache_path,
-            config=cfg,
-        )
-        raw_votes.to_csv(test_annotation_cache_path, index=True, index_label="index")
-        parsed_votes = icai_loader.parse_raw_votes(raw_votes)
-        annotated_pairs = create_annotated_pairs(
-            df=test_data,
-            principles=results["summaries"],
-            comparison_votes=parsed_votes,
-            dataset_name=f"ICAI Test Dataset - {pathlib.Path(hydra_out_path).name}",
-            auto_detect_annotators=True,
-        )
-        save_annotated_pairs_to_file(
-            annotated_pairs,
-            str(results_path / "071_testset_annotated_pairs_dataset.json"),
-        )
+            logger.info("Annotating test data by principle-following annotators")
+            raw_votes, _ = get_votes_for_principles(
+                feedback_df=test_df,
+                summaries=results["summaries"],
+                max_votes_in_single_prompt=cfg.s3_filter_max_votes_in_single_prompt,
+                model_name=cfg.alg_model,
+                cache_path=test_annotation_cache_path,
+                config=cfg,
+            )
+            raw_votes.to_csv(
+                test_annotation_cache_path, index=True, index_label="index"
+            )
+            parsed_votes = icai_loader.parse_raw_votes(raw_votes)
+            test_annotated_pairs = create_annotated_pairs(
+                df=test_df,
+                principles=results["summaries"],
+                comparison_votes=parsed_votes,
+                dataset_name=f"ICAI Test Dataset - {pathlib.Path(hydra_out_path).name}",
+                auto_detect_annotators=True,
+            )
+            save_annotated_pairs_to_file(
+                test_annotated_pairs,
+                str(results_path / f"071_testset{i}_annotated_pairs_dataset.json"),
+            )
+            test_ap_data.append(test_annotated_pairs)
 
     if cfg.annotator.skip:
         logger.warning("Skipping LLM annotation stage")
@@ -328,8 +337,10 @@ def run(cfg: DictConfig):
         inverse_cai.annotators.annotate(
             cfg=cfg,
             data=data,
+            ap_data=train_annotated_pairs,
             icai_results_dict=results,
             test_data=test_data,
+            test_ap_data=test_ap_data,
             constitution=constitution,
             tmp_path=tmp_path,
             results_path=results_path,
