@@ -9,6 +9,7 @@ from inverse_cai.data.annotated_pairs_format import (
     votes_to_annotations,
     add_annotators,
     create_annotated_pairs,
+    merge_annotated_pairs,
     DEFAULT_ANNOTATOR_DESCRIPTION,
     DEFAULT_ANNOTATOR_TYPE,
     DEFAULT_PREFERENCE_COLUMN,
@@ -380,3 +381,146 @@ def test_create_annotated_pairs_with_additional_columns():
     assert (
         unknown_annotator_id in annotations
     ), "Unknown annotator should be in annotations"
+
+
+def test_merge_annotated_pairs_basic():
+    """Test basic merging of two datasets."""
+    # Create two simple datasets with different comparisons
+    dataset1 = {
+        "metadata": {
+            "version": "2.0",
+            "dataset_name": "dataset1",
+            "default_annotator": "default1",
+        },
+        "annotators": {"default1": {"type": "unknown", "name": "default"}},
+        "comparisons": [
+            {
+                "id": "comp1",
+                "prompt": "prompt1",
+                "response_a": {"text": "A1"},
+                "response_b": {"text": "B1"},
+                "annotations": {"default1": {"pref": "a"}},
+            }
+        ],
+    }
+
+    dataset2 = {
+        "metadata": {
+            "version": "2.0",
+            "dataset_name": "dataset2",
+            "default_annotator": "default2",
+        },
+        "annotators": {"default2": {"type": "unknown", "name": "default"}},
+        "comparisons": [
+            {
+                "id": "comp2",
+                "prompt": "prompt2",
+                "response_a": {"text": "A2"},
+                "response_b": {"text": "B2"},
+                "annotations": {"default2": {"pref": "b"}},
+            }
+        ],
+    }
+
+    result = merge_annotated_pairs([dataset1, dataset2])
+
+    assert len(result["comparisons"]) == 2
+    assert len(result["annotators"]) == 2
+    assert "dataset1_dataset2" in result["metadata"]["dataset_name"]
+    assert result["metadata"]["default_annotator"] == "default1"
+
+
+def test_merge_annotated_pairs_same_comparison():
+    """Test merging datasets with the same comparison but different annotations."""
+    dataset1 = {
+        "metadata": {"version": "2.0", "dataset_name": "dataset1"},
+        "annotators": {
+            "ann1": {"type": "human", "name": "Annotator 1"},
+            "ann2": {"type": "human", "name": "Annotator 2"},
+        },
+        "comparisons": [
+            {
+                "id": "same_comp",
+                "prompt": "prompt",
+                "response_a": {"text": "A"},
+                "response_b": {"text": "B"},
+                "annotations": {"ann1": {"pref": "a"}},
+                "metadata": {"source": "test1"},
+            }
+        ],
+    }
+
+    dataset2 = {
+        "metadata": {"version": "2.0", "dataset_name": "dataset2"},
+        "annotators": {
+            "ann2": {"type": "human", "name": "Annotator 2"},
+            "ann3": {"type": "principle", "description": "Principle"},
+        },
+        "comparisons": [
+            {
+                "id": "same_comp",
+                "prompt": "prompt",
+                "response_a": {"text": "A"},
+                "response_b": {"text": "B"},
+                "annotations": {"ann2": {"pref": "a"}, "ann3": {"pref": "b"}},
+                "metadata": {"model": "gpt-4"},
+            }
+        ],
+    }
+
+    result = merge_annotated_pairs([dataset1, dataset2])
+
+    assert len(result["comparisons"]) == 1
+    assert len(result["annotators"]) == 3
+
+    comparison = result["comparisons"][0]
+    assert len(comparison["annotations"]) == 3
+    assert comparison["annotations"]["ann1"]["pref"] == "a"
+    assert comparison["annotations"]["ann2"]["pref"] == "a"
+    assert comparison["annotations"]["ann3"]["pref"] == "b"
+    assert comparison["metadata"]["source"] == "test1"
+    assert comparison["metadata"]["model"] == "gpt-4"
+
+
+def test_merge_annotated_pairs_validation():
+    """Test validation during merging."""
+    dataset1 = {"metadata": {"version": "2.0"}, "comparisons": [], "annotators": {}}
+    dataset2 = {"metadata": {"version": "1.0"}, "comparisons": [], "annotators": {}}
+
+    with pytest.raises(ValueError, match="same format version"):
+        merge_annotated_pairs([dataset1, dataset2])
+
+    # Test empty list
+    with pytest.raises(ValueError, match="No annotated pairs"):
+        merge_annotated_pairs([])
+
+    # Test dataset with duplicate comparison IDs
+    dataset_with_dupes = {
+        "metadata": {"version": "2.0", "dataset_name": "dupes"},
+        "annotators": {},
+        "comparisons": [
+            {"id": "comp1", "annotations": {}},
+            {"id": "comp1", "annotations": {}},
+        ],
+    }
+
+    with pytest.raises(ValueError, match="not unique"):
+        merge_annotated_pairs([dataset_with_dupes])
+
+
+def test_merge_annotated_pairs_conflicting_annotations():
+    """Test that conflicting annotations raise an error."""
+    dataset1 = {
+        "metadata": {"version": "2.0"},
+        "annotators": {"ann1": {}},
+        "comparisons": [{"id": "comp1", "annotations": {"ann1": {"pref": "a"}}}],
+    }
+
+    dataset2 = {
+        "metadata": {"version": "2.0"},
+        "annotators": {"ann1": {}},
+        "comparisons": [{"id": "comp1", "annotations": {"ann1": {"pref": "b"}}}],
+    }
+
+    with pytest.raises(AssertionError, match="not the same"):
+        merge_annotated_pairs([dataset1, dataset2])
