@@ -135,7 +135,8 @@ def _run_annotation_pipeline(
                 )
             except Exception as e:
                 logger.error(
-                    f"Failed to run annotator {annotator} on {dataset_name}: {e}"
+                    f"Failed to run annotator {annotator} on {dataset_name}: {e}",
+                    exc_info=True,
                 )
 
     logger.info(
