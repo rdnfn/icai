@@ -203,14 +203,15 @@ def test_add_annotators():
 def test_create_annotated_pairs():
     """Test the create_annotated_pairs function."""
     # Setup test data
+    num_comparisons = 10
     train_df = pd.DataFrame(
         {
-            "text_a": ["Response A"],
-            "text_b": ["Response B"],
-            "input": ["What is the capital of France?"],
-            DEFAULT_PREFERENCE_COLUMN: ["a"],
-            "model_a": ["Model X"],
-            "model_b": ["Model Y"],
+            "text_a": ["Response A"] * num_comparisons,
+            "text_b": ["Response B"] * num_comparisons,
+            "input": ["What is the capital of France?"] * num_comparisons,
+            DEFAULT_PREFERENCE_COLUMN: ["a", "b", "text_a", "text_b", "text_b"] * 2,
+            "model_a": ["Model X"] * num_comparisons,
+            "model_b": ["Model Y"] * num_comparisons,
         }
     )
 
@@ -242,7 +243,7 @@ def test_create_annotated_pairs():
     assert default_annotator_id is not None, "Should have a default annotator"
 
     # Verify comparison
-    assert len(result["comparisons"]) == 1, "Should have 1 comparison"
+    assert len(result["comparisons"]) == num_comparisons, "Should have 10 comparisons"
     comparison = result["comparisons"][0]
 
     # Check response_a and response_b format
@@ -278,6 +279,18 @@ def test_create_annotated_pairs():
     assert (
         annotations[honest_id]["pref"] == "a"
     ), "Principle annotation should be correct and use 'a'"
+
+    # check if other default preference columns are converted correctly for first five comparisons
+    first_five_comparisons = result["comparisons"][:5]
+    default_annotator_hash = hash_string(DEFAULT_ANNOTATOR_DESCRIPTION)
+    first_five_annotations = [
+        first_five_comparisons[i]["annotations"][default_annotator_hash]["pref"]
+        for i in range(5)
+    ]
+    correct_prefs = ["a", "b", "a", "b", "b"]
+    assert (
+        first_five_annotations == correct_prefs
+    ), f"Reference annotations should be {correct_prefs}, got {first_five_annotations} instead"
 
 
 def test_create_annotated_pairs_with_additional_columns():

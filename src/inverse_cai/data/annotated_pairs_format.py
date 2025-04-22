@@ -29,7 +29,7 @@ PREFERENCE_ALIAS_MAPPING = {
     "a": "a",
     "b": "b",
     "text_a": "a",
-    "text_b": "a",
+    "text_b": "b",
 }
 
 
