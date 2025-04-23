@@ -44,18 +44,31 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
         logger.info(
             "No test data path specified. Only using training data for testing."
         )
-        return None
+        return []
     else:
         if isinstance(cfg.test_data_path, list):
-            assert isinstance(
-                cfg.test_data_len, list
-            ), "test_data_len must be a list if test_data_path is a list"
-            assert isinstance(
-                cfg.test_data_start_index, list
-            ), "test_data_start_index must be a list if test_data_path is a list"
-            assert isinstance(
-                cfg.test_data_invert_labels, list
-            ), "test_data_invert_labels must be a list if test_data_path is a list"
+            # Handle None values for test dataset settings
+            test_data_len = cfg.test_data_len
+            if test_data_len is None:
+                test_data_len = [None] * len(cfg.test_data_path)
+            elif not isinstance(test_data_len, list):
+                test_data_len = [test_data_len] * len(cfg.test_data_path)
+
+            test_data_invert_labels = cfg.test_data_invert_labels
+            if test_data_invert_labels is None:
+                test_data_invert_labels = [False] * len(cfg.test_data_path)
+            elif not isinstance(test_data_invert_labels, list):
+                test_data_invert_labels = [test_data_invert_labels] * len(
+                    cfg.test_data_path
+                )
+
+            test_data_start_index = cfg.test_data_start_index
+            if test_data_start_index is None:
+                test_data_start_index = [0] * len(cfg.test_data_path)
+            elif not isinstance(test_data_start_index, list):
+                test_data_start_index = [test_data_start_index] * len(
+                    cfg.test_data_path
+                )
 
             return [
                 setup_data(
@@ -66,27 +79,24 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
                 )
                 for path, data_len, invert_labels, data_start_index in zip(
                     cfg.test_data_path,
-                    cfg.test_data_len,
-                    cfg.test_data_invert_labels,
-                    cfg.test_data_start_index,
+                    test_data_len,
+                    test_data_invert_labels,
+                    test_data_start_index,
                 )
             ]
         elif isinstance(cfg.test_data_path, str):
-            assert isinstance(
-                cfg.test_data_len, int
-            ), "test_data_len must be an int if test_data_path is a string"
-            assert isinstance(
-                cfg.test_data_start_index, int
-            ), "test_data_start_index must be an int if test_data_path is a string"
-            assert isinstance(
-                cfg.test_data_invert_labels, bool
-            ), "test_data_invert_labels must be a bool if test_data_path is a string"
-            return setup_data(
-                data_path=cfg.test_data_path,
-                invert_labels=cfg.test_data_invert_labels,
-                data_len=cfg.test_data_len,
-                data_start_index=cfg.test_data_start_index,
-            )
+            return [
+                setup_data(
+                    data_path=cfg.test_data_path,
+                    invert_labels=(
+                        cfg.test_data_invert_labels
+                        if cfg.test_data_invert_labels is not None
+                        else False
+                    ),
+                    data_len=cfg.test_data_len,
+                    data_start_index=cfg.test_data_start_index,
+                )
+            ]
         else:
             raise ValueError(
                 f"test_data_path must be a string or a list of strings (given '{cfg.test_data_path}')"
@@ -97,7 +107,7 @@ def setup_data(
     data_path: str,
     invert_labels: bool,
     data_len: Optional[int],
-    data_start_index: int,
+    data_start_index: Optional[int],
 ) -> pd.DataFrame:
 
     data = inverse_cai.data.loader.standard.load(data_path, switch_labels=invert_labels)
@@ -113,6 +123,11 @@ def setup_data(
         )
     logger.info(f"Overall data length: {len(data)}")
     logger.info(f"Using data length: {data_len}")
+
+    # Set default data_start_index if None
+    if data_start_index is None:
+        data_start_index = 0
+
     data = data.iloc[data_start_index : data_start_index + data_len]
 
     return data
@@ -167,6 +182,8 @@ def run(cfg: DictConfig):
     tmp_path = pathlib.Path(hydra_out_path) / "tmp"
     for path in [results_path, tmp_path]:
         path.mkdir(parents=True, exist_ok=True)
+
+    ap_paths = []
 
     # Enable running of cfg checks defined in __post_init__ method above.
     # (from https://github.com/facebookresearch/hydra/issues/981)
@@ -225,11 +242,13 @@ def run(cfg: DictConfig):
     data.to_csv(results_path / "000_train_data.csv", index=True, index_label="index")
     test_data = setup_test_data(cfg)
     assert_no_identical_rows(data, test_data)
+    assert isinstance(test_data, list)
 
-    if test_data is not None:
-        test_data.to_csv(
-            results_path / "001_test_data.csv", index=True, index_label="index"
-        )
+    if test_data:
+        for i, test_df in enumerate(test_data):
+            test_df.to_csv(
+                results_path / f"001_test_data_{i}.csv", index=True, index_label="index"
+            )
 
     # TODO: remove this in a future version once s1_num_principles_per_instance is removed
     if cfg.s1_num_principles_per_instance is not None:
@@ -263,16 +282,17 @@ def run(cfg: DictConfig):
         constitution = results["constitution"]
 
         # Generate annotated pairs format
-        ap_output_file = results_path / "070_annotated_pairs_dataset.json"
+        ap_output_file = results_path / "070_annotations_train_ap.json"
         parsed_votes = icai_loader.parse_raw_votes(results["raw_votes"])
-        annotated_pairs = create_annotated_pairs(
+        train_annotated_pairs = create_annotated_pairs(
             df=data,
             principles=results["summaries"],
             comparison_votes=parsed_votes,
             dataset_name=f"ICAI Training Dataset - {pathlib.Path(hydra_out_path).name}",
             auto_detect_annotators=True,
         )
-        save_annotated_pairs_to_file(annotated_pairs, ap_output_file)
+        save_annotated_pairs_to_file(train_annotated_pairs, ap_output_file)
+        ap_paths.append(ap_output_file)
         logger.info(f"Generated annotated pairs format at {ap_output_file}")
     else:
         logger.warning(
@@ -286,33 +306,38 @@ def run(cfg: DictConfig):
             )
         constitution = cfg.annotator.alpaca_eval.constitution
 
+    test_ap_data = []
     if cfg.test_data_annotate_with_principles:
-        test_annotation_cache_path = (
-            results_path / "043_votes_per_comparison_testset.csv"
-        )
+        for i, test_df in enumerate(test_data):
+            test_annotation_cache_path = (
+                results_path / "043_votes_per_comparison_testset.csv"
+            )
 
-        logger.info("Annotating test data by principle-following annotators")
-        raw_votes, _ = get_votes_for_principles(
-            feedback_df=test_data,
-            summaries=results["summaries"],
-            max_votes_in_single_prompt=cfg.s3_filter_max_votes_in_single_prompt,
-            model_name=cfg.alg_model,
-            cache_path=test_annotation_cache_path,
-            config=cfg,
-        )
-        raw_votes.to_csv(test_annotation_cache_path, index=True, index_label="index")
-        parsed_votes = icai_loader.parse_raw_votes(raw_votes)
-        annotated_pairs = create_annotated_pairs(
-            df=test_data,
-            principles=results["summaries"],
-            comparison_votes=parsed_votes,
-            dataset_name=f"ICAI Test Dataset - {pathlib.Path(hydra_out_path).name}",
-            auto_detect_annotators=True,
-        )
-        save_annotated_pairs_to_file(
-            annotated_pairs,
-            str(results_path / "071_testset_annotated_pairs_dataset.json"),
-        )
+            logger.info("Annotating test data by principle-following annotators")
+            raw_votes, _ = get_votes_for_principles(
+                feedback_df=test_df,
+                summaries=results["summaries"],
+                max_votes_in_single_prompt=cfg.s3_filter_max_votes_in_single_prompt,
+                model_name=cfg.alg_model,
+                cache_path=test_annotation_cache_path,
+                config=cfg,
+            )
+            raw_votes.to_csv(
+                test_annotation_cache_path, index=True, index_label="index"
+            )
+            parsed_votes = icai_loader.parse_raw_votes(raw_votes)
+            test_annotated_pairs = create_annotated_pairs(
+                df=test_df,
+                principles=results["summaries"],
+                comparison_votes=parsed_votes,
+                dataset_name=f"ICAI Test Dataset - {pathlib.Path(hydra_out_path).name}",
+                auto_detect_annotators=True,
+            )
+            ap_path = results_path / f"071_annotations_testset-{i}_ap.json"
+            save_annotated_pairs_to_file(test_annotated_pairs, ap_path)
+            ap_paths.append(ap_path)
+            logger.info(f"Generated annotated pairs format at {ap_path}")
+            test_ap_data.append(test_annotated_pairs)
 
     if cfg.annotator.skip:
         logger.warning("Skipping LLM annotation stage")
@@ -328,8 +353,10 @@ def run(cfg: DictConfig):
         inverse_cai.annotators.annotate(
             cfg=cfg,
             data=data,
+            ap_data=train_annotated_pairs,
             icai_results_dict=results,
             test_data=test_data,
+            test_ap_data=test_ap_data,
             constitution=constitution,
             tmp_path=tmp_path,
             results_path=results_path,
@@ -353,10 +380,14 @@ def run(cfg: DictConfig):
         )
 
     logger.info(f"Experiment finished. Find results at {results_path}")
+    ap_commands = []
+    for ap_path in ap_paths:
+        ap_commands.append(f"feedback-forensics -d {ap_path}")
     logger.info(
         "🔍 You can use Feedback Forensics to inspect the results "
-        f"via the following command: \n\nfeedback-forensics -d {results_path.parent}\n\n"
-        "Follow the instructions in the Feedback Forensics repo to install it (https://github.com/rdnfn/feedback-forensics)."
+        f"for the different datasets via the following commands: \n\n"
+        + "\n\n".join(ap_commands)
+        + "\n\nFollow the instructions in the Feedback Forensics repo to install it (https://github.com/rdnfn/feedback-forensics)."
     )
     logger.info("All done! ✨")
 

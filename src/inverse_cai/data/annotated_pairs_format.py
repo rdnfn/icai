@@ -29,7 +29,7 @@ PREFERENCE_ALIAS_MAPPING = {
     "a": "a",
     "b": "b",
     "text_a": "a",
-    "text_b": "a",
+    "text_b": "b",
 }
 
 
@@ -125,7 +125,7 @@ def votes_to_annotations(
 
 def add_annotators(
     output: Dict,
-    principles: Mapping[int, str],
+    principles: Mapping[int, str] | None = None,
     additional_columns: List[str] = None,
 ) -> None:
     """Add all annotators to the output structure.
@@ -134,9 +134,9 @@ def add_annotators(
     information to output["annotators"] and setting the default annotator.
 
     Args:
-        output: The output dataset dictionary to modify in-place
-        principles: Dictionary of principles where keys are principle IDs
-        additional_columns: List of additional columns from the training data to include as annotations
+        output (Dict): The output dataset dictionary to modify in-place
+        principles (Mapping[int, str] | None): Dictionary of principles where keys are principle IDs
+        additional_columns (List[str] | None): List of additional columns from the training data to include as annotations
     """
     # Create default annotator
     default_annotator_id = hash_string(DEFAULT_ANNOTATOR_DESCRIPTION)
@@ -148,7 +148,10 @@ def add_annotators(
     output["metadata"]["default_annotator"] = default_annotator_id
 
     # Determine active principles
-    active_principles = list(principles.values())
+    if principles is not None:
+        active_principles = list(principles.values())
+    else:
+        active_principles = []
 
     # Create principle annotators
     for principle in active_principles:
@@ -213,9 +216,11 @@ def detect_annotator_columns(df: pd.DataFrame) -> List[str]:
 
 def create_annotated_pairs(
     df: pd.DataFrame,
-    principles: Mapping[int, str],
-    comparison_votes: Mapping[int, Dict[int, Union[bool, str, None]]] | pd.Series,
     dataset_name: str,
+    principles: Mapping[int, str] | None = None,
+    comparison_votes: (
+        Mapping[int, Dict[int, Union[bool, str, None]]] | pd.Series | None
+    ) = None,
     additional_columns: List[str] = None,
     auto_detect_annotators: bool = True,
 ) -> Dict:
@@ -223,10 +228,10 @@ def create_annotated_pairs(
 
     Args:
         df: DataFrame with preference data pairs. Must have mandatory "text_a", "text_b", and DEFAULT_PREFERENCE_COLUMN rows, and an optional "input" (prompt).
-        principles: Dictionary of principles where keys are principle IDs
-        comparison_votes: Dictionary of comparison votes
         dataset_name: Name for the dataset
         additional_columns: List of additional columns from the training data to include as annotations
+        principles: Dictionary of principles where keys are principle IDs
+        comparison_votes: Dictionary of comparison votes
         auto_detect_annotators: Whether to automatically detect annotator columns in the DataFrame
 
     Returns:
@@ -286,7 +291,24 @@ def create_annotated_pairs(
 
     # Prepare data needed for annotations
     default_annotator_id = output["metadata"]["default_annotator"]
-    active_principles = list(principles.values())
+
+    if principles is None or comparison_votes is None:
+        if not (principles is None and comparison_votes is None):
+            raise ValueError(
+                "Got values for principles or comparison_votes, but not both. "
+                "Please provide both or neither."
+            )
+        active_principles = []
+    else:
+        active_principles = list(principles.values())
+
+    if principles is not None:
+        active_principles = list(principles.values())
+        assert (
+            comparison_votes is not None
+        ), "Comparison votes are required when principles are provided"
+    else:
+        active_principles = []
 
     # Process each comparison
     for idx, row in df.iterrows():
@@ -322,17 +344,18 @@ def create_annotated_pairs(
             DEFAULT_PREFERENCE_KEY: reference_preference
         }
 
-        # Add principle annotations based on votes
-        if idx in comparison_votes:
-            votes = comparison_votes[idx]
-            principle_annotations = votes_to_annotations(
-                votes, principles, active_principles, reference_preference
-            )
-            annotations.update(principle_annotations)
-        else:
-            logger.warning(
-                f"Missing votes for comparison with index {idx}, skipping principle annotations"
-            )
+        if comparison_votes is not None:
+            # Add principle annotations based on votes
+            if idx in comparison_votes:
+                votes = comparison_votes[idx]
+                principle_annotations = votes_to_annotations(
+                    votes, principles, active_principles, reference_preference
+                )
+                annotations.update(principle_annotations)
+            else:
+                logger.warning(
+                    f"Missing votes for comparison with index {idx}, skipping principle annotations"
+                )
 
         # Add additional columns as annotations if specified
         if all_additional_columns:
@@ -420,3 +443,139 @@ def save_annotated_pairs_to_file(
     logger.info(f"Created annotated pairs format dataset: {output_file}")
     logger.info(f"- Dataset contains {len(annotated_pairs['comparisons'])} comparisons")
     logger.info(f"- Dataset contains {len(annotated_pairs['annotators'])} annotators")
+
+
+def load_annotated_pairs_from_file(annotated_pairs_file: str | Path) -> Dict:
+    """Load an annotated pairs dataset from a JSON file.
+
+    Args:
+        annotated_pairs_file: Path to the annotated pairs dataset file
+    """
+    return json.load(open(annotated_pairs_file, "r", encoding="utf-8"))
+
+
+def merge_annotated_pairs(
+    annotated_pairs_list: List[Dict], merged_metadata: Dict | None = None
+) -> Dict:
+    """Merge a list of annotated pairs datasets into a single annotated pairs dataset.
+
+    Args:
+        annotated_pairs_list: List of annotated pairs datasets to merge
+
+    Returns:
+        The merged annotated pairs dataset
+    """
+    if not annotated_pairs_list:
+        raise ValueError("No annotated pairs datasets provided for merging")
+
+    # Check that all datasets have the same format version
+    format_versions = [
+        dataset.get("metadata", {}).get("version") for dataset in annotated_pairs_list
+    ]
+    if not all(version == format_versions[0] for version in format_versions):
+        raise ValueError(
+            "All annotated pairs datasets must have the same format version"
+        )
+
+    original_descriptions = [
+        dataset.get("metadata", {}).get("description")
+        for dataset in annotated_pairs_list
+    ]
+    # Filter out None values
+    original_descriptions = [desc for desc in original_descriptions if desc is not None]
+
+    # Merge dataset names if available
+    dataset_names = []
+    for dataset in annotated_pairs_list:
+        if dataset.get("metadata", {}).get("dataset_name"):
+            dataset_names.append(dataset["metadata"]["dataset_name"])
+
+    # Initialize merged dataset with metadata from the first dataset
+    merged = {
+        "metadata": {},
+        "annotators": {},
+        "comparisons": [],
+    }
+
+    if merged_metadata is not None:
+        merged["metadata"].update(merged_metadata)
+    else:
+        merged["metadata"] = {
+            "version": FORMAT_VERSION,
+            "description": f"Merged annotated pairs dataset from multiple datasets ({', '.join(dataset_names)}). Original descriptions: {', '.join(original_descriptions)}",
+            "created_at": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "dataset_name": "merged_dataset",
+        }
+
+    if dataset_names:
+        merged["metadata"]["dataset_name"] = "_".join(dataset_names)
+
+    # Track comparison IDs to avoid duplicates
+    comparison_ids = set()
+    # Dictionary to store comparisons by ID for easy access
+    comparison_map = {}
+
+    # Merge annotators and comparisons
+    for i, dataset in enumerate(annotated_pairs_list):
+        # Merge annotators
+        for annotator_id, annotator in dataset.get("annotators", {}).items():
+            if annotator_id not in merged["annotators"]:
+                merged["annotators"][annotator_id] = annotator
+
+        # Copy default annotator if this is the first dataset and it has one
+        if not merged["metadata"].get("default_annotator") and dataset.get(
+            "metadata", {}
+        ).get("default_annotator"):
+            merged["metadata"]["default_annotator"] = dataset["metadata"][
+                "default_annotator"
+            ]
+
+        # check that comparison ids are unique within each dataset
+        dataset_comparison_ids = [
+            comparison["id"] for comparison in dataset.get("comparisons", [])
+        ]
+        if len(dataset_comparison_ids) != len(set(dataset_comparison_ids)):
+            raise ValueError(
+                f"Comparison IDs are not unique in dataset {dataset_names[i]}. Could not merge datasets."
+            )
+
+        # Merge comparisons and their annotations
+        for comparison in dataset.get("comparisons", []):
+            comparison_id = comparison["id"]
+
+            if comparison_id not in comparison_map:
+                # First time seeing this comparison, add it to our map
+                comparison_map[comparison_id] = comparison.copy()
+                comparison_ids.add(comparison_id)
+            else:
+                # We've seen this comparison before, merge annotations
+                existing_comparison = comparison_map[comparison_id]
+
+                # Merge annotations
+                for annotator_id, annotation in comparison.get(
+                    "annotations", {}
+                ).items():
+                    if annotator_id not in existing_comparison["annotations"]:
+                        existing_comparison["annotations"][annotator_id] = annotation
+                    else:
+                        assert (
+                            existing_comparison["annotations"][annotator_id]
+                            == annotation
+                        ), f"Annotations for {annotator_id} on comparison {comparison_id} are not the same ({existing_comparison['annotations'][annotator_id]} != {annotation}). Could not merge datasets."
+
+                # Merge metadata if present
+                if "metadata" in comparison and "metadata" in existing_comparison:
+                    existing_comparison["metadata"].update(
+                        comparison.get("metadata", {})
+                    )
+                elif "metadata" in comparison:
+                    existing_comparison["metadata"] = comparison["metadata"].copy()
+
+    # Use the merged comparisons from our map
+    merged["comparisons"] = list(comparison_map.values())
+
+    logger.info(
+        f"Merged {len(annotated_pairs_list)} datasets with {len(merged['comparisons'])} unique comparisons"
+    )
+
+    return merged

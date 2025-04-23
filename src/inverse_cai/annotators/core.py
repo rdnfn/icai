@@ -7,6 +7,13 @@ from loguru import logger
 
 import inverse_cai.annotators.alpaca_eval
 from inverse_cai.experiment.config.main import ExpConfig, FunctionAnnotatorConfig
+from inverse_cai.data.annotated_pairs_format import (
+    create_annotated_pairs,
+    save_annotated_pairs_to_file,
+    load_annotated_pairs_from_file,
+    merge_annotated_pairs,
+    DEFAULT_PREFERENCE_COLUMN,
+)
 
 
 def _import_annotator_function(annotator: FunctionAnnotatorConfig):
@@ -51,10 +58,12 @@ def _evaluate_annotations(annotated_data: pd.DataFrame):
 def _run_annotation_pipeline(
     cfg: ExpConfig,
     data: pd.DataFrame,
+    ap_data: dict,
     icai_results_dict: dict,
     constitution: list[str],
     tmp_files_path: pathlib.Path,
     alpaca_results_csv_path: pathlib.Path,
+    annotations_ap_path: pathlib.Path,
     final_results_csv_path: pathlib.Path,
     dataset_name: str,
     results_path: pathlib.Path,
@@ -67,6 +76,7 @@ def _run_annotation_pipeline(
         constitution: The constitution to use for annotation.
         tmp_files_path: Path for temporary files.
         alpaca_results_csv_path: Path to save AlpacaEval results.
+        annotations_ap_path: Path to save annotations in AnnotatedPairs json format.
         final_results_csv_path: Path to save final annotation results.
         dataset_name: Name of the dataset for logging purposes.
 
@@ -74,6 +84,7 @@ def _run_annotation_pipeline(
         DataFrame with annotation results.
     """
     # Initialize annotation results
+    individual_annotations = pd.DataFrame()
     annotation_results = pd.DataFrame()
 
     # Run AlpacaEval if not skipped
@@ -113,10 +124,12 @@ def _run_annotation_pipeline(
                 annotator_kwargs = annotator.function_kwargs
                 annotated_data = annotator_fn(
                     data=data,
+                    ap_data=ap_data,
                     icai_results_dict=icai_results_dict,
                     results_path=results_path,
                     **annotator_kwargs,
                 )
+                annotator_short_name = annotator.function.split(".")[-1]
                 agreement = _evaluate_annotations(annotated_data)
 
                 # Add row with annotator name and agreement to annotation results
@@ -125,33 +138,70 @@ def _run_annotation_pipeline(
                         "annotator": [annotator],
                         "agreement": [agreement],
                         "annotator_type": ["function"],
-                        "annotator_short_name": [annotator.function.split(".")[-1]],
+                        "annotator_short_name": [annotator_short_name],
                     }
                 )
                 annotation_results = pd.concat(
                     [annotation_results, new_row], ignore_index=True
                 )
+
+                if "text_a" not in individual_annotations.columns:
+                    individual_annotations["text_a"] = data["text_a"]
+                if "text_b" not in individual_annotations.columns:
+                    individual_annotations["text_b"] = data["text_b"]
+                if DEFAULT_PREFERENCE_COLUMN not in individual_annotations.columns:
+                    individual_annotations[DEFAULT_PREFERENCE_COLUMN] = data[
+                        DEFAULT_PREFERENCE_COLUMN
+                    ]
+                individual_annotations[annotator_short_name] = annotated_data[
+                    "annotation"
+                ]
             except Exception as e:
                 logger.error(
-                    f"Failed to run annotator {annotator} on {dataset_name}: {e}"
+                    f"Failed to run annotator {annotator} on {dataset_name}: {e}",
+                    exc_info=True,
                 )
 
     logger.info(
         f"Annotation results for dataset '{dataset_name}':\n{annotation_results}"
     )
 
-    # Save final results
-    annotation_results.to_csv(final_results_csv_path)
+    # save annotations of function annotators to AnnotatedPairs format
+    # TODO: potentially support alpacaeval annotations here as well
+    annotated_pairs = create_annotated_pairs(
+        df=individual_annotations,
+        dataset_name=f"Dataset with annotations by evaluated annotators - {dataset_name}",
+        auto_detect_annotators=True,
+    )
+    if annotations_ap_path.exists():
+        # merge with existing annotated pairs
+        existing_annotated_pairs = load_annotated_pairs_from_file(annotations_ap_path)
+        merged_metadata = existing_annotated_pairs["metadata"].copy()
+        merged_metadata["description"] = (
+            merged_metadata["description"]
+            + "\n\nIncluding annotations by function annotators."
+        )
+        annotated_pairs = merge_annotated_pairs(
+            [existing_annotated_pairs, annotated_pairs],
+            merged_metadata=merged_metadata,
+        )
+    save_annotated_pairs_to_file(
+        annotated_pairs,
+        annotations_ap_path,
+    )
+    annotation_results.to_csv(final_results_csv_path, index=False)
     return annotation_results
 
 
 def annotate(
     cfg: ExpConfig,
     data: pd.DataFrame,
+    ap_data: dict,
     icai_results_dict: dict,
     constitution: list[str],
     tmp_path: pathlib.Path,
-    test_data: pd.DataFrame | None,
+    test_data: list[pd.DataFrame] | None,
+    test_ap_data: list[dict] | None,
     results_path: pathlib.Path,
 ):
     """Annotate the data using the annotator specified in the config.
@@ -159,9 +209,12 @@ def annotate(
     Args:
         cfg (ExpConfig): The experiment configuration.
         data (pd.DataFrame): The data to annotate.
+        ap_data (list[dict]): Data to annotate in AnnotatedPairs format.
+            This can be used to access per-principle votes by annotator.
         constitution (list[str]): The constitution to use for the annotation.
         tmp_path (pathlib.Path): The path to the temporary files.
-        test_data (pd.DataFrame | None): The test data to annotate.
+        test_data (list[pd.DataFrame] | None): The test data to annotate.
+        test_ap_data (list[dict] | None): Data to annotate in AnnotatedPairs format.
         results_path (pathlib.Path): The path to the results.
     """
     # Process training data if not skipped
@@ -169,33 +222,42 @@ def annotate(
         _run_annotation_pipeline(
             cfg=cfg,
             data=data,
+            ap_data=ap_data,
             icai_results_dict=icai_results_dict,
             constitution=constitution,
             tmp_files_path=tmp_path / "trainset",
             alpaca_results_csv_path=results_path
             / "092_full_alpacaeval_results_training.csv",
+            annotations_ap_path=results_path / "070_annotations_train_ap.json",
             final_results_csv_path=results_path / "094_results_training.csv",
             dataset_name="training data",
             results_path=results_path,
         )
 
     # Process test data if provided
-    if test_data is not None:
-        # Ensure we can iterate over the test data, even if it's a single dataframe
-        if not isinstance(test_data, list):
-            test_data = [test_data]
+    if test_data:
+        if len(test_ap_data) == 0:
+            logger.warning(
+                "No AnnotatedPairs data available for test sets. Annotating without AP data."
+            )
+            test_ap_data = [None] * len(test_data)
 
-        for i, test_data_single in enumerate(test_data):
+        test_data_forms = zip(test_data, test_ap_data)
+
+        for i, (test_df_single, test_ap_single) in enumerate(test_data_forms):
             _run_annotation_pipeline(
                 cfg=cfg,
-                data=test_data_single,
+                data=test_df_single,
+                ap_data=test_ap_single,
                 icai_results_dict=icai_results_dict,
                 constitution=constitution,
-                tmp_files_path=tmp_path / f"testset_{i}",
+                tmp_files_path=tmp_path / f"testset-{i}",
                 alpaca_results_csv_path=results_path
-                / f"093_full_alpacaeval_results_testset_{i}.csv",
-                final_results_csv_path=results_path / f"095_results_testset_{i}.csv",
-                dataset_name=f"test data {i}/{len(test_data)}",
+                / f"093_full_alpacaeval_results_testset-{i}.csv",
+                annotations_ap_path=results_path
+                / f"071_annotations_testset-{i}_ap.json",
+                final_results_csv_path=results_path / f"095_results_testset-{i}.csv",
+                dataset_name=f"test data {i+1}/{len(test_data)}",
                 results_path=results_path,
             )
     elif cfg.annotator.test_data_only:
