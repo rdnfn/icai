@@ -47,15 +47,28 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
         return []
     else:
         if isinstance(cfg.test_data_path, list):
-            assert isinstance(
-                cfg.test_data_len, list
-            ), "test_data_len must be a list if test_data_path is a list"
-            assert isinstance(
-                cfg.test_data_start_index, list
-            ), "test_data_start_index must be a list if test_data_path is a list"
-            assert isinstance(
-                cfg.test_data_invert_labels, list
-            ), "test_data_invert_labels must be a list if test_data_path is a list"
+            # Handle None values for test dataset settings
+            test_data_len = cfg.test_data_len
+            if test_data_len is None:
+                test_data_len = [None] * len(cfg.test_data_path)
+            elif not isinstance(test_data_len, list):
+                test_data_len = [test_data_len] * len(cfg.test_data_path)
+
+            test_data_invert_labels = cfg.test_data_invert_labels
+            if test_data_invert_labels is None:
+                test_data_invert_labels = [False] * len(cfg.test_data_path)
+            elif not isinstance(test_data_invert_labels, list):
+                test_data_invert_labels = [test_data_invert_labels] * len(
+                    cfg.test_data_path
+                )
+
+            test_data_start_index = cfg.test_data_start_index
+            if test_data_start_index is None:
+                test_data_start_index = [0] * len(cfg.test_data_path)
+            elif not isinstance(test_data_start_index, list):
+                test_data_start_index = [test_data_start_index] * len(
+                    cfg.test_data_path
+                )
 
             return [
                 setup_data(
@@ -66,25 +79,20 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
                 )
                 for path, data_len, invert_labels, data_start_index in zip(
                     cfg.test_data_path,
-                    cfg.test_data_len,
-                    cfg.test_data_invert_labels,
-                    cfg.test_data_start_index,
+                    test_data_len,
+                    test_data_invert_labels,
+                    test_data_start_index,
                 )
             ]
         elif isinstance(cfg.test_data_path, str):
-            assert isinstance(
-                cfg.test_data_len, int
-            ), "test_data_len must be an int if test_data_path is a string"
-            assert isinstance(
-                cfg.test_data_start_index, int
-            ), "test_data_start_index must be an int if test_data_path is a string"
-            assert isinstance(
-                cfg.test_data_invert_labels, bool
-            ), "test_data_invert_labels must be a bool if test_data_path is a string"
             return [
                 setup_data(
                     data_path=cfg.test_data_path,
-                    invert_labels=cfg.test_data_invert_labels,
+                    invert_labels=(
+                        cfg.test_data_invert_labels
+                        if cfg.test_data_invert_labels is not None
+                        else False
+                    ),
                     data_len=cfg.test_data_len,
                     data_start_index=cfg.test_data_start_index,
                 )
@@ -99,7 +107,7 @@ def setup_data(
     data_path: str,
     invert_labels: bool,
     data_len: Optional[int],
-    data_start_index: int,
+    data_start_index: Optional[int],
 ) -> pd.DataFrame:
 
     data = inverse_cai.data.loader.standard.load(data_path, switch_labels=invert_labels)
@@ -115,6 +123,11 @@ def setup_data(
         )
     logger.info(f"Overall data length: {len(data)}")
     logger.info(f"Using data length: {data_len}")
+
+    # Set default data_start_index if None
+    if data_start_index is None:
+        data_start_index = 0
+
     data = data.iloc[data_start_index : data_start_index + data_len]
 
     return data
