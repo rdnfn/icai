@@ -176,12 +176,21 @@ def get_preference_vote_for_single_text(
 
     model = inverse_cai.models.get_model(model_name)
 
-    try:
-        vote = model.invoke(messages).content
-    except Exception as e:
-        logger.error(f"Error invoking model: {e}")
-        logger.error(f"Parsed messages: {messages}")
-        raise e
+    sleep_time = 1  # simple exponential backoff
+    while True:
+        try:
+            vote = model.invoke(messages).content
+            break
+        except Exception as e:
+            if "Error code: 429" in str(e):
+                logger.warning(f"Ratelimit error invoking model: {e}")
+                logger.warning(f"Sleeping for {sleep_time}s and trying again...")
+                time.sleep(sleep_time)
+                sleep_time *= 2
+            else:
+                logger.error(f"Error invoking model: {e}")
+                logger.error(f"Parsed messages: {messages}")
+                raise e
 
     vote = parse_individual_pref_vote(vote, summaries_len=len(summaries))
 
