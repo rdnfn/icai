@@ -455,7 +455,7 @@ def load_annotated_pairs_from_file(annotated_pairs_file: str | Path) -> Dict:
 
 
 def merge_annotated_pairs(
-    annotated_pairs_list: List[Dict], merged_metadata: Dict
+    annotated_pairs_list: List[Dict], merged_metadata: Dict | None = None
 ) -> Dict:
     """Merge a list of annotated pairs datasets into a single annotated pairs dataset.
 
@@ -497,7 +497,7 @@ def merge_annotated_pairs(
         "comparisons": [],
     }
 
-    if merged_metadata:
+    if merged_metadata is not None:
         merged["metadata"].update(merged_metadata)
     else:
         merged["metadata"] = {
