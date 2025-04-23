@@ -26,7 +26,7 @@ class AlpacaEvalAnnotatorConfig:
     constitution: Optional[Union[str, bool]] = (
         None  # constitution to use for AI judgment
     )
-    is_single_annotator: bool = False  # whether to use a single annotator (or four)
+    is_single_annotator: bool = True  # whether to use a single annotator (or four)
     # for available default annotators, see inverse_cai/assets/alpacaeval_annotator_configs,
     # for these you can just use the name of the annotator, e.g.
     # "gpt4omini_fn_constitutional_base_neutral_v2"
