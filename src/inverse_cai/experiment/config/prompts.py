@@ -57,9 +57,10 @@ Sample B:
 Given the samples data above, check for each rule below which sample should be selected:
 {summaries}
 
-Answer in json format, e.g. {{0: "A", 1: "B", 2: "None",...}}.
+Answer in json format, e.g. {{0: "A", 1: "B", 2: "None", 3: "Both", 4: "Neither",...}}.
 Put "A" if A is selected according to that rule, and "B" if B is selected. Put "None" if a rule is not applicable to the two samples.
-No ties are allowed, only one of "A", "B" or "None".
+Put "Both" if both A and B follow the rule. Put "Neither" if neither A nor B follow the rule.
+No other values are allowed, only one of "A", "B", "Both", "Neither", or "None".
 Vote for all rules, even if you are unsure.
 DO NOT respond with any text apart from the json format above!
 DO NOT add markdown formatting around JSON.

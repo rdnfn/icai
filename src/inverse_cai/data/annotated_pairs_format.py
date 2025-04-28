@@ -109,11 +109,11 @@ def votes_to_annotations(
                         "b" if reference_preference == "a" else "a"
                     )
                 }
-            elif vote == "invalid":
-                # Special case for invalid votes
+            elif vote.lower() in ("invalid", "both", "neither"):
+                # Special votes
                 annotations[principle_id] = {
                     DEFAULT_PREFERENCE_KEY: None,
-                    "no_pref_reason": "invalid",
+                    "no_pref_reason": vote.lower(),
                 }
             else:
                 raise ValueError(

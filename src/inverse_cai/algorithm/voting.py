@@ -209,6 +209,8 @@ def get_preference_vote_for_single_text(
             updated_vote[key] = False
         elif value is None:
             updated_vote[key] = None
+        elif value in ("Both", "Neither"):
+            updated_vote[key] = value
         else:
             updated_vote[key] = "invalid"
 
@@ -239,8 +241,8 @@ def parse_individual_pref_vote(vote, summaries_len):
 
     # check if all values are A, B or None
     for key, value in vote_dict.items():
-        if value not in ["A", "B", "None", None]:
-            logger.error(f"Vote value {value} is not A, B or None")
+        if value not in ["A", "B", "Both", "Neither", "None", None]:
+            logger.error(f"Vote value {value} is not A, B, Both, Neither, or None")
             vote_dict[key] = "invalid"
 
     return vote_dict
@@ -251,7 +253,7 @@ def combine_votes(votes: pd.Series, summaries: dict):
     Combine list of votes into an overall result, for each principle.
     """
     vote_dict = {
-        i: {"for": 0, "against": 0, "abstain": 0, "invalid": 0}
+        i: {"for": 0, "against": 0, "abstain": 0, "invalid": 0, "both": 0, "neither": 0}
         for i in summaries.keys()
     }
     for vote in votes:
@@ -263,6 +265,10 @@ def combine_votes(votes: pd.Series, summaries: dict):
                 vote_dict[j]["for"] += 1
             elif vote[j] is False:
                 vote_dict[j]["against"] += 1
+            elif vote[j] == "Both":
+                vote_dict[j]["both"] += 1
+            elif vote[j] == "Neither":
+                vote_dict[j]["both"] += 1
             elif vote[j] is None:
                 vote_dict[j]["abstain"] += 1
             else:
@@ -280,6 +286,8 @@ def clean_vote_json(vote_json, summaries_len):
         .replace(" ", "")
         .replace("true", "True")
         .replace("false", "False")
+        .replace("both", "Both")
+        .replace("neither", "Neither")
         .replace("null", "None")
     )
     # replace string keys with int keys
@@ -287,7 +295,7 @@ def clean_vote_json(vote_json, summaries_len):
         vote_json = vote_json.replace(f'"{i}"', f"{i}")
         vote_json = vote_json.replace(f"'{i}'", f"{i}")
 
-    for letter in ["A", "B"]:
+    for letter in ["A", "B", "Both", "Neither"]:
         vote_json = vote_json.replace(f"'{letter}'", f'"{letter}"')
 
     return vote_json
