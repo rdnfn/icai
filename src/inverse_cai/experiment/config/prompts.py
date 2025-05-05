@@ -58,17 +58,19 @@ Given the samples data above, check for each rule below which sample should be s
 {summaries}
 
 Answer in json format, e.g. {{0: "A", 1: "B", 2: "None", 3: "Both", 4: "Neither",...}}.
-Put "A" if A is selected according to that rule, and "B" if B is selected. Put "None" if a rule is not applicable to the two samples.
-Put "Both" if both A and B follow the rule. Put "Neither" if neither A nor B follow the rule.
-No other values are allowed, only one of "A", "B", "Both", "Neither", or "None".
-Vote for all rules, even if you are unsure.
+Put "A" if A is selected according to that rule, and "B" if B is selected.
+
+Put "None" if a rule is not applicable to the two samples. Put "Both" if both A and B follow the rule exactly as well.
+If either A or B follow the rule better AT ALL, put "A" or "B", DO NOT put "None" or "Both".
+No other values are allowed, only one of "A", "B", "Both", or "None".
+VOTE FOR ALL RULES, EVEN IF YOU ARE UNSURE.
 DO NOT respond with any text apart from the json format above!
 DO NOT add markdown formatting around JSON.
 ONLY REPLY IN JSON FORMAT
 <|im_end|>"""
 
 DEFAULT_CLUSTER_SUMMARY_PROMPT = """<|im_start|>system
-Your job is to summarize the principles below as a single similar principle. Ignore outlier principles. The principle should be an instruction about choosing one of the options.
+Your job is to summarize the principles below as a single similar principle. Make sure the summarized principle remains broadly applicable. Ignore outlier principles. The principle should be an instruction about choosing one of the options.
 <|im_end|>
 <|im_start|>user
 {principles}
