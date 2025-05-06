@@ -33,13 +33,15 @@ def filter_according_to_votes(
     principle_keys_to_keep = []
     for principle, votes in combined_votes.items():
         keep_principle = True
-        votes_for, votes_against, votes_abstain, votes_invalid = (
+        votes_for, votes_against, votes_abstain, votes_invalid, votes_both, votes_neither = (
             votes["for"],
             votes["against"],
             votes["abstain"],
             votes["invalid"],
+            votes["both"],
+            votes["neither"],
         )
-        total_votes = votes_for + votes_against + votes_abstain + votes_invalid
+        total_votes = votes_for + votes_against + votes_abstain + votes_invalid + votes_both + votes_neither
 
         if require_majority_true:
             if votes_for <= votes_against:

@@ -21,6 +21,7 @@ def get_votes_for_principles(
     config: ExpConfig,
     model_name: str,
     cache_path: Path,
+    prompt_principles = False,
 ) -> tuple[pd.DataFrame, dict]:
     """Get votes for principles.
 
@@ -63,6 +64,7 @@ def get_votes_for_principles(
             config=config,
             model_name=model_name,
             cache_path=cache_path,
+            prompt_principles=prompt_principles,
         )
 
         # append to pd series another pd series
@@ -83,6 +85,7 @@ def run_pass_to_get_votes_for_principles(
     config: ExpConfig,
     model_name: str,
     cache_path: Path,
+    prompt_principles: bool,
 ) -> tuple[pd.Series, dict]:
     """
     Given a dataframe of conversations, run voting with each proposed
@@ -96,28 +99,44 @@ def run_pass_to_get_votes_for_principles(
 
     # Function to process each row
     def process_row(index, row, summaries, model_name, config, initial_cached_votes):
-        # Check cache first
-        # Initialize cache
-        vote_cache = VoteCache(cache_path)
+        if prompt_principles:
+            def _get_prompt(row):
+                # TODO: this is so hackyyyyyy
+                a = row["text_a"].split("Instruction:\n")[-1].split("Response:\n")[0].split("Assistant:\n")[0]
+                b = row["text_b"].split("Instruction:\n")[-1].split("Response:\n")[0].split("Assistant:\n")[0]
+                assert a == b
+                return a.strip()
 
-        cache_index = vote_cache.get_full_index(index, summaries)
+            vote = get_prompt_principle_vote_for_single_text(
+                prompt=_get_prompt(row),
+                summaries=summaries,
+                model_name=model_name,
+                config=config,
+            )
+        else:
+            # Check cache first
+            # Initialize cache
+            vote_cache = VoteCache(cache_path)
 
-        if cache_index in initial_cached_votes:
-            time.sleep(0.1)
-            return index, initial_cached_votes[cache_index]
+            cache_index = vote_cache.get_full_index(index, summaries)
 
-        preferred = get_preferred_text(row)
-        rejected = get_rejected_text(row)
-        vote = get_preference_vote_for_single_text(
-            preferred_sample=preferred,
-            rejected_sample=rejected,
-            summaries=summaries,
-            model_name=model_name,
-            config=config,
-        )
+            if cache_index in initial_cached_votes:
+                time.sleep(0.1)
+                return index, initial_cached_votes[cache_index]
 
-        # Update cache
-        vote_cache.update_cache(index, vote)
+            preferred = get_preferred_text(row)
+            rejected = get_rejected_text(row)
+            vote = get_preference_vote_for_single_text(
+                preferred_sample=preferred,
+                rejected_sample=rejected,
+                summaries=summaries,
+                model_name=model_name,
+                config=config,
+            )
+
+            # Update cache
+            vote_cache.update_cache(index, vote)
+
         return index, vote
 
     # Parallel processing of rows
@@ -136,6 +155,69 @@ def run_pass_to_get_votes_for_principles(
     combined_votes = combine_votes(list(raw_votes), summaries)
 
     return raw_votes, combined_votes
+
+
+def get_prompt_principle_vote_for_single_text(
+    prompt,
+    summaries,
+    config: ExpConfig,
+    model_name: str,
+):
+    """
+    Given a dataframe of conversations, let the model votes according to each proposed principles.
+
+    Model output is formatted as json format, for each principle.
+
+    Note: preference-based voting require ast-based parsing here to ensure flipped
+    votes can be corrected for right away.
+    """
+
+    # map summary keys to integers
+    summary_key_mapping = {i: k for i, k in enumerate(summaries.keys())}
+    integer_summaries = {i: v for i, v in enumerate(summaries.values())}
+
+    messages = inverse_cai.algorithm.utils.parse_prompt(
+        prompt_str=config.alg_prompts.prompt_voting_prompt,
+        prompt_kwargs=dict(
+            prompt=prompt,
+            summaries=integer_summaries,
+        ),
+    )
+
+    model = inverse_cai.models.get_model(model_name)
+
+    sleep_time = 1  # simple exponential backoff
+    while True:
+        try:
+            vote = model.invoke(messages).content
+            break
+        except Exception as e:
+            if "Error code: 429" in str(e):
+                logger.warning(f"Ratelimit error invoking model: {e}")
+                logger.warning(f"Sleeping for {sleep_time}s and trying again...")
+                time.sleep(sleep_time)
+                sleep_time *= 2
+            else:
+                logger.error(f"Error invoking model: {e}")
+                logger.error(f"Parsed messages: {messages}")
+                raise e
+
+    vote = parse_individual_pref_vote(vote, summaries_len=len(summaries), prompt_principles=True)
+
+    # change back to original keys
+    vote = {summary_key_mapping[k]: v for k, v in vote.items()}
+
+    # translate votes to correct/incorrect/invalid
+    updated_vote = {}
+    for key, value in vote.items():
+        if value in ["True", "true", True]:
+            updated_vote[key] = True
+        elif value in ["False", "false", False]:
+            updated_vote[key] = False
+        else:
+            updated_vote[key] = "invalid"
+
+    return updated_vote
 
 
 def get_preference_vote_for_single_text(
@@ -176,12 +258,21 @@ def get_preference_vote_for_single_text(
 
     model = inverse_cai.models.get_model(model_name)
 
-    try:
-        vote = model.invoke(messages).content
-    except Exception as e:
-        logger.error(f"Error invoking model: {e}")
-        logger.error(f"Parsed messages: {messages}")
-        raise e
+    sleep_time = 1  # simple exponential backoff
+    while True:
+        try:
+            vote = model.invoke(messages).content
+            break
+        except Exception as e:
+            if "Error code: 429" in str(e):
+                logger.warning(f"Ratelimit error invoking model: {e}")
+                logger.warning(f"Sleeping for {sleep_time}s and trying again...")
+                time.sleep(sleep_time)
+                sleep_time *= 2
+            else:
+                logger.error(f"Error invoking model: {e}")
+                logger.error(f"Parsed messages: {messages}")
+                raise e
 
     vote = parse_individual_pref_vote(vote, summaries_len=len(summaries))
 
@@ -200,13 +291,15 @@ def get_preference_vote_for_single_text(
             updated_vote[key] = False
         elif value is None:
             updated_vote[key] = None
+        elif value in ("Both", "Neither"):
+            updated_vote[key] = value
         else:
             updated_vote[key] = "invalid"
 
     return updated_vote
 
 
-def parse_individual_pref_vote(vote, summaries_len):
+def parse_individual_pref_vote(vote, summaries_len, prompt_principles=False):
     """
     Parse preference-based votes.
 
@@ -228,10 +321,13 @@ def parse_individual_pref_vote(vote, summaries_len):
             f"Vote length {len(vote_dict)} does not match summaries length {summaries_len}"
         )
 
-    # check if all values are A, B or None
+    if prompt_principles:
+        valid = ["True", "False", "true", "false", True, False]
+    else:
+        valid = ["A", "B", "Both", "Neither", "None", None]
     for key, value in vote_dict.items():
-        if value not in ["A", "B", "None", None]:
-            logger.error(f"Vote value {value} is not A, B or None")
+        if value not in valid:
+            logger.error(f"Vote value {value} is not in {valid}")
             vote_dict[key] = "invalid"
 
     return vote_dict
@@ -242,7 +338,7 @@ def combine_votes(votes: pd.Series, summaries: dict):
     Combine list of votes into an overall result, for each principle.
     """
     vote_dict = {
-        i: {"for": 0, "against": 0, "abstain": 0, "invalid": 0}
+        i: {"for": 0, "against": 0, "abstain": 0, "invalid": 0, "both": 0, "neither": 0}
         for i in summaries.keys()
     }
     for vote in votes:
@@ -254,6 +350,10 @@ def combine_votes(votes: pd.Series, summaries: dict):
                 vote_dict[j]["for"] += 1
             elif vote[j] is False:
                 vote_dict[j]["against"] += 1
+            elif vote[j] == "Both":
+                vote_dict[j]["both"] += 1
+            elif vote[j] == "Neither":
+                vote_dict[j]["both"] += 1
             elif vote[j] is None:
                 vote_dict[j]["abstain"] += 1
             else:
@@ -271,6 +371,8 @@ def clean_vote_json(vote_json, summaries_len):
         .replace(" ", "")
         .replace("true", "True")
         .replace("false", "False")
+        .replace("both", "Both")
+        .replace("neither", "Neither")
         .replace("null", "None")
     )
     # replace string keys with int keys
@@ -278,7 +380,7 @@ def clean_vote_json(vote_json, summaries_len):
         vote_json = vote_json.replace(f'"{i}"', f"{i}")
         vote_json = vote_json.replace(f"'{i}'", f"{i}")
 
-    for letter in ["A", "B"]:
+    for letter in ["A", "B", "Both", "Neither"]:
         vote_json = vote_json.replace(f"'{letter}'", f'"{letter}"')
 
     return vote_json
