@@ -62,20 +62,21 @@ def generate_principles_from_feedback(
 
     # initialize the principles column
     feedback["principles"] = None
+    feedback["prompt_principles"] = None
 
     if num_rankings_per_sampling_step == 1:
 
         def process_row(
             index, row, num_principles_per_sampling_step, model_name, config
         ):
-            principles = generate_principles_from_single_ranking(
+            principles, prompt_principles = generate_principles_from_single_ranking(
                 preferred_text=get_preferred_text(row),
                 rejected_text=get_rejected_text(row),
                 num_principles=num_principles_per_sampling_step,
                 model_name=model_name,
                 config=config,
             )
-            return index, principles
+            return index, principles, prompt_principles
 
         # parallelize the process
         results = Parallel(n_jobs=config.parallel_workers)(
@@ -85,10 +86,13 @@ def generate_principles_from_feedback(
             for index, row in tqdm.tqdm(feedback.iterrows(), total=feedback.shape[0])
         )
         # update the feedback DataFrame
-        for index, principles in results:
+        for index, principles, prompt_principles in results:
             feedback.at[index, "principles"] = principles
+            feedback.at[index, "prompt_principles"] = prompt_principles
 
     elif num_rankings_per_sampling_step > 1:
+
+        raise NotImplementedError
 
         # allocate group_ids, such that each row is assigned to a random equally
         # sized group
@@ -136,14 +140,18 @@ def generate_principles_from_feedback(
     # get list of all principles (note that in results
     # principles are lists of principles)
     principles = [
-        principle for _, principle_list in results for principle in principle_list
+        principle for _, principle_list, _ in results for principle in principle_list
+    ]
+
+    prompt_principles = [
+        principle for _, _, prompt_principle_list in results for principle in prompt_principle_list
     ]
 
     logger.info(
-        f"Generated {len(principles)} principles (expected {overall_num_principles})"
+        f"Generated {len(principles)} principles, {len(prompt_principles)} prompt principles (expected {overall_num_principles})"
     )
 
-    return feedback, principles
+    return feedback, principles, prompt_principles
 
 
 def generate_principles_from_single_ranking(
@@ -171,6 +179,7 @@ def generate_principles_from_single_ranking(
     # get the model
     model = inverse_cai.models.get_model(model_name)
     principles: list = []
+    prompt_principles: list = []
 
     for prompt in config.alg_prompts.generator_prompts:
         messages = inverse_cai.algorithm.utils.parse_prompt(
@@ -199,7 +208,42 @@ def generate_principles_from_single_ranking(
             logger.error(f"Failed to parse principles: {principle_output}")
             logger.error(e)
 
-    return principles
+    for prompt in config.alg_prompts.prompt_generator_prompts:
+        def _get_prompt(a_, b_):
+            # TODO: !!!!! this is duplicated in voting.py
+            a = a_.split("Instruction:\n")[-1].split("Response:\n")[0].split("Assistant:\n")[0]
+            b = b_.split("Instruction:\n")[-1].split("Response:\n")[0].split("Assistant:\n")[0]
+            assert a == b
+            return a.strip()
+
+        messages = inverse_cai.algorithm.utils.parse_prompt(
+            prompt_str=prompt,
+            prompt_kwargs=dict(
+                preferred_sample=preferred_text,
+                rejected_sample=rejected_text,
+                prompt=_get_prompt(preferred_text, rejected_text),
+                num_principles=num_principles,
+            ),
+        )
+
+        # generate principles
+        principle_output = model.invoke(messages).content
+
+        # parse the principles
+        try:
+            principle_output = clean_principle_str(principle_output)
+            parsed_output = ast.literal_eval(principle_output)["features"]
+            prompt_principles += parsed_output
+            if len(parsed_output) < num_principles:
+                logger.warning(
+                    f"Generated fewer ({len(parsed_output)}) principles "
+                    f"than expected ({num_principles})"
+                )
+        except Exception as e:
+            logger.error(f"Failed to parse principles: {principle_output}")
+            logger.error(e)
+
+    return principles, prompt_principles
 
 
 def generate_principles_from_multiple_rankings(
@@ -222,6 +266,7 @@ def generate_principles_from_multiple_rankings(
     Returns:
         A list of principles.
     """
+    raise NotImplementedError
     assert num_principles > 0, "Number of principles must be greater than 0"
     assert len(preferred_texts) == len(
         rejected_texts
