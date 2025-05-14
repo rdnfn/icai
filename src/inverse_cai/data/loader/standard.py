@@ -60,6 +60,20 @@ def _add_prompt_to_texts(df: pd.DataFrame) -> pd.DataFrame:
     Adds the prompt to the texts.
     """
 
+    # sanity check to see if the prompt is always in the response
+    # using 100 first rows
+    prompt_in_response = df.iloc[:100].apply(
+        lambda row: row["prompt"] in row["text_a"] and row["prompt"] in row["text_b"],
+        axis=1,
+    )
+    if prompt_in_response.all():
+        logger.warning(
+            "Prompt is always in the response. This is unexpected. "
+            "This is likely because the prompt is already included in the text columns."
+            "Skipping merging the prompt and text columns."
+        )
+        return df
+
     logger.info("Combining prompts and texts since separate prompt column provided.")
 
     df["_og_text_a"] = df["text_a"]
