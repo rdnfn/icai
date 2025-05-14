@@ -35,6 +35,7 @@ def setup_train_data(cfg: ExpConfig) -> pd.DataFrame:
         invert_labels=cfg.data_invert_labels,
         data_len=cfg.data_len,
         data_start_index=cfg.data_start_index,
+        merge_prompts=cfg.data_merge_prompts,
     )
 
 
@@ -76,6 +77,7 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
                     invert_labels=invert_labels,
                     data_len=data_len,
                     data_start_index=data_start_index,
+                    merge_prompts=cfg.test_data_merge_prompts,
                 )
                 for path, data_len, invert_labels, data_start_index in zip(
                     cfg.test_data_path,
@@ -95,6 +97,7 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
                     ),
                     data_len=cfg.test_data_len,
                     data_start_index=cfg.test_data_start_index,
+                    merge_prompts=cfg.test_data_merge_prompts,
                 )
             ]
         else:
@@ -108,9 +111,12 @@ def setup_data(
     invert_labels: bool,
     data_len: Optional[int],
     data_start_index: Optional[int],
+    merge_prompts: bool,
 ) -> pd.DataFrame:
 
-    data = inverse_cai.data.loader.standard.load(data_path, switch_labels=invert_labels)
+    data = inverse_cai.data.loader.standard.load(
+        data_path, switch_labels=invert_labels, merge_prompts=merge_prompts
+    )
 
     # Limit the number of samples
     if data_len is None:

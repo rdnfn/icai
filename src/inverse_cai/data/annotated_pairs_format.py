@@ -336,8 +336,18 @@ def create_annotated_pairs(
     # Process each comparison
     for idx, row in df.iterrows():
         # Extract model information for response_a and response_b
-        response_a = {"text": row["text_a"]}
-        response_b = {"text": row["text_b"]}
+        if "_og_text_a" in row:
+            text_a = row["_og_text_a"]
+        else:
+            text_a = row["text_a"]
+
+        if "_og_text_b" in row:
+            text_b = row["_og_text_b"]
+        else:
+            text_b = row["text_b"]
+
+        response_a = {"text": text_a}
+        response_b = {"text": text_b}
 
         # Add model information if available
         if "model_a" in row and pd.notna(row["model_a"]):

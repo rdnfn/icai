@@ -1,6 +1,9 @@
 """Functions for loading standard preference data."""
 
 import pandas as pd
+from loguru import logger
+
+REQUIRED_COLUMNS = ["text_a", "text_b"]
 
 
 def switch_pref_labels_in_df(df):
@@ -22,7 +25,9 @@ def switch_pref_labels_in_df(df):
     return df
 
 
-def load(path: str, switch_labels: bool = False) -> pd.DataFrame:
+def load(
+    path: str, switch_labels: bool = False, merge_prompts: bool = True
+) -> pd.DataFrame:
     """
     Load the standard preference data from a CSV file.
 
@@ -33,8 +38,44 @@ def load(path: str, switch_labels: bool = False) -> pd.DataFrame:
     # Load the CSV file
     df = pd.read_csv(path)
 
+    # Check that the required columns are present
+    missing_columns = set(REQUIRED_COLUMNS) - set(df.columns)
+    if missing_columns:
+        raise ValueError(
+            f"Dataset {path} is missing required columns: {missing_columns}"
+        )
+
+    if "prompt" in df.columns and merge_prompts:
+        df = _add_prompt_to_texts(df)
+
     # switch original labels
     if switch_labels:
         df = switch_pref_labels_in_df(df)
+
+    return df
+
+
+def _add_prompt_to_texts(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds the prompt to the texts.
+    """
+
+    logger.info("Combining prompts and texts since separate prompt column provided.")
+
+    df["_og_text_a"] = df["text_a"]
+    df["_og_text_b"] = df["text_b"]
+
+    # Parse the prompt and text together into
+    # a chatbot conversation.
+    for text_name in ["text_a", "text_b"]:
+        df[text_name] = df[["prompt", text_name]].apply(
+            lambda x: str(
+                [
+                    {"role": "user", "content": x["prompt"]},
+                    {"role": "assistant", "content": x[text_name]},
+                ]
+            ),
+            axis=1,
+        )
 
     return df
