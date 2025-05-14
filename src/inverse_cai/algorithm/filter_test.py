@@ -13,18 +13,24 @@ def sample_votes():
             "against": 2,
             "abstain": 0,
             "invalid": 0,
+            "both": 0,
+            "neither": 0,
         },
         "principle2": {
             "for": 6,
             "against": 5,
             "abstain": 0,
             "invalid": 0,
+            "both": 0,
+            "neither": 0,
         },
         "principle3": {
             "for": 3,
             "against": 7,
             "abstain": 0,
             "invalid": 0,
+            "both": 0,
+            "neither": 0,
         },
     }
 
