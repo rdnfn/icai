@@ -390,7 +390,10 @@ def create_annotated_pairs(
                     f"Missing votes for comparison with index {idx}, skipping principle annotations"
                 )
 
-        if non_preference_comparison_votes is not None:
+        if (
+            non_preference_comparison_votes is not None
+            and len(non_preference_comparison_votes) > 0
+        ):
             if idx in non_preference_comparison_votes:
                 votes = non_preference_comparison_votes[idx]
                 non_preference_principle_annotations = votes_to_annotations(
