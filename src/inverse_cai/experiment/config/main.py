@@ -185,6 +185,7 @@ class ExpConfig:
     # Stage 2: principle clustering and de-duplication
     s2_num_clusters: int = 3
     s2_random_clusters: bool = False
+    s2_sample_cluster_instead_of_rewrite: bool = True
 
     # Stage 3: principle approximate voting
     s3_skip_voting_entirely: bool = False

@@ -105,7 +105,7 @@ def run(
         summaries = get_cluster_summaries(
             clusters,
             model_name=model_name,
-            sample_instead_of_rewrite=False,
+            sample_instead_of_rewrite=config.s2_sample_cluster_instead_of_rewrite,
             config=config,
         )
         print_clusters(clusters, summaries)
@@ -120,7 +120,7 @@ def run(
         prompt_summaries = get_cluster_summaries(
             prompt_clusters,
             model_name=model_name,
-            sample_instead_of_rewrite=False,
+            sample_instead_of_rewrite=config.s2_sample_cluster_instead_of_rewrite,
             config=config,
             prompt_principles=True,
         )
@@ -128,6 +128,7 @@ def run(
     else:
         logger.warning("Skipping principle generation stage")
         summaries = {}
+        prompt_summaries = {}
         clusters = None
 
     def _add_principles(summaries: dict, principles: list[str]) -> dict:
