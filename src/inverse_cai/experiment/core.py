@@ -35,6 +35,7 @@ def setup_train_data(cfg: ExpConfig) -> pd.DataFrame:
         invert_labels=cfg.data_invert_labels,
         data_len=cfg.data_len,
         data_start_index=cfg.data_start_index,
+        merge_prompts=cfg.data_merge_prompts,
     )
 
 
@@ -76,6 +77,7 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
                     invert_labels=invert_labels,
                     data_len=data_len,
                     data_start_index=data_start_index,
+                    merge_prompts=cfg.test_data_merge_prompts,
                 )
                 for path, data_len, invert_labels, data_start_index in zip(
                     cfg.test_data_path,
@@ -95,6 +97,7 @@ def setup_test_data(cfg: ExpConfig) -> pd.DataFrame:
                     ),
                     data_len=cfg.test_data_len,
                     data_start_index=cfg.test_data_start_index,
+                    merge_prompts=cfg.test_data_merge_prompts,
                 )
             ]
         else:
@@ -108,9 +111,12 @@ def setup_data(
     invert_labels: bool,
     data_len: Optional[int],
     data_start_index: Optional[int],
+    merge_prompts: bool,
 ) -> pd.DataFrame:
 
-    data = inverse_cai.data.loader.standard.load(data_path, switch_labels=invert_labels)
+    data = inverse_cai.data.loader.standard.load(
+        data_path, switch_labels=invert_labels, merge_prompts=merge_prompts
+    )
 
     # Limit the number of samples
     if data_len is None:
@@ -284,10 +290,13 @@ def run(cfg: DictConfig):
         # Generate annotated pairs format
         ap_output_file = results_path / "070_annotations_train_ap.json"
         parsed_votes = icai_loader.parse_raw_votes(results["raw_votes"])
+        parsed_prompt_votes = icai_loader.parse_raw_votes(results["raw_prompt_votes"])
         train_annotated_pairs = create_annotated_pairs(
             df=data,
             principles=results["summaries"],
             comparison_votes=parsed_votes,
+            non_preference_principles=results["prompt_summaries"],
+            non_preference_comparison_votes=parsed_prompt_votes,
             dataset_name=f"ICAI Training Dataset - {pathlib.Path(hydra_out_path).name}",
             auto_detect_annotators=True,
         )
@@ -325,11 +334,33 @@ def run(cfg: DictConfig):
             raw_votes.to_csv(
                 test_annotation_cache_path, index=True, index_label="index"
             )
+
+            test_prompt_annotation_cache_path = (
+                results_path / "048_prompt_votes_per_comparison_testset.csv"
+            )
+
+            logger.info("Annotating test data by prompt-principle-following annotators")
+            raw_prompt_votes, _ = get_votes_for_principles(
+                feedback_df=test_df,
+                summaries=results["prompt_summaries"],
+                max_votes_in_single_prompt=cfg.s3_filter_max_votes_in_single_prompt,
+                model_name=cfg.alg_model,
+                cache_path=test_annotation_cache_path,
+                config=cfg,
+                prompt_principles=True,
+            )
+            raw_prompt_votes.to_csv(
+                test_prompt_annotation_cache_path, index=True, index_label="index"
+            )
+
             parsed_votes = icai_loader.parse_raw_votes(raw_votes)
+            parsed_prompt_votes = icai_loader.parse_raw_votes(raw_prompt_votes)
             test_annotated_pairs = create_annotated_pairs(
                 df=test_df,
                 principles=results["summaries"],
                 comparison_votes=parsed_votes,
+                non_preference_principles=results["prompt_summaries"],
+                non_preference_comparison_votes=parsed_prompt_votes,
                 dataset_name=f"ICAI Test Dataset - {pathlib.Path(hydra_out_path).name}",
                 auto_detect_annotators=True,
             )

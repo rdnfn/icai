@@ -54,8 +54,14 @@ def test_run_full_workflow(
 ):
     # Setup mock returns
     mock_principles = ["principle1", "principle2"]
-    mock_generate_principles.return_value = mock_feedback_df, mock_principles
+    mock_prompt_principles = ["prompt_principle1", "prompt_principle2"]
+    mock_generate_principles.return_value = (
+        mock_feedback_df,
+        mock_principles,
+        mock_prompt_principles,
+    )
     mock_feedback_df["principles"] = mock_principles
+    mock_feedback_df["prompt_principles"] = mock_prompt_principles
 
     mock_cluster_principles.return_value = {
         "cluster1": ["principle1"],
@@ -110,25 +116,33 @@ def test_run_full_workflow(
 
     # Verify the workflow
     mock_generate_principles.assert_called_once()
-    mock_cluster_principles.assert_called_once()
-    mock_get_summaries.assert_called_once()
-    mock_get_votes.assert_called_once()
-    mock_filter_votes.assert_called_once()
+    assert mock_cluster_principles.call_count == 2
+    assert mock_get_summaries.call_count == 2
+    assert mock_get_votes.call_count == 2
+    assert mock_filter_votes.call_count == 1
 
     # Verify save_to_json calls
     assert mock_save_to_json.call_count >= 4
 
     # Check the returned dictionary structure
-    assert set(result.keys()) == {
+    expected_keys = {
         "feedback",
         "clusters",
+        "prompt_clusters",
         "summaries",
+        "prompt_summaries",
         "raw_votes",
         "combined_votes",
+        "raw_prompt_votes",
+        "combined_prompt_votes",
         "filtered_plinciples",
         "final_principles",
         "constitution",
     }
+    result_keys = set(result.keys())
+    assert (
+        expected_keys == result_keys
+    ), f"Expected keys: {expected_keys}, but got: {result_keys}."
 
     # Verify the constitution format
     assert isinstance(result["constitution"], str)
@@ -150,8 +164,14 @@ def test_run_skip_voting(
 ):
     # Setup mock returns
     mock_principles = ["principle1", "principle2"]
-    mock_generate_principles.return_value = mock_feedback_df, mock_principles
+    mock_prompt_principles = ["prompt_principle1", "prompt_principle2"]
+    mock_generate_principles.return_value = (
+        mock_feedback_df,
+        mock_principles,
+        mock_prompt_principles,
+    )
     mock_feedback_df["principles"] = mock_principles
+    mock_feedback_df["prompt_principles"] = mock_prompt_principles
 
     mock_cluster_principles.return_value = {
         "cluster1": ["principle1"],
@@ -182,8 +202,8 @@ def test_run_skip_voting(
 
     # Verify workflow with skipped voting
     mock_generate_principles.assert_called_once()
-    mock_cluster_principles.assert_called_once()
-    mock_get_summaries.assert_called_once()
+    assert mock_cluster_principles.call_count == 2
+    assert mock_get_summaries.call_count == 2
 
     # Check the returned dictionary structure
     assert result["combined_votes"] is None
@@ -212,12 +232,29 @@ def test_run_integration(
             return Mock(
                 content='{"principles": ["Select response that is more concise", "Select response that is more accurate"]}'
             )
+        elif (
+            "Given the data above, what features of the instruction were important to why one sample was selected over the other?"
+            in message_text
+        ):
+            # For prompt-based feature generation
+            return Mock(
+                content='{"features": ["Select response that is more concise", "Select response that is more accurate"]}'
+            )
         elif "check for each rule below" in message_text:
-            # For voting
+            # For voting on principles
             return Mock(content='{"0": "A", "1": "B"}')
-        else:
+        elif (
+            "Given the prompt above, check whether each rule below is true or false"
+            in message_text
+        ):
+            # For voting on prompt-based features
+            return Mock(content="{0: true, 1: false}")
+        elif "Your job is to summarize the principles" in message_text:
             # For summaries
             return Mock(content='{"summary": "Select response that is more effective"}')
+        elif "Your job is to summarize the prompt" in message_text:
+            # For summaries
+            return Mock(content="Is the prompt...")
 
     mock_model.invoke.side_effect = side_effect
     mock_get_model.return_value = mock_model
