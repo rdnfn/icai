@@ -129,6 +129,7 @@ def run(
         logger.warning("Skipping principle generation stage")
         summaries = {}
         prompt_summaries = {}
+        prompt_clusters = None
         clusters = None
 
     def _add_principles(summaries: dict, principles: list[str]) -> dict:
