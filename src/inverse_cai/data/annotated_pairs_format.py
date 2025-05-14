@@ -330,6 +330,8 @@ def create_annotated_pairs(
     # TODO: robustness and assertion stuff
     if non_preference_principles is not None:
         active_non_preference_principles = list(non_preference_principles.values())
+    else:
+        active_non_preference_principles = []
 
     # Process each comparison
     for idx, row in df.iterrows():
@@ -382,8 +384,10 @@ def create_annotated_pairs(
             if idx in non_preference_comparison_votes:
                 votes = non_preference_comparison_votes[idx]
                 non_preference_principle_annotations = votes_to_annotations(
-                    votes, non_preference_principles,
-                    active_non_preference_principles, None,
+                    votes,
+                    non_preference_principles,
+                    active_non_preference_principles,
+                    None,
                     non_preference=True,
                 )
                 annotations.update(non_preference_principle_annotations)

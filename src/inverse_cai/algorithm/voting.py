@@ -21,7 +21,7 @@ def get_votes_for_principles(
     config: ExpConfig,
     model_name: str,
     cache_path: Path,
-    prompt_principles = False,
+    prompt_principles=False,
 ) -> tuple[pd.DataFrame, dict]:
     """Get votes for principles.
 
@@ -100,10 +100,21 @@ def run_pass_to_get_votes_for_principles(
     # Function to process each row
     def process_row(index, row, summaries, model_name, config, initial_cached_votes):
         if prompt_principles:
+
             def _get_prompt(row):
                 # TODO: this is so hackyyyyyy
-                a = row["text_a"].split("Instruction:\n")[-1].split("Response:\n")[0].split("Assistant:\n")[0]
-                b = row["text_b"].split("Instruction:\n")[-1].split("Response:\n")[0].split("Assistant:\n")[0]
+                a = (
+                    row["text_a"]
+                    .split("Instruction:\n")[-1]
+                    .split("Response:\n")[0]
+                    .split("Assistant:\n")[0]
+                )
+                b = (
+                    row["text_b"]
+                    .split("Instruction:\n")[-1]
+                    .split("Response:\n")[0]
+                    .split("Assistant:\n")[0]
+                )
                 assert a == b
                 return a.strip()
 
@@ -202,7 +213,9 @@ def get_prompt_principle_vote_for_single_text(
                 logger.error(f"Parsed messages: {messages}")
                 raise e
 
-    vote = parse_individual_pref_vote(vote, summaries_len=len(summaries), prompt_principles=True)
+    vote = parse_individual_pref_vote(
+        vote, summaries_len=len(summaries), prompt_principles=True
+    )
 
     # change back to original keys
     vote = {summary_key_mapping[k]: v for k, v in vote.items()}

@@ -159,7 +159,9 @@ def run(
     logger.info(f"Principles to be tested: {list(summaries.values())}")
 
     save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
-    save_to_json(prompt_summaries, save_path / "035_distilled_prompt_principles_per_cluster.json")
+    save_to_json(
+        prompt_summaries, save_path / "035_distilled_prompt_principles_per_cluster.json"
+    )
 
     ### STAGE 3: Get votes for principles
     logger.info("Stage 3: Get votes for principles")
@@ -206,8 +208,12 @@ def run(
             prompt_principles=True,
         )
 
-        raw_prompt_votes.to_csv(new_prompt_vote_cache_path, index=True, index_label="index")
-        save_to_json(combined_prompt_votes, save_path / "046_prompt_votes_per_cluster.json")
+        raw_prompt_votes.to_csv(
+            new_prompt_vote_cache_path, index=True, index_label="index"
+        )
+        save_to_json(
+            combined_prompt_votes, save_path / "046_prompt_votes_per_cluster.json"
+        )
 
         try:
             # visualise

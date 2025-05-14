@@ -144,7 +144,9 @@ def generate_principles_from_feedback(
     ]
 
     prompt_principles = [
-        principle for _, _, prompt_principle_list in results for principle in prompt_principle_list
+        principle
+        for _, _, prompt_principle_list in results
+        for principle in prompt_principle_list
     ]
 
     logger.info(
@@ -209,10 +211,19 @@ def generate_principles_from_single_ranking(
             logger.error(e)
 
     for prompt in config.alg_prompts.prompt_generator_prompts:
+
         def _get_prompt(a_, b_):
             # TODO: !!!!! this is duplicated in voting.py
-            a = a_.split("Instruction:\n")[-1].split("Response:\n")[0].split("Assistant:\n")[0]
-            b = b_.split("Instruction:\n")[-1].split("Response:\n")[0].split("Assistant:\n")[0]
+            a = (
+                a_.split("Instruction:\n")[-1]
+                .split("Response:\n")[0]
+                .split("Assistant:\n")[0]
+            )
+            b = (
+                b_.split("Instruction:\n")[-1]
+                .split("Response:\n")[0]
+                .split("Assistant:\n")[0]
+            )
             assert a == b
             return a.strip()
 

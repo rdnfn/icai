@@ -118,7 +118,10 @@ def get_cluster_summaries(
             summaries[i] = random.choice(principles)
         else:
             summaries[i] = summarize_cluster(
-                principles, model_name=model_name, config=config, prompt_principles=prompt_principles,
+                principles,
+                model_name=model_name,
+                config=config,
+                prompt_principles=prompt_principles,
             )
     return summaries
 
@@ -127,7 +130,7 @@ def summarize_cluster(
     single_cluster_principles,
     model_name,
     config: ExpConfig,
-    prompt_principles: bool = False
+    prompt_principles: bool = False,
 ):
     """
     Given a cluster of principles, summarize the cluster.
@@ -136,8 +139,8 @@ def summarize_cluster(
     messages = inverse_cai.algorithm.utils.parse_prompt(
         prompt_str=(
             config.alg_prompts.prompt_cluster_summary_prompt
-            if prompt_principles else
-            config.alg_prompts.cluster_summary_prompt
+            if prompt_principles
+            else config.alg_prompts.cluster_summary_prompt
         ),
         prompt_kwargs=dict(
             principles="\n\n".join(single_cluster_principles),
