@@ -28,10 +28,10 @@ def get_votes_for_principles(
     Distributed over multiple passes if necessary."""
 
     logger.info("Getting votes for principles")
-    logger.info(
-        "This is done by checking if vote with principle "
-        "is identical to original vote."
-    )
+    if prompt_principles:
+        logger.info("Voting for prompt principles (rather than regular principles)")
+    else:
+        logger.info("Voting for regular principles")
 
     summaries_parts = []
     for i in range(0, len(summaries), max_votes_in_single_prompt):
@@ -54,6 +54,10 @@ def get_votes_for_principles(
 
     raw_votes = []
     combined_votes = []
+
+    if len(summaries_parts) == 0:
+        logger.warning("No principles to vote on, skipping voting.")
+        return pd.Series(), {}
 
     for i, summary_part in enumerate(summaries_parts):
         logger.info(f"Starting pass {i+1}/{len(summaries_parts)}")
