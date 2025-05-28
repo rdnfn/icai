@@ -63,6 +63,7 @@ def votes_to_annotations(
     principle_index_to_text: Mapping[int, str],
     active_principles: Sequence[str],
     reference_preference: str,
+    non_preference: bool = False,
 ) -> Dict[str, Dict[str, Optional[str]]]:
     """Convert principle votes to annotations in the standardized format.
 
@@ -91,8 +92,14 @@ def votes_to_annotations(
         if principle_text in active_principles:
             principle_id = hash_string(principle_text)
 
+            if non_preference:
+                annotations[principle_id] = {
+                    DEFAULT_PREFERENCE_KEY: None,
+                    "no_pref_reason": "non_preference_annotation",
+                    "value": vote,
+                }
             # Convert vote to a, b, or None with reason
-            if vote is None:
+            elif vote is None:
                 annotations[principle_id] = {
                     DEFAULT_PREFERENCE_KEY: None,
                     "no_pref_reason": "not_applicable",
@@ -109,11 +116,11 @@ def votes_to_annotations(
                         "b" if reference_preference == "a" else "a"
                     )
                 }
-            elif vote == "invalid":
-                # Special case for invalid votes
+            elif vote.lower() in ("invalid", "both", "neither"):
+                # Special votes
                 annotations[principle_id] = {
                     DEFAULT_PREFERENCE_KEY: None,
-                    "no_pref_reason": "invalid",
+                    "no_pref_reason": vote.lower(),
                 }
             else:
                 raise ValueError(
@@ -221,6 +228,10 @@ def create_annotated_pairs(
     comparison_votes: (
         Mapping[int, Dict[int, Union[bool, str, None]]] | pd.Series | None
     ) = None,
+    non_preference_principles: Mapping[int, str] | None = None,
+    non_preference_comparison_votes: (
+        Mapping[int, Dict[int, Union[bool, str, None]]] | pd.Series | None
+    ) = None,
     additional_columns: List[str] = None,
     auto_detect_annotators: bool = True,
 ) -> Dict:
@@ -269,6 +280,12 @@ def create_annotated_pairs(
         all_additional_columns,
     )
 
+    add_annotators(
+        output,
+        non_preference_principles,
+        all_additional_columns,
+    )
+
     # Identify metadata columns (columns that are not standard columns, not annotator columns, and not used for comparison content)
     standard_columns = {
         "text_a",
@@ -310,11 +327,27 @@ def create_annotated_pairs(
     else:
         active_principles = []
 
+    # TODO: robustness and assertion stuff
+    if non_preference_principles is not None:
+        active_non_preference_principles = list(non_preference_principles.values())
+    else:
+        active_non_preference_principles = []
+
     # Process each comparison
     for idx, row in df.iterrows():
         # Extract model information for response_a and response_b
-        response_a = {"text": row["text_a"]}
-        response_b = {"text": row["text_b"]}
+        if "_og_text_a" in row:
+            text_a = row["_og_text_a"]
+        else:
+            text_a = row["text_a"]
+
+        if "_og_text_b" in row:
+            text_b = row["_og_text_b"]
+        else:
+            text_b = row["text_b"]
+
+        response_a = {"text": text_a}
+        response_b = {"text": text_b}
 
         # Add model information if available
         if "model_a" in row and pd.notna(row["model_a"]):
@@ -355,6 +388,25 @@ def create_annotated_pairs(
             else:
                 logger.warning(
                     f"Missing votes for comparison with index {idx}, skipping principle annotations"
+                )
+
+        if (
+            non_preference_comparison_votes is not None
+            and len(non_preference_comparison_votes) > 0
+        ):
+            if idx in non_preference_comparison_votes:
+                votes = non_preference_comparison_votes[idx]
+                non_preference_principle_annotations = votes_to_annotations(
+                    votes,
+                    non_preference_principles,
+                    active_non_preference_principles,
+                    None,
+                    non_preference=True,
+                )
+                annotations.update(non_preference_principle_annotations)
+            else:
+                logger.warning(
+                    f"Missing non-preference votes for comparison with index {idx}, skipping principle annotations"
                 )
 
         # Add additional columns as annotations if specified

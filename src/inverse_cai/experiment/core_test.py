@@ -13,6 +13,12 @@ import pytest
             "s0_added_standard_principles_to_test=[v1,v2]",
             "annotator.fn_annotators=[{function:'inverse_cai.annotators.dummy.annotate_perfectly'}]",
         ],
+        [
+            # test that uses ICAI for Feedback Forensics use-case
+            "s0_added_standard_principles_to_test=[v4]",
+            "annotator.skip=true",
+            "s0_skip_principle_generation=true",
+        ],
     ],
 )
 def test_cli_minimal_experiment(additional_args: list[str]):

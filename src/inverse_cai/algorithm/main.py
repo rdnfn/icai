@@ -68,7 +68,7 @@ def run(
     if not config.s0_skip_principle_generation:
         ### STAGE 1: Generate principles from feedback
         logger.info("Stage 1: Generate principles from feedback")
-        feedback, principles = generate_principles_from_feedback(
+        feedback, principles, prompt_principles = generate_principles_from_feedback(
             feedback=feedback,
             num_principles_per_sampling_step=num_principles_per_sampling_step,
             model_name=model_name,
@@ -80,9 +80,18 @@ def run(
             index=True,
             index_label="index",
         )
+        feedback["prompt_principles"].to_csv(
+            save_path / "015_prompt_principles_per_comparison.csv",
+            index=True,
+            index_label="index",
+        )
 
+        print("Principles:")
         print("\n".join(principles))
+        print("Prompt Principles:")
+        print("\n".join(prompt_principles))
         save_to_json(principles, save_path / "011_principles_list.json")
+        save_to_json(prompt_principles, save_path / "016_prompt_principles_list.json")
 
         ### STAGE 2: Cluster principles
         logger.info("Stage 2: Cluster principles")
@@ -96,13 +105,31 @@ def run(
         summaries = get_cluster_summaries(
             clusters,
             model_name=model_name,
-            sample_instead_of_rewrite=True,
+            sample_instead_of_rewrite=config.s2_sample_cluster_instead_of_rewrite,
             config=config,
         )
         print_clusters(clusters, summaries)
+
+        prompt_clusters = cluster_principles(
+            prompt_principles,
+            num_clusters=num_clusters,
+            random_clusters=random_clusters,
+        )
+        save_to_json(prompt_clusters, save_path / "025_prompt_principle_clusters.json")
+
+        prompt_summaries = get_cluster_summaries(
+            prompt_clusters,
+            model_name=model_name,
+            sample_instead_of_rewrite=config.s2_sample_cluster_instead_of_rewrite,
+            config=config,
+            prompt_principles=True,
+        )
+        print_clusters(prompt_clusters, prompt_summaries)
     else:
         logger.warning("Skipping principle generation stage")
         summaries = {}
+        prompt_summaries = {}
+        prompt_clusters = None
         clusters = None
 
     def _add_principles(summaries: dict, principles: list[str]) -> dict:
@@ -134,6 +161,9 @@ def run(
     logger.info(f"Principles to be tested: {list(summaries.values())}")
 
     save_to_json(summaries, save_path / "030_distilled_principles_per_cluster.json")
+    save_to_json(
+        prompt_summaries, save_path / "035_distilled_prompt_principles_per_cluster.json"
+    )
 
     ### STAGE 3: Get votes for principles
     logger.info("Stage 3: Get votes for principles")
@@ -141,6 +171,7 @@ def run(
     if not skip_voting:
 
         new_vote_cache_path = save_path / "040_votes_per_comparison.csv"
+        new_prompt_vote_cache_path = save_path / "045_prompt_votes_per_comparison.csv"
         if config.prior_cache_path is not None:
             # copy over prior cache file
             shutil.copy(
@@ -169,6 +200,23 @@ def run(
         raw_votes.to_csv(new_vote_cache_path, index=True, index_label="index")
         save_to_json(combined_votes, save_path / "041_votes_per_cluster.json")
 
+        raw_prompt_votes, combined_prompt_votes = get_votes_for_principles(
+            feedback_df=feedback,
+            summaries=prompt_summaries,
+            max_votes_in_single_prompt=config.s3_filter_max_votes_in_single_prompt,
+            model_name=model_name,
+            cache_path=new_vote_cache_path,
+            config=config,
+            prompt_principles=True,
+        )
+
+        raw_prompt_votes.to_csv(
+            new_prompt_vote_cache_path, index=True, index_label="index"
+        )
+        save_to_json(
+            combined_prompt_votes, save_path / "046_prompt_votes_per_cluster.json"
+        )
+
         try:
             # visualise
             inverse_cai.visualisation.plot_approval_bars(
@@ -176,7 +224,7 @@ def run(
                 votes=list(combined_votes.values()),
                 path=save_path / "042_principle_approval_votes.png",
             )
-        except ValueError as e:
+        except (ValueError, ZeroDivisionError) as e:
             logger.warning(f"Error visualising approval bars: {e}")
 
         filtered_plinciple_keys = filter_according_to_votes(
@@ -250,6 +298,8 @@ def run(
         combined_votes = None
         filtered_principles = None
         raw_votes = None
+        raw_prompt_votes = None
+        combined_prompt_votes = None
 
         # randomly sample from all principles instead of voting
         available_principles = list(summaries.values())
@@ -266,9 +316,13 @@ def run(
     return_val = {
         "feedback": feedback,
         "clusters": clusters,
+        "prompt_clusters": prompt_clusters,
         "summaries": summaries,
+        "prompt_summaries": prompt_summaries,
         "raw_votes": raw_votes,
         "combined_votes": combined_votes,
+        "raw_prompt_votes": raw_prompt_votes,
+        "combined_prompt_votes": combined_prompt_votes,
         "filtered_plinciples": filtered_principles,
         "final_principles": final_principles,
         "constitution": constitution,

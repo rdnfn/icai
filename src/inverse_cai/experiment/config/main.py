@@ -146,6 +146,9 @@ class ExpConfig:
     data_len: Optional[int] = None  # Number of samples to use for the experiment
     data_start_index: int = 0  # Index of the first sample to use
     data_invert_labels: bool = False  # Whether to invert the labels of the data
+    data_merge_prompts: bool = (
+        True  # Whether to merge the prompts and texts, if available
+    )
 
     # Test data config
     test_data_path: Any = None
@@ -153,6 +156,9 @@ class ExpConfig:
     test_data_start_index: Any = 0
     test_data_invert_labels: Any = False
     test_data_annotate_with_principles: bool = False
+    test_data_merge_prompts: bool = (
+        True  # Whether to merge the prompts and texts, if available
+    )
 
     # Cache config
     prior_cache_path: str | None = (
@@ -185,6 +191,7 @@ class ExpConfig:
     # Stage 2: principle clustering and de-duplication
     s2_num_clusters: int = 3
     s2_random_clusters: bool = False
+    s2_sample_cluster_instead_of_rewrite: bool = True
 
     # Stage 3: principle approximate voting
     s3_skip_voting_entirely: bool = False
