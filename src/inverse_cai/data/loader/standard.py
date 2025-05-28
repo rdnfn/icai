@@ -63,7 +63,8 @@ def _add_prompt_to_texts(df: pd.DataFrame) -> pd.DataFrame:
     # sanity check to see if the prompt is always in the response
     # using 100 first rows
     prompt_in_response = df.iloc[:100].apply(
-        lambda row: row["prompt"] in row["text_a"] and row["prompt"] in row["text_b"],
+        lambda row: str(row["prompt"]) in str(row["text_a"])
+        and str(row["prompt"]) in str(row["text_b"]),
         axis=1,
     )
     if prompt_in_response.all():
