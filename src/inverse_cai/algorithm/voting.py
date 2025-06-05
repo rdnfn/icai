@@ -133,30 +133,50 @@ def run_pass_to_get_votes_for_principles(
                 config=config,
             )
         else:
+            preferred = get_preferred_text(row)
+            rejected = get_rejected_text(row)
+
             # Check cache first
             # Initialize cache
             vote_cache = VoteCache(cache_path)
 
-            cache_index = vote_cache.get_full_index(index, summaries)
+            principles = list(summaries.values())
+            hashes = {
+                principle: VoteCache.get_datapoint_hash(
+                    preferred=preferred,
+                    rejected=rejected,
+                    principle=principle,
+                    model_name=model_name,
+                )
+                for principle in principles
+            }
 
-            if cache_index in initial_cached_votes:
+            all_hashes_in_cache = True
+            for hash_str in hashes.values():
+                if hash_str not in initial_cached_votes:
+                    all_hashes_in_cache = False
+                    break
+
+            if all_hashes_in_cache:
                 time.sleep(0.1)
-                return index, initial_cached_votes[cache_index]
+                return index, {h: initial_cached_votes[h] for h in hashes.values()}
 
-            preferred = get_preferred_text(row)
-            rejected = get_rejected_text(row)
             vote = get_preference_vote_for_single_text(
                 preferred_sample=preferred,
                 rejected_sample=rejected,
-                summaries=summaries,
+                principles=principles,
                 model_name=model_name,
                 config=config,
             )
 
             # Update cache
-            vote_cache.update_cache(index, vote)
+            hashed_vote = {
+                hash_str: vote[principle] for principle, hash_str in hashes.items()
+            }
+            for hash_str, vote_value in hashed_vote.items():
+                vote_cache.update_cache(hash_str, vote_value)
 
-        return index, vote
+        return index, hashed_vote
 
     # Parallel processing of rows
     results = Parallel(n_jobs=config.parallel_workers)(
@@ -222,7 +242,7 @@ def get_prompt_principle_vote_for_single_text(
                 raise e
 
     vote = parse_individual_pref_vote(
-        vote, summaries_len=len(summaries), prompt_principles=True
+        vote, num_principles=len(summaries), prompt_principles=True
     )
 
     # change back to original keys
@@ -244,7 +264,7 @@ def get_prompt_principle_vote_for_single_text(
 def get_preference_vote_for_single_text(
     preferred_sample,
     rejected_sample,
-    summaries,
+    principles,
     config: ExpConfig,
     model_name: str,
 ):
@@ -264,16 +284,14 @@ def get_preference_vote_for_single_text(
     else:
         sample_a, sample_b = preferred_sample, rejected_sample
 
-    # map summary keys to integers
-    summary_key_mapping = {i: k for i, k in enumerate(summaries.keys())}
-    integer_summaries = {i: v for i, v in enumerate(summaries.values())}
+    numbered_principles = {i: v for i, v in enumerate(principles)}
 
     messages = inverse_cai.algorithm.utils.parse_prompt(
         prompt_str=config.alg_prompts.voting_prompt,
         prompt_kwargs=dict(
             sample_a=sample_a,
             sample_b=sample_b,
-            summaries=integer_summaries,
+            summaries=numbered_principles,
         ),
     )
 
@@ -295,10 +313,10 @@ def get_preference_vote_for_single_text(
                 logger.error(f"Parsed messages: {messages}")
                 raise e
 
-    vote = parse_individual_pref_vote(vote, summaries_len=len(summaries))
+    vote = parse_individual_pref_vote(vote, num_principles=len(principles))
 
     # change back to original keys
-    vote = {summary_key_mapping[k]: v for k, v in vote.items()}
+    vote = {numbered_principles[k]: v for k, v in vote.items()}
 
     if flipped:
         vote = {k: "A" if v == "B" else "B" if v == "A" else v for k, v in vote.items()}
@@ -320,26 +338,26 @@ def get_preference_vote_for_single_text(
     return updated_vote
 
 
-def parse_individual_pref_vote(vote, summaries_len, prompt_principles=False):
+def parse_individual_pref_vote(vote, num_principles, prompt_principles=False):
     """
     Parse preference-based votes.
 
     Using each principle to make a preference decision.
     """
     try:
-        vote_json = clean_vote_json(vote, summaries_len)
+        vote_json = clean_vote_json(vote, num_principles)
         vote_dict = ast.literal_eval(vote_json)
     except Exception as e:
-        vote_dict = {i: "invalid" for i in range(summaries_len)}
+        vote_dict = {i: "invalid" for i in range(num_principles)}
         logger.error(f"Failed to parse vote: {vote}")
         logger.error(e)
 
     # make sure all keys are integers
     vote_dict = {int(k): v for k, v in vote_dict.items()}
 
-    if len(vote_dict) != summaries_len:
+    if len(vote_dict) != num_principles:
         logger.error(
-            f"Vote length {len(vote_dict)} does not match summaries length {summaries_len}"
+            f"Vote length {len(vote_dict)} does not match number of principles {num_principles}"
         )
 
     if prompt_principles:

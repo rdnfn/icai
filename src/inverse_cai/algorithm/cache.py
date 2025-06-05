@@ -108,3 +108,16 @@ class VoteCache:
     def get_hash(dict_to_hash: dict) -> str:
         string = json.dumps(dict_to_hash, sort_keys=True)
         return hashlib.md5(string.encode("utf-8")).hexdigest()[:8]
+
+    @staticmethod
+    def get_datapoint_hash(
+        preferred: str, rejected: str, principle: str, model_name: str
+    ) -> str:
+        return VoteCache.get_hash(
+            dict(
+                preferred=preferred,
+                rejected=rejected,
+                principle=principle,
+                model_name=model_name,
+            )
+        )
