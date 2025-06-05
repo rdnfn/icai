@@ -3,82 +3,73 @@ import time
 from pathlib import Path
 from filelock import FileLock
 from loguru import logger
-import csv
 import json
-import ast
+import hashlib
 
 
 class VoteCache:
-    def __init__(self, cache_path: Path, lock_timeout: int = 10):
-        """Initialize vote cache with path to csv file.
+    def __init__(self, cache_path: Path, lock_timeout: int = 10, verbose: bool = False):
+        """Initialize vote cache with path to jsonl file.
 
         Args:
-            cache_path: Path to csv file storing votes
+            cache_path: Path to jsonl file storing votes
             lock_timeout: Maximum time to wait for file lock in seconds
         """
         self.cache_path = Path(cache_path)
-        self.index_path = self.cache_path.with_suffix(".index.json")
+        self.hash_path = self.cache_path.with_suffix(".hash.json")
         self.lock_path = self.cache_path.with_suffix(".lock")
         self.lock_timeout = lock_timeout
         self.lock = FileLock(self.lock_path, timeout=lock_timeout)
+        self.verbose = verbose
 
         # Initialize empty cache file if it doesn't exist
         if not self.cache_path.exists():
-            with open(self.cache_path, "w", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
-                writer.writerow(["index", "votes"])
+            self.cache_path.touch()
 
-        if not self.index_path.exists():
-            with open(self.index_path, "w", encoding="utf-8") as f:
-                json.dump(set(), f, default=list)
+        if not self.hash_path.exists():
+            with open(self.hash_path, "w", encoding="utf-8") as f:
+                json.dump([], f)
 
-    def get_processed_indices(self) -> set:
-        """Load set of processed indices."""
-        with open(self.index_path, "r", encoding="utf-8") as f:
+    def get_processed_hashes(self) -> set:
+        """Load set of processed hashes."""
+        with open(self.hash_path, "r", encoding="utf-8") as f:
             return set(json.load(f))
 
-    def get_full_index(self, index: int, vote: dict) -> str:
-        """Get full index string for a vote.
+    def check_if_hash_processed(self, hash: str) -> bool:
+        """Check if hash has been processed."""
+        processed = self.get_processed_hashes()
+        return hash in processed
 
-        Starting with comparison index, then lowest and highest principle id voted on.
-        Note that the votes_per_comparison csv can contain multiple votes per
-        comparison, so we need to be able to handle this.
-        """
-        min_principle_id_voted_on = min(vote.keys())
-        max_principle_id_voted_on = max(vote.keys())
-        return f"{index}_{min_principle_id_voted_on}_{max_principle_id_voted_on}"
-
-    def check_if_index_processed(self, index: int, vote: dict) -> bool:
-        """Check if index has been processed."""
-        processed = self.get_processed_indices()
-        return self.get_full_index(index, vote) in processed
-
-    def _add_processed_index(self, index: int, vote: dict):
-        """Add index to processed set."""
-        processed = self.get_processed_indices()
-        processed.add(self.get_full_index(index, vote))
-        with open(self.index_path, "w", encoding="utf-8") as f:
+    def _add_processed_hash(self, hash: str):
+        """Add hash to processed set."""
+        processed = self.get_processed_hashes()
+        processed.add(hash)
+        with open(self.hash_path, "w", encoding="utf-8") as f:
             json.dump(list(processed), f)
 
     def get_cached_votes(self) -> dict:
-        """Get all cached votes as dictionary of index -> dictionary of votes."""
+        """Get all cached votes as dictionary of hash -> dictionary of votes."""
         with self.lock:
             votes_dict = {}
-            with open(self.cache_path, "r", newline="", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    if row["votes"] and pd.notna(row["votes"]):
-                        index = int(row["index"])
-                        vote = ast.literal_eval(row["votes"])
-                        full_index = self.get_full_index(index, vote)
-                        if full_index not in votes_dict:
-                            votes_dict[full_index] = {}
-                        votes_dict[full_index] = vote
+            if self.cache_path.stat().st_size == 0:
+                return votes_dict
+
+            with open(self.cache_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        try:
+                            data = json.loads(line.strip())
+                            hash_key = data["hash"]
+                            vote = data["vote"]
+                            votes_dict[hash_key] = vote
+                        except (json.JSONDecodeError, KeyError) as e:
+                            logger.warning(
+                                f"Skipping malformed line in cache: {line.strip()}, error: {e}"
+                            )
         return votes_dict
 
-    def update_cache(self, index: int, vote: dict):
+    def update_cache(self, hash: str, vote: dict):
         """Update cache with new vote result by appending to file.
-        Multiple votes per index are allowed.
 
         Will retry if lock is not available.
         """
@@ -88,17 +79,19 @@ class VoteCache:
         for attempt in range(max_retries):
             try:
                 with self.lock:
-                    if self.check_if_index_processed(index, vote):
-                        print(
-                            f"Cache warning: Index {index} already processed. Cache not updated."
-                        )
+                    if self.check_if_hash_processed(hash):
+                        if self.verbose:
+                            print(
+                                f"Cache warning: hash {hash} already processed. Cache not updated."
+                            )
                         return
-                    # Append new vote
-                    with open(self.cache_path, "a", newline="", encoding="utf-8") as f:
-                        writer = csv.writer(f)
-                        writer.writerow([index, str(vote)])
 
-                    self._add_processed_index(index, vote)
+                    # Append new vote as JSON line
+                    with open(self.cache_path, "a", encoding="utf-8") as f:
+                        json_line = json.dumps({"hash": hash, "vote": vote})
+                        f.write(json_line + "\n")
+
+                    self._add_processed_hash(hash)
                 return
             except TimeoutError as exc:
                 if attempt < max_retries - 1:
@@ -110,3 +103,8 @@ class VoteCache:
                     raise TimeoutError(
                         f"Failed to acquire lock after {max_retries} retries"
                     ) from exc
+
+    @staticmethod
+    def get_hash(dict_to_hash: dict) -> str:
+        string = json.dumps(dict_to_hash, sort_keys=True)
+        return hashlib.md5(string.encode("utf-8")).hexdigest()[:8]
