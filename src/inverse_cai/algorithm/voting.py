@@ -106,7 +106,11 @@ def run_pass_to_get_votes_for_principles(
         if prompt_principles:
 
             def _get_prompt(row):
-                # TODO: this is so hackyyyyyy
+                if "prompt" in row:
+                    return row["prompt"]
+
+                # Manually attempt to extract prompt if no
+                # prompt column is available
                 a = (
                     row["text_a"]
                     .split("Instruction:\n")[-1]
