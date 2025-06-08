@@ -11,12 +11,13 @@ from inverse_cai.experiment.config import ExpConfig
 import inverse_cai.algorithm.utils
 
 
-async def generate_principles_from_feedback(
+def generate_principles_from_feedback(
     feedback: pd.DataFrame,
     num_principles_per_sampling_step,
     model_name: str,
     config: ExpConfig,
     num_rankings_per_sampling_step: int = 1,
+    max_concurrent_tasks: int = 10,
 ) -> list:
     """
     Generate principles from feedback.
@@ -30,6 +31,7 @@ async def generate_principles_from_feedback(
         num_rankings_per_sampling_step: The number of rankings to use per
             principle sampling step. Only implemented for
             num_rankings_per_sampling_step=1 at the moment.
+        max_concurrent_tasks: Maximum number of concurrent tasks to run.
 
     Returns:
         A list of principles.
@@ -66,62 +68,73 @@ async def generate_principles_from_feedback(
             )
         )
 
-    # initialize the principles column
-    feedback["principles"] = None
-    feedback["prompt_principles"] = None
+    async def _async_generate_principles():
+        # initialize the principles column
+        feedback["principles"] = None
+        feedback["prompt_principles"] = None
 
-    if num_rankings_per_sampling_step == 1:
+        if num_rankings_per_sampling_step == 1:
+            # Create semaphore for controlling concurrency
+            semaphore = asyncio.Semaphore(max_concurrent_tasks)
 
-        async def process_row(
-            index, row, num_principles_per_sampling_step, model_name, config
-        ):
-            principles, prompt_principles = (
-                await generate_principles_from_single_ranking(
-                    preferred_text=get_preferred_text(row),
-                    rejected_text=get_rejected_text(row),
-                    num_principles=num_principles_per_sampling_step,
-                    model_name=model_name,
-                    config=config,
-                )
-            )
-            return index, principles, prompt_principles
-
-        # create async tasks for parallel processing
-        tasks = [
-            process_row(
+            async def process_row(
                 index, row, num_principles_per_sampling_step, model_name, config
-            )
-            for index, row in tqdm.tqdm(feedback.iterrows(), total=feedback.shape[0])
+            ):
+                async with semaphore:
+                    principles, prompt_principles = (
+                        await generate_principles_from_single_ranking(
+                            preferred_text=get_preferred_text(row),
+                            rejected_text=get_rejected_text(row),
+                            num_principles=num_principles_per_sampling_step,
+                            model_name=model_name,
+                            config=config,
+                        )
+                    )
+                    return index, principles, prompt_principles
+
+            # create async tasks for parallel processing
+            tasks = [
+                process_row(
+                    index, row, num_principles_per_sampling_step, model_name, config
+                )
+                for index, row in tqdm.tqdm(
+                    feedback.iterrows(), total=feedback.shape[0]
+                )
+            ]
+
+            # execute all tasks concurrently
+            results = await asyncio.gather(*tasks)
+
+            # update the feedback DataFrame
+            for index, principles, prompt_principles in results:
+                feedback.at[index, "principles"] = principles
+                feedback.at[index, "prompt_principles"] = prompt_principles
+
+        elif num_rankings_per_sampling_step > 1:
+            raise NotImplementedError
+
+        # get list of all principles (note that in results
+        # principles are lists of principles)
+        principles = [
+            principle
+            for _, principle_list, _ in results
+            for principle in principle_list
         ]
 
-        # execute all tasks concurrently
-        results = await asyncio.gather(*tasks)
+        prompt_principles = [
+            principle
+            for _, _, prompt_principle_list in results
+            for principle in prompt_principle_list
+        ]
 
-        # update the feedback DataFrame
-        for index, principles, prompt_principles in results:
-            feedback.at[index, "principles"] = principles
-            feedback.at[index, "prompt_principles"] = prompt_principles
+        logger.info(
+            f"Generated {len(principles)} principles, {len(prompt_principles)} prompt principles (expected {overall_num_principles})"
+        )
 
-    elif num_rankings_per_sampling_step > 1:
-        raise NotImplementedError
+        return feedback, principles, prompt_principles
 
-    # get list of all principles (note that in results
-    # principles are lists of principles)
-    principles = [
-        principle for _, principle_list, _ in results for principle in principle_list
-    ]
-
-    prompt_principles = [
-        principle
-        for _, _, prompt_principle_list in results
-        for principle in prompt_principle_list
-    ]
-
-    logger.info(
-        f"Generated {len(principles)} principles, {len(prompt_principles)} prompt principles (expected {overall_num_principles})"
-    )
-
-    return feedback, principles, prompt_principles
+    # Run the async function
+    return asyncio.run(_async_generate_principles())
 
 
 async def generate_principles_from_single_ranking(
