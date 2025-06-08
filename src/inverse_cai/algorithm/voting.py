@@ -139,6 +139,16 @@ def run_pass_to_get_votes_for_principles(
     # Function to process each row
     def process_row(index, row, summaries, model_name, config, initial_cached_votes):
         if prompt_principles:
+            raise NotImplementedError(
+                (
+                    "Prompt principles not implemented. "
+                    "Recent changes to voting system require a re-implementation."
+                )
+            )
+            # TODO: Adapt prompt principles to work with the new voting system.
+            # Now the process row command returns a single dictionary, with
+            # each key being the hash of the relevant vote and the
+            # value being the individual vote.
 
             def _get_prompt(row):
                 if "prompt" in row:
