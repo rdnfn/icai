@@ -108,23 +108,11 @@ def run_pass_to_get_votes_for_principles(
             def _get_prompt(row):
                 if "prompt" in row:
                     return row["prompt"]
-
-                # Manually attempt to extract prompt if no
-                # prompt column is available
-                a = (
-                    row["text_a"]
-                    .split("Instruction:\n")[-1]
-                    .split("Response:\n")[0]
-                    .split("Assistant:\n")[0]
-                )
-                b = (
-                    row["text_b"]
-                    .split("Instruction:\n")[-1]
-                    .split("Response:\n")[0]
-                    .split("Assistant:\n")[0]
-                )
-                assert a == b
-                return a.strip()
+                else:
+                    return inverse_cai.algorithm.utils.get_prompt_from_two_samples(
+                        sample_a=row["text_a"],
+                        sample_b=row["text_b"],
+                    )
 
             vote = get_prompt_principle_vote_for_single_text(
                 prompt=_get_prompt(row),

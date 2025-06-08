@@ -192,28 +192,15 @@ async def generate_principles_from_single_ranking(
             logger.error(e)
 
     for prompt in config.alg_prompts.prompt_generator_prompts:
-
-        def _get_prompt(a_, b_):
-            # TODO: !!!!! this is duplicated in voting.py
-            a = (
-                a_.split("Instruction:\n")[-1]
-                .split("Response:\n")[0]
-                .split("Assistant:\n")[0]
-            )
-            b = (
-                b_.split("Instruction:\n")[-1]
-                .split("Response:\n")[0]
-                .split("Assistant:\n")[0]
-            )
-            assert a == b
-            return a.strip()
-
         messages = inverse_cai.algorithm.utils.parse_prompt(
             prompt_str=prompt,
             prompt_kwargs=dict(
                 preferred_sample=preferred_text,
                 rejected_sample=rejected_text,
-                prompt=_get_prompt(preferred_text, rejected_text),
+                prompt=inverse_cai.algorithm.utils.get_prompt_from_two_samples(
+                    sample_a=preferred_text,
+                    sample_b=rejected_text,
+                ),
                 num_principles=num_principles,
             ),
         )
