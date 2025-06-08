@@ -170,8 +170,7 @@ def run(
 
     if not skip_voting:
 
-        new_vote_cache_path = save_path / "040_votes_per_comparison.csv"
-        new_prompt_vote_cache_path = save_path / "045_prompt_votes_per_comparison.csv"
+        new_vote_cache_path = save_path / "046_votes_cache.jsonl"
         if config.prior_cache_path is not None:
             # copy over prior cache file
             shutil.copy(
@@ -197,7 +196,9 @@ def run(
             config=config,
         )
 
-        raw_votes.to_csv(new_vote_cache_path, index=True, index_label="index")
+        raw_votes.to_csv(
+            save_path / "040_votes_per_comparison.csv", index=True, index_label="index"
+        )
         save_to_json(combined_votes, save_path / "041_votes_per_cluster.json")
 
         raw_prompt_votes, combined_prompt_votes = get_votes_for_principles(
@@ -205,13 +206,15 @@ def run(
             summaries=prompt_summaries,
             max_votes_in_single_prompt=config.s3_filter_max_votes_in_single_prompt,
             model_name=model_name,
-            cache_path=new_vote_cache_path,
+            cache_path=None,
             config=config,
             prompt_principles=True,
         )
 
         raw_prompt_votes.to_csv(
-            new_prompt_vote_cache_path, index=True, index_label="index"
+            save_path / "045_prompt_votes_per_comparison.csv",
+            index=True,
+            index_label="index",
         )
         save_to_json(
             combined_prompt_votes, save_path / "046_prompt_votes_per_cluster.json"
