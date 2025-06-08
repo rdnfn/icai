@@ -14,7 +14,7 @@ import inverse_cai.models
 from inverse_cai.algorithm.cache import VoteCache, get_vote_hash
 
 
-async def get_votes_for_principles(
+def get_votes_for_principles(
     feedback_df: pd.DataFrame,
     max_votes_in_single_prompt: int,
     summaries: dict,
@@ -62,14 +62,16 @@ async def get_votes_for_principles(
     for i, summary_part in enumerate(summaries_parts):
         logger.info(f"Starting pass {i+1}/{len(summaries_parts)}")
 
-        votes = await run_pass_to_get_votes_for_principles(
-            feedback_df=feedback_df,
-            summaries=summary_part,
-            config=config,
-            model_name=model_name,
-            cache_path=cache_path,
-            prompt_principles=prompt_principles,
-            max_concurrent_tasks=max_concurrent_tasks,
+        votes = asyncio.run(
+            run_pass_to_get_votes_for_principles(
+                feedback_df=feedback_df,
+                summaries=summary_part,
+                config=config,
+                model_name=model_name,
+                cache_path=cache_path,
+                prompt_principles=prompt_principles,
+                max_concurrent_tasks=max_concurrent_tasks,
+            )
         )
         hashed_votes.append(votes)
 
