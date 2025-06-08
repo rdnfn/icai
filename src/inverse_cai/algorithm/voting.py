@@ -1,11 +1,11 @@
 import ast
-import tqdm
+import asyncio
 import random
 import time
 import pandas as pd
 from pathlib import Path
 from loguru import logger
-from joblib import Parallel, delayed
+from tqdm.asyncio import tqdm
 
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
 from inverse_cai.experiment.config import ExpConfig
@@ -14,7 +14,7 @@ import inverse_cai.models
 from inverse_cai.algorithm.cache import VoteCache, get_vote_hash
 
 
-def get_votes_for_principles(
+async def get_votes_for_principles(
     feedback_df: pd.DataFrame,
     max_votes_in_single_prompt: int,
     summaries: dict,
@@ -22,6 +22,7 @@ def get_votes_for_principles(
     model_name: str,
     cache_path: Path,
     prompt_principles=False,
+    max_concurrent_tasks: int = 10,
 ) -> tuple[pd.DataFrame, dict]:
     """Get votes for principles.
 
@@ -61,13 +62,14 @@ def get_votes_for_principles(
     for i, summary_part in enumerate(summaries_parts):
         logger.info(f"Starting pass {i+1}/{len(summaries_parts)}")
 
-        votes = run_pass_to_get_votes_for_principles(
+        votes = await run_pass_to_get_votes_for_principles(
             feedback_df=feedback_df,
             summaries=summary_part,
             config=config,
             model_name=model_name,
             cache_path=cache_path,
             prompt_principles=prompt_principles,
+            max_concurrent_tasks=max_concurrent_tasks,
         )
         hashed_votes.append(votes)
 
@@ -118,14 +120,15 @@ def get_votes_for_principles(
     return raw_votes, combined_votes
 
 
-def run_pass_to_get_votes_for_principles(
+async def run_pass_to_get_votes_for_principles(
     feedback_df: pd.DataFrame,
     summaries: dict,
     config: ExpConfig,
     model_name: str,
     cache_path: Path,
     prompt_principles: bool,
-) -> tuple[pd.Series, dict]:
+    max_concurrent_tasks: int = 10,
+) -> dict:
     """
     Given a dataframe of conversations, run voting with each proposed
     principle on each pairwise comparison. Single pass over dataset.
@@ -136,88 +139,95 @@ def run_pass_to_get_votes_for_principles(
     initial_cache = VoteCache(cache_path)
     initial_cached_votes = initial_cache.get_cached_votes()
 
+    # Create semaphore for controlling concurrency
+    semaphore = asyncio.Semaphore(max_concurrent_tasks)
+
     # Function to process each row
-    def process_row(index, row, summaries, model_name, config, initial_cached_votes):
-        if prompt_principles:
-            raise NotImplementedError(
-                (
-                    "Prompt principles not implemented. "
-                    "Recent changes to voting system require a re-implementation."
-                )
-            )
-            # TODO: Adapt prompt principles to work with the new voting system.
-            # Now the process row command returns a single dictionary, with
-            # each key being the hash of the relevant vote and the
-            # value being the individual vote.
-
-            def _get_prompt(row):
-                if "prompt" in row:
-                    return row["prompt"]
-                else:
-                    return inverse_cai.algorithm.utils.get_prompt_from_two_samples(
-                        sample_a=row["text_a"],
-                        sample_b=row["text_b"],
+    async def process_row(
+        index, row, summaries, model_name, config, initial_cached_votes
+    ):
+        async with semaphore:
+            if prompt_principles:
+                raise NotImplementedError(
+                    (
+                        "Prompt principles not implemented. "
+                        "Recent changes to voting system require a re-implementation."
                     )
-
-            vote = get_prompt_principle_vote_for_single_text(
-                prompt=_get_prompt(row),
-                summaries=summaries,
-                model_name=model_name,
-                config=config,
-            )
-        else:
-            preferred = get_preferred_text(row)
-            rejected = get_rejected_text(row)
-
-            # Check cache first
-            # Initialize cache
-            vote_cache = VoteCache(cache_path)
-
-            principles = list(summaries.values())
-            hashes = {
-                principle: get_vote_hash(
-                    preferred=preferred,
-                    rejected=rejected,
-                    principle=principle,
-                    model_name=model_name,
                 )
-                for principle in principles
-            }
+                # TODO: Adapt prompt principles to work with the new voting system.
+                # Now the process row command returns a single dictionary, with
+                # each key being the hash of the relevant vote and the
+                # value being the individual vote.
 
-            all_hashes_in_cache = True
-            for hash_str in hashes.values():
-                if hash_str not in initial_cached_votes:
-                    all_hashes_in_cache = False
-                    break
+                def _get_prompt(row):
+                    if "prompt" in row:
+                        return row["prompt"]
+                    else:
+                        return inverse_cai.algorithm.utils.get_prompt_from_two_samples(
+                            sample_a=row["text_a"],
+                            sample_b=row["text_b"],
+                        )
 
-            if all_hashes_in_cache:
-                time.sleep(0.1)
-                return index, {h: initial_cached_votes[h] for h in hashes.values()}
+                vote = await get_prompt_principle_vote_for_single_text(
+                    prompt=_get_prompt(row),
+                    summaries=summaries,
+                    model_name=model_name,
+                    config=config,
+                )
+            else:
+                preferred = get_preferred_text(row)
+                rejected = get_rejected_text(row)
 
-            vote = get_preference_vote_for_single_text(
-                preferred_sample=preferred,
-                rejected_sample=rejected,
-                principles=principles,
-                model_name=model_name,
-                config=config,
-            )
+                # Check cache first
+                # Initialize cache
+                vote_cache = VoteCache(cache_path)
 
-            # Update cache
-            hashed_vote = {
-                hash_str: vote[principle] for principle, hash_str in hashes.items()
-            }
-            for hash_str, vote_value in hashed_vote.items():
-                vote_cache.update_cache(hash_str, vote_value)
+                principles = list(summaries.values())
+                hashes = {
+                    principle: get_vote_hash(
+                        preferred=preferred,
+                        rejected=rejected,
+                        principle=principle,
+                        model_name=model_name,
+                    )
+                    for principle in principles
+                }
 
-        return hashed_vote
+                all_hashes_in_cache = True
+                for hash_str in hashes.values():
+                    if hash_str not in initial_cached_votes:
+                        all_hashes_in_cache = False
+                        break
 
-    # Parallel processing of rows
-    votes = Parallel(n_jobs=config.parallel_workers)(
-        delayed(process_row)(
-            index, row, summaries, model_name, config, initial_cached_votes
-        )
-        for index, row in tqdm.tqdm(feedback_df.iterrows(), total=feedback_df.shape[0])
-    )
+                if all_hashes_in_cache:
+                    await asyncio.sleep(0.1)
+                    return {h: initial_cached_votes[h] for h in hashes.values()}
+
+                vote = await get_preference_vote_for_single_text(
+                    preferred_sample=preferred,
+                    rejected_sample=rejected,
+                    principles=principles,
+                    model_name=model_name,
+                    config=config,
+                )
+
+                # Update cache
+                hashed_vote = {
+                    hash_str: vote[principle] for principle, hash_str in hashes.items()
+                }
+                for hash_str, vote_value in hashed_vote.items():
+                    vote_cache.update_cache(hash_str, vote_value)
+
+            return hashed_vote
+
+    # Create async tasks for parallel processing
+    tasks = [
+        process_row(index, row, summaries, model_name, config, initial_cached_votes)
+        for index, row in feedback_df.iterrows()
+    ]
+
+    # Execute all tasks concurrently with progress bar
+    votes = await tqdm.gather(*tasks)
 
     # Combine votes into a single dictionary
     # Each entry is a single vote for a principle on a single comparison.
@@ -226,7 +236,7 @@ def run_pass_to_get_votes_for_principles(
     return full_votes
 
 
-def get_prompt_principle_vote_for_single_text(
+async def get_prompt_principle_vote_for_single_text(
     prompt,
     summaries,
     config: ExpConfig,
@@ -258,13 +268,13 @@ def get_prompt_principle_vote_for_single_text(
     sleep_time = 1  # simple exponential backoff
     while True:
         try:
-            vote = model.invoke(messages).content
+            vote = (await model.ainvoke(messages)).content
             break
         except Exception as e:
             if "Error code: 429" in str(e):
                 logger.warning(f"Ratelimit error invoking model: {e}")
                 logger.warning(f"Sleeping for {sleep_time}s and trying again...")
-                time.sleep(sleep_time)
+                await asyncio.sleep(sleep_time)
                 sleep_time *= 2
             else:
                 logger.error(f"Error invoking model: {e}")
@@ -291,7 +301,7 @@ def get_prompt_principle_vote_for_single_text(
     return updated_vote
 
 
-def get_preference_vote_for_single_text(
+async def get_preference_vote_for_single_text(
     preferred_sample,
     rejected_sample,
     principles,
@@ -330,13 +340,13 @@ def get_preference_vote_for_single_text(
     sleep_time = 1  # simple exponential backoff
     while True:
         try:
-            vote = model.invoke(messages).content
+            vote = (await model.ainvoke(messages)).content
             break
         except Exception as e:
             if "Error code: 429" in str(e):
                 logger.warning(f"Ratelimit error invoking model: {e}")
                 logger.warning(f"Sleeping for {sleep_time}s and trying again...")
-                time.sleep(sleep_time)
+                await asyncio.sleep(sleep_time)
                 sleep_time *= 2
             else:
                 logger.error(f"Error invoking model: {e}")
