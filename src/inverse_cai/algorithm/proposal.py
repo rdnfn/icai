@@ -1,9 +1,8 @@
 import ast
 import asyncio
 import pandas as pd
-import tqdm
+from tqdm.asyncio import tqdm
 from loguru import logger
-import numpy as np
 
 import inverse_cai.models
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
@@ -97,13 +96,11 @@ def generate_principles_from_feedback(
                 process_row(
                     index, row, num_principles_per_sampling_step, model_name, config
                 )
-                for index, row in tqdm.tqdm(
-                    feedback.iterrows(), total=feedback.shape[0]
-                )
+                for index, row in feedback.iterrows()
             ]
 
             # execute all tasks concurrently
-            results = await asyncio.gather(*tasks)
+            results = await tqdm.gather(*tasks)
 
             # update the feedback DataFrame
             for index, principles, prompt_principles in results:
