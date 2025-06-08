@@ -11,7 +11,7 @@ from inverse_cai.data.utils import get_preferred_text, get_rejected_text
 from inverse_cai.experiment.config import ExpConfig
 import inverse_cai.algorithm.utils
 import inverse_cai.models
-from inverse_cai.algorithm.cache import VoteCache
+from inverse_cai.algorithm.cache import VoteCache, get_vote_hash
 
 
 def get_votes_for_principles(
@@ -52,8 +52,7 @@ def get_votes_for_principles(
         f"max votes in single prompt: {max_votes_in_single_prompt}"
     )
 
-    raw_votes = []
-    combined_votes = []
+    hashed_votes = []
 
     if len(summaries_parts) == 0:
         logger.warning("No principles to vote on, skipping voting.")
@@ -62,7 +61,7 @@ def get_votes_for_principles(
     for i, summary_part in enumerate(summaries_parts):
         logger.info(f"Starting pass {i+1}/{len(summaries_parts)}")
 
-        raw_votes_part, combined_votes_part = run_pass_to_get_votes_for_principles(
+        votes = run_pass_to_get_votes_for_principles(
             feedback_df=feedback_df,
             summaries=summary_part,
             config=config,
@@ -70,17 +69,53 @@ def get_votes_for_principles(
             cache_path=cache_path,
             prompt_principles=prompt_principles,
         )
+        hashed_votes.append(votes)
 
-        # append to pd series another pd series
-        raw_votes.append(raw_votes_part)
-        combined_votes.append(combined_votes_part)
+    logger.info(f"Post-processing votes")
+    postprocess_start_time = time.time()
 
-    raw_votes = pd.concat(raw_votes)
-    combined_votes_dict = {k: v for part in combined_votes for k, v in part.items()}
+    # combine hashed votes across all passes into single dictionary
+    hashed_votes = {k: v for part in hashed_votes for k, v in part.items()}
 
+    def _get_per_comparison_votes(row):
+        """Returns a per-comparison vote containing all votes for all principles."""
+        hash_per_principle = {}
+        for key, principle in summaries.items():
+            vote_hash = get_vote_hash(
+                preferred=get_preferred_text(row),
+                rejected=get_rejected_text(row),
+                principle=principle,
+                model_name=model_name,
+            )
+            hash_per_principle[key] = vote_hash
+
+        return {key: hashed_votes[hash_per_principle[key]] for key in summaries.keys()}
+
+    # ### First output: raw_votes ###
+    # Raw votes take the following pd series form:
+    # index,votes
+    # 0,"{0: False, 1: True, 2: None, 3: None, 4: None, ...}"
+    # Where each key is the index of the principle in the summaries.
+    # Eventually, e.g. saved to 040_votes_per_comparison.csv (by algorithm.main.py).
+    raw_votes = feedback_df.apply(_get_per_comparison_votes, axis=1)
+
+    # ### Second output: combined_votes ###
+    # Takes the following json form:
+    # {
+    # "0": {"for": 279, "against": 363, "abstain": 6, "invalid": 0, "both": 0, "neither": 0},
+    # ...
+    # }
+    #
+    # Here, the "0" key is the index of the principle in the summaries.
+    # Eventually, e.g. saved to 041_votes_per_cluster.json (by algorithm.main.py).
+    combined_votes = combine_votes(list(raw_votes), summaries)
+
+    logger.info(
+        f"Post-processing complete: took {time.time() - postprocess_start_time:.4f} seconds"
+    )
     logger.info("Votes complete")
 
-    return raw_votes, combined_votes_dict
+    return raw_votes, combined_votes
 
 
 def run_pass_to_get_votes_for_principles(
@@ -130,7 +165,7 @@ def run_pass_to_get_votes_for_principles(
 
             principles = list(summaries.values())
             hashes = {
-                principle: VoteCache.get_datapoint_hash(
+                principle: get_vote_hash(
                     preferred=preferred,
                     rejected=rejected,
                     principle=principle,
@@ -164,24 +199,21 @@ def run_pass_to_get_votes_for_principles(
             for hash_str, vote_value in hashed_vote.items():
                 vote_cache.update_cache(hash_str, vote_value)
 
-        return index, hashed_vote
+        return hashed_vote
 
     # Parallel processing of rows
-    results = Parallel(n_jobs=config.parallel_workers)(
+    votes = Parallel(n_jobs=config.parallel_workers)(
         delayed(process_row)(
             index, row, summaries, model_name, config, initial_cached_votes
         )
         for index, row in tqdm.tqdm(feedback_df.iterrows(), total=feedback_df.shape[0])
     )
 
-    # Updating DataFrame with results
-    for index, vote in results:
-        feedback_df.at[index, "votes"] = vote
+    # Combine votes into a single dictionary
+    # Each entry is a single vote for a principle on a single comparison.
+    full_votes = {k: v for part in votes for k, v in part.items()}
 
-    raw_votes = feedback_df["votes"]
-    combined_votes = combine_votes(list(raw_votes), summaries)
-
-    return raw_votes, combined_votes
+    return full_votes
 
 
 def get_prompt_principle_vote_for_single_text(
