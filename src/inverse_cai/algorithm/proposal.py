@@ -1,9 +1,8 @@
 import ast
-from joblib import Parallel, delayed
+import asyncio
 import pandas as pd
-import tqdm
+from tqdm.asyncio import tqdm
 from loguru import logger
-import numpy as np
 
 import inverse_cai.models
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
@@ -16,14 +15,22 @@ def generate_principles_from_feedback(
     num_principles_per_sampling_step,
     model_name: str,
     config: ExpConfig,
-    num_rankings_per_sampling_step: int,
+    num_rankings_per_sampling_step: int = 1,
+    max_concurrent_tasks: int = 10,
 ) -> list:
     """
     Generate principles from feedback.
 
     Args:
         feedback: feedback data as a pandas DataFrame.
-        num_principles_per_ranking: The number of principles to generate per ranking.
+        num_principles_per_sampling_step: The number of principles to
+            generate per sampling step.
+        model_name: The name of the model to use.
+        config: The experiment configuration.
+        num_rankings_per_sampling_step: The number of rankings to use per
+            principle sampling step. Only implemented for
+            num_rankings_per_sampling_step=1 at the moment.
+        max_concurrent_tasks: Maximum number of concurrent tasks to run.
 
     Returns:
         A list of principles.
@@ -60,103 +67,74 @@ def generate_principles_from_feedback(
             )
         )
 
-    # initialize the principles column
-    feedback["principles"] = None
-    feedback["prompt_principles"] = None
+    async def _async_generate_principles():
+        # initialize the principles column
+        feedback["principles"] = None
+        feedback["prompt_principles"] = None
 
-    if num_rankings_per_sampling_step == 1:
+        if num_rankings_per_sampling_step == 1:
+            # Create semaphore for controlling concurrency
+            semaphore = asyncio.Semaphore(max_concurrent_tasks)
 
-        def process_row(
-            index, row, num_principles_per_sampling_step, model_name, config
-        ):
-            principles, prompt_principles = generate_principles_from_single_ranking(
-                preferred_text=get_preferred_text(row),
-                rejected_text=get_rejected_text(row),
-                num_principles=num_principles_per_sampling_step,
-                model_name=model_name,
-                config=config,
-            )
-            return index, principles, prompt_principles
-
-        # parallelize the process
-        results = Parallel(n_jobs=config.parallel_workers)(
-            delayed(process_row)(
+            async def process_row(
                 index, row, num_principles_per_sampling_step, model_name, config
-            )
-            for index, row in tqdm.tqdm(feedback.iterrows(), total=feedback.shape[0])
+            ):
+                async with semaphore:
+                    principles, prompt_principles = (
+                        await generate_principles_from_single_ranking(
+                            preferred_text=get_preferred_text(row),
+                            rejected_text=get_rejected_text(row),
+                            num_principles=num_principles_per_sampling_step,
+                            model_name=model_name,
+                            config=config,
+                        )
+                    )
+                    return index, principles, prompt_principles
+
+            # create async tasks for parallel processing
+            tasks = [
+                process_row(
+                    index, row, num_principles_per_sampling_step, model_name, config
+                )
+                for index, row in feedback.iterrows()
+            ]
+
+            # execute all tasks concurrently
+            results = await tqdm.gather(*tasks)
+
+            # update the feedback DataFrame
+            for index, principles, prompt_principles in results:
+                feedback.at[index, "principles"] = principles
+                feedback.at[index, "prompt_principles"] = prompt_principles
+
+        elif num_rankings_per_sampling_step > 1:
+            raise NotImplementedError
+
+        # get list of all principles (note that in results
+        # principles are lists of principles)
+        principles = [
+            principle
+            for _, principle_list, _ in results
+            for principle in principle_list
+        ]
+
+        prompt_principles = [
+            principle
+            for _, _, prompt_principle_list in results
+            for principle in prompt_principle_list
+        ]
+
+        logger.info(
+            f"Generated {len(principles)} principles, {len(prompt_principles)} prompt principles (expected {overall_num_principles})"
         )
-        # update the feedback DataFrame
-        for index, principles, prompt_principles in results:
-            feedback.at[index, "principles"] = principles
-            feedback.at[index, "prompt_principles"] = prompt_principles
 
-    elif num_rankings_per_sampling_step > 1:
+        return feedback, principles, prompt_principles
 
-        raise NotImplementedError
-
-        # allocate group_ids, such that each row is assigned to a random equally
-        # sized group
-        n_groups = -(len(feedback) // -num_rankings_per_sampling_step)
-        feedback["group_id"] = pd.qcut(
-            np.random.permutation(len(feedback)), q=n_groups, labels=False
-        )
-        assert (
-            feedback["group_id"].value_counts().max() <= num_rankings_per_sampling_step
-        ), f"Number of rankings per group must be less than or equal to {num_rankings_per_sampling_step}, max is {feedback['group_id'].value_counts().max()}"
-        assert (
-            feedback["group_id"].unique().shape[0] == n_groups,
-            f"Number of groups ({feedback['group_id'].unique().shape[0]}) must be equal to {n_groups}",
-        )
-
-        def process_multiple_rows(
-            index, rows, num_principles_per_sampling_step, model_name, config
-        ):
-            principles = generate_principles_from_multiple_rankings(
-                preferred_texts=[get_preferred_text(row) for _, row in rows.iterrows()],
-                rejected_texts=[get_rejected_text(row) for _, row in rows.iterrows()],
-                num_principles=num_principles_per_sampling_step,
-                model_name=model_name,
-                config=config,
-            )
-            return index, principles
-
-        # parallelize the process
-        results = Parallel(n_jobs=config.parallel_workers)(
-            delayed(process_multiple_rows)(
-                index, rows, num_principles_per_sampling_step, model_name, config
-            )
-            for index, rows in tqdm.tqdm(
-                feedback.groupby("group_id"), total=feedback.shape[0]
-            )
-        )
-
-        # update the feedback DataFrame, adding groups principles to each row in group
-        for index, principles in results:
-            # add principles to each row in the group
-            feedback.loc[feedback["group_id"] == index]["principles"] = [
-                principles
-            ] * len(feedback[feedback["group_id"] == index])
-
-    # get list of all principles (note that in results
-    # principles are lists of principles)
-    principles = [
-        principle for _, principle_list, _ in results for principle in principle_list
-    ]
-
-    prompt_principles = [
-        principle
-        for _, _, prompt_principle_list in results
-        for principle in prompt_principle_list
-    ]
-
-    logger.info(
-        f"Generated {len(principles)} principles, {len(prompt_principles)} prompt principles (expected {overall_num_principles})"
-    )
-
-    return feedback, principles, prompt_principles
+    # Run the async function
+    return asyncio.run(_async_generate_principles())
 
 
-def generate_principles_from_single_ranking(
+async def generate_principles_from_single_ranking(
     preferred_text: str,
     rejected_text: str,
     num_principles,
@@ -194,7 +172,7 @@ def generate_principles_from_single_ranking(
         )
 
         # generate principles
-        principle_output = model.invoke(messages).content
+        principle_output = (await model.ainvoke(messages)).content
 
         # parse the principles
         try:
@@ -211,34 +189,21 @@ def generate_principles_from_single_ranking(
             logger.error(e)
 
     for prompt in config.alg_prompts.prompt_generator_prompts:
-
-        def _get_prompt(a_, b_):
-            # TODO: !!!!! this is duplicated in voting.py
-            a = (
-                a_.split("Instruction:\n")[-1]
-                .split("Response:\n")[0]
-                .split("Assistant:\n")[0]
-            )
-            b = (
-                b_.split("Instruction:\n")[-1]
-                .split("Response:\n")[0]
-                .split("Assistant:\n")[0]
-            )
-            assert a == b
-            return a.strip()
-
         messages = inverse_cai.algorithm.utils.parse_prompt(
             prompt_str=prompt,
             prompt_kwargs=dict(
                 preferred_sample=preferred_text,
                 rejected_sample=rejected_text,
-                prompt=_get_prompt(preferred_text, rejected_text),
+                prompt=inverse_cai.algorithm.utils.get_prompt_from_two_samples(
+                    sample_a=preferred_text,
+                    sample_b=rejected_text,
+                ),
                 num_principles=num_principles,
             ),
         )
 
         # generate principles
-        principle_output = model.invoke(messages).content
+        principle_output = (await model.ainvoke(messages)).content
 
         # parse the principles
         try:
@@ -255,75 +220,6 @@ def generate_principles_from_single_ranking(
             logger.error(e)
 
     return principles, prompt_principles
-
-
-def generate_principles_from_multiple_rankings(
-    preferred_texts: list[str],
-    rejected_texts: list[str],
-    num_principles: int,
-    model_name: str,
-    config: ExpConfig,
-) -> list:
-    """
-    Generate principles from multiple rankings.
-
-    Args:
-        preferred_texts: List of preferred texts.
-        rejected_texts: List of rejected texts.
-        num_principles: The number of principles to generate.
-        model_name: The name of the model to use.
-        config: The experiment configuration.
-
-    Returns:
-        A list of principles.
-    """
-    raise NotImplementedError
-    assert num_principles > 0, "Number of principles must be greater than 0"
-    assert len(preferred_texts) == len(
-        rejected_texts
-    ), "Number of preferred and rejected texts must match"
-    assert len(preferred_texts) > 0, "At least one ranking must be provided"
-
-    # get the model
-    model = inverse_cai.models.get_model(model_name)
-    principles: list = []
-
-    rankings_str = "\n".join(
-        [
-            f"## Ranking {i+1}:\n### Preferred: {preferred_text}\n\n### Rejected: {rejected_text}\n\n-----\n\n"
-            for i, (preferred_text, rejected_text) in enumerate(
-                zip(preferred_texts, rejected_texts)
-            )
-        ]
-    )
-
-    for prompt in config.alg_prompts.generator_prompts:
-        messages = inverse_cai.algorithm.utils.parse_prompt(
-            prompt_str=prompt,
-            prompt_kwargs=dict(
-                rankings=rankings_str,
-                num_principles=num_principles,
-            ),
-        )
-
-        # generate principles
-        principle_output = model.invoke(messages).content
-
-        # parse the principles
-        try:
-            principle_output = clean_principle_str(principle_output)
-            parsed_output = ast.literal_eval(principle_output)["principles"]
-            principles += parsed_output
-            if len(parsed_output) < num_principles:
-                logger.warning(
-                    f"Generated fewer ({len(parsed_output)}) principles "
-                    f"than expected ({num_principles})"
-                )
-        except Exception as e:
-            logger.error(f"Failed to parse principles: {principle_output}")
-            logger.error(e)
-
-    return principles
 
 
 def clean_principle_str(principle_str: str) -> str:

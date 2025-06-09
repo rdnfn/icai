@@ -16,6 +16,7 @@ jobs:
     uses: ./.github/workflows/test.yml
     secrets:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
   build:
     name: Build distribution 📦

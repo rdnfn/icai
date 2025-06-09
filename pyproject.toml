@@ -1,6 +1,6 @@
 [project]
 name = "inverse-cai"
-version = "0.4.0"
+version = "0.4.1"
 authors = [
   { name="rdnfn", email="hi@arduin.io" },
   { name="timokau", email="" },
@@ -33,6 +33,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest >=6.0",
+    "pytest-asyncio",
     "black ==24.10.0",
     "bump-my-version",
 ]
@@ -70,7 +71,7 @@ line-length = 88
 target-version = ['py311']
 
 [tool.bumpversion]
-current_version = "0.4.0"
+current_version = "0.4.1"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 search = "{current_version}"

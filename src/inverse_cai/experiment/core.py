@@ -330,6 +330,7 @@ def run(cfg: DictConfig):
                 model_name=cfg.alg_model,
                 cache_path=test_annotation_cache_path,
                 config=cfg,
+                max_concurrent_tasks=cfg.async_task_num,
             )
             raw_votes.to_csv(
                 test_annotation_cache_path, index=True, index_label="index"
@@ -348,6 +349,7 @@ def run(cfg: DictConfig):
                 cache_path=test_annotation_cache_path,
                 config=cfg,
                 prompt_principles=True,
+                max_concurrent_tasks=cfg.async_task_num,
             )
             raw_prompt_votes.to_csv(
                 test_prompt_annotation_cache_path, index=True, index_label="index"

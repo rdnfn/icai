@@ -8,6 +8,8 @@ on:
       secrets:
         OPENAI_API_KEY:
           required: true
+        OPENROUTER_API_KEY:
+          required: true
 
 jobs:
   test:
@@ -32,4 +34,5 @@ jobs:
       - name: Run API tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: pytest -v -m "api"
