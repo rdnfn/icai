@@ -132,9 +132,8 @@ class ExpConfig:
 
     # General config
     secrets_path: str = "./secrets.toml"  # Path to the secrets file
-    parallel_workers: int = (
-        -1
-    )  # Number of parallel workers to use, -1 for all avaliable
+    async_task_num: int = 30  # Number of tasks to run asynchronously
+    # Relevant for steps calling API models (principle proposal and voting)
 
     # logging config via wandb (DEPRECATED, only here for compatibility)
     wandb_project: Optional[str] = None

@@ -74,6 +74,7 @@ def run(
             model_name=model_name,
             config=config,
             num_rankings_per_sampling_step=num_rankings_per_sampling_step,
+            max_concurrent_tasks=config.async_task_num,
         )
         feedback["principles"].to_csv(
             save_path / "010_principles_per_comparison.csv",
@@ -194,6 +195,7 @@ def run(
             model_name=model_name,
             cache_path=new_vote_cache_path,
             config=config,
+            max_concurrent_tasks=config.async_task_num,
         )
 
         raw_votes.to_csv(
@@ -209,6 +211,7 @@ def run(
             cache_path=None,
             config=config,
             prompt_principles=True,
+            max_concurrent_tasks=config.async_task_num,
         )
 
         raw_prompt_votes.to_csv(

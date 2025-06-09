@@ -45,6 +45,9 @@ def get_votes_for_principles(
         )
 
     logger.info(f"Split voting into {len(summaries_parts)} runs over entire dataset.")
+    logger.info(
+        f"Running up to {max_concurrent_tasks} LLM calls asynchronously at the same time."
+    )
 
     assert sum(len(part) for part in summaries_parts) == len(summaries), (
         f"Sum of lengths of summaries parts ({sum(len(part) for part in summaries_parts)}) "
