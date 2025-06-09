@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 import pandas as pd
 from inverse_cai.experiment.config import ExpConfig
 from inverse_cai.algorithm.main import run
@@ -217,7 +217,7 @@ def test_run_integration(
     mock_random_choice, mock_get_model, mock_feedback_df, mock_config, mock_save_path
 ):
     # Setup mock model with different responses for different calls
-    mock_model = Mock()
+    mock_model = AsyncMock()
 
     # Set random.choice to return False only when choosing between booleans
     def random_choice_side_effect(seq):
@@ -225,7 +225,7 @@ def test_run_integration(
 
     mock_random_choice.side_effect = random_choice_side_effect
 
-    def side_effect(messages):
+    async def side_effect(messages):
         message_text = str(messages)
         if "Given the data above, why do you think" in message_text:
             # For principle generation
@@ -255,8 +255,11 @@ def test_run_integration(
         elif "Your job is to summarize the prompt" in message_text:
             # For summaries
             return Mock(content="Is the prompt...")
+        else:
+            # Default response for any other cases
+            return Mock(content='{"default": "response"}')
 
-    mock_model.invoke.side_effect = side_effect
+    mock_model.ainvoke.side_effect = side_effect
     mock_get_model.return_value = mock_model
 
     # Disable parallel processing for the test
@@ -293,7 +296,7 @@ def test_run_integration(
     assert "constitution" in result
 
     # Verify that the model was called
-    assert mock_model.invoke.call_count > 0
+    assert mock_model.ainvoke.call_count > 0
 
     # Verify the constitution format
     assert isinstance(result["constitution"], str)
