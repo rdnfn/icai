@@ -33,6 +33,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest >=6.0",
+    "pytest-asyncio",
     "black ==24.10.0",
     "bump-my-version",
 ]

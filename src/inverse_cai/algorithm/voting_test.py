@@ -2,7 +2,8 @@
 Tests for the voting module.
 """
 
-from unittest.mock import patch, MagicMock
+import pytest
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from inverse_cai.algorithm.voting import (
     get_preference_vote_for_single_text,
@@ -14,17 +15,20 @@ from inverse_cai.experiment.core import ExpConfig
 
 @patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
 @patch("inverse_cai.algorithm.voting.random.choice")
-def test_get_preference_vote_for_single_text_flipped(
+@pytest.mark.asyncio
+async def test_get_preference_vote_for_single_text_flipped(
     mock_random_choice, mock_get_model
 ):
     """Test preference voting when the order of samples is flipped."""
     # outputs are always flipped
     mock_random_choice.return_value = True
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{0: "A", 1: "B"}'
+    mock_model = AsyncMock()
+    mock_response = MagicMock()
+    mock_response.content = '{0: "A", 1: "B"}'
+    mock_model.ainvoke.return_value = mock_response
     mock_get_model.return_value = mock_model
 
-    result = get_preference_vote_for_single_text(
+    result = await get_preference_vote_for_single_text(
         "preferred_sample",
         "rejected_sample",
         {1: "suma", 2: "sumb"},
@@ -37,16 +41,19 @@ def test_get_preference_vote_for_single_text_flipped(
 
 @patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
 @patch("inverse_cai.algorithm.voting.random.choice")
-def test_get_preference_vote_for_single_text_not_flipped(
+@pytest.mark.asyncio
+async def test_get_preference_vote_for_single_text_not_flipped(
     mock_random_choice, mock_get_model
 ):
     """Test preference voting when the order of samples is not flipped."""
     mock_random_choice.return_value = False
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{0: "A", 1: "B"}'
+    mock_model = AsyncMock()
+    mock_response = MagicMock()
+    mock_response.content = '{0: "A", 1: "B"}'
+    mock_model.ainvoke.return_value = mock_response
     mock_get_model.return_value = mock_model
 
-    result = get_preference_vote_for_single_text(
+    result = await get_preference_vote_for_single_text(
         "preferred_sample",
         "rejected_sample",
         {1: "suma", 2: "sumb"},
@@ -59,16 +66,19 @@ def test_get_preference_vote_for_single_text_not_flipped(
 
 @patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
 @patch("inverse_cai.algorithm.voting.random.choice")
-def test_get_preference_vote_for_single_text_invalid_vote(
+@pytest.mark.asyncio
+async def test_get_preference_vote_for_single_text_invalid_vote(
     mock_random_choice, mock_get_model
 ):
     """Test preference voting when an invalid vote is returned by model."""
     mock_random_choice.return_value = False
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{"0": "C", "1": "None"}'
+    mock_model = AsyncMock()
+    mock_response = MagicMock()
+    mock_response.content = '{"0": "C", "1": "None"}'
+    mock_model.ainvoke.return_value = mock_response
     mock_get_model.return_value = mock_model
 
-    return_val = get_preference_vote_for_single_text(
+    return_val = await get_preference_vote_for_single_text(
         "preferred_sample",
         "rejected_sample",
         {1: "suma", 2: "sumb"},
@@ -79,13 +89,16 @@ def test_get_preference_vote_for_single_text_invalid_vote(
 
 
 @patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
-def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
+@pytest.mark.asyncio
+async def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
     """Test preference voting when invalid JSON is returned."""
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = "invalid_json"
+    mock_model = AsyncMock()
+    mock_response = MagicMock()
+    mock_response.content = "invalid_json"
+    mock_model.ainvoke.return_value = mock_response
     mock_get_model.return_value = mock_model
 
-    result = get_preference_vote_for_single_text(
+    result = await get_preference_vote_for_single_text(
         "preferred_sample",
         "rejected_sample",
         {1: "suma", 2: "sumb"},
@@ -94,19 +107,22 @@ def test_get_preference_vote_for_single_text_invalid_json(mock_get_model):
     )
 
     assert all(
-        value is "invalid" for value in result.values()
-    ), "Expected all votes to be None due to invalid JSON"
+        value == "invalid" for value in result.values()
+    ), "Expected all votes to be 'invalid' due to invalid JSON"
 
 
 @patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
-def test_get_preference_vote_for_single_text_all_keys_present(mock_get_model):
+@pytest.mark.asyncio
+async def test_get_preference_vote_for_single_text_all_keys_present(mock_get_model):
     """Test that all summary keys are present in the preference voting result."""
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{"0": "A", "1": "B", "2": "A"}'
+    mock_model = AsyncMock()
+    mock_response = MagicMock()
+    mock_response.content = '{"0": "A", "1": "B", "2": "A"}'
+    mock_model.ainvoke.return_value = mock_response
     mock_get_model.return_value = mock_model
 
     summaries = {1: "suma", 2: "sumb", 3: "sumc"}
-    result = get_preference_vote_for_single_text(
+    result = await get_preference_vote_for_single_text(
         "preferred_sample",
         "rejected_sample",
         summaries,
@@ -133,13 +149,16 @@ def test_clean_vote_json():
 
 
 @patch("inverse_cai.algorithm.voting.inverse_cai.models.get_model")
-def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model):
+@pytest.mark.asyncio
+async def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model):
     """Test to ensure unexpected vote values are counted as invalid in preference voting."""
-    mock_model = MagicMock()
-    mock_model.invoke.return_value.content = '{"0": "Z", "1": "Y"}'  # Unexpected values
+    mock_model = AsyncMock()
+    mock_response = MagicMock()
+    mock_response.content = '{"0": "Z", "1": "Y"}'  # Unexpected values
+    mock_model.ainvoke.return_value = mock_response
     mock_get_model.return_value = mock_model
 
-    result = get_preference_vote_for_single_text(
+    result = await get_preference_vote_for_single_text(
         "preferred_sample",
         "rejected_sample",
         {1: "suma", 2: "sumb"},
@@ -148,7 +167,7 @@ def test_get_preference_vote_for_single_text_unexpected_values(mock_get_model):
     )
 
     assert all(
-        value is "invalid" for value in result.values()
+        value == "invalid" for value in result.values()
     ), "Expected all votes to be counted as invalid due to unexpected values"
 
 
