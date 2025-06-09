@@ -1,6 +1,11 @@
 import subprocess
 import pytest
 
+# Model to be used for testing the CLI.
+# Corresponding API needs to be set to
+# allow these tests to succeed.
+TEST_API_MODEL = "openrouter/openai/gpt-4o-mini-2024-07-18"
+
 
 @pytest.mark.slow
 @pytest.mark.api
@@ -27,6 +32,7 @@ def test_cli_minimal_experiment(additional_args: list[str]):
     cmd = [
         "icai-exp",
         "data_path=data/processed/example/example.csv",
+        f"alg_model={TEST_API_MODEL}",
         *additional_args,
     ]
 
