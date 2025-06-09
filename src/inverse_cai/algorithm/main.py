@@ -196,6 +196,8 @@ def run(
             cache_path=new_vote_cache_path,
             config=config,
             max_concurrent_tasks=config.async_task_num,
+            num_seeds=config.s3_num_seeds_to_reannotate_with,
+            voting_method_cross_seed=config.s3_voting_method_cross_seed,
         )
 
         raw_votes.to_csv(
@@ -212,6 +214,8 @@ def run(
             config=config,
             prompt_principles=True,
             max_concurrent_tasks=config.async_task_num,
+            num_seeds=config.s3_num_seeds_to_reannotate_with,
+            voting_method_cross_seed=config.s3_voting_method_cross_seed,
         )
 
         raw_prompt_votes.to_csv(

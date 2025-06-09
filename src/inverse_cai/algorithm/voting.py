@@ -6,6 +6,7 @@ import pandas as pd
 from pathlib import Path
 from loguru import logger
 from tqdm.asyncio import tqdm
+from typing import Literal
 
 from inverse_cai.data.utils import get_preferred_text, get_rejected_text
 from inverse_cai.experiment.config import ExpConfig
@@ -21,12 +22,26 @@ def get_votes_for_principles(
     config: ExpConfig,
     model_name: str,
     cache_path: Path,
+    max_concurrent_tasks: int,
+    num_seeds: int,
+    voting_method_cross_seed: Literal["majority", "unanimous"],
     prompt_principles=False,
-    max_concurrent_tasks: int = 10,
 ) -> tuple[pd.DataFrame, dict]:
     """Get votes for principles.
 
-    Distributed over multiple passes if necessary."""
+    Distributed over multiple passes if necessary.
+
+    Args:
+        feedback_df: DataFrame of feedback
+        max_votes_in_single_prompt: Maximum number of votes in a single prompt
+        summaries: Dictionary of summaries
+        config: Configuration
+        model_name: Name of the model to use
+        cache_path: Path to cache (without .jsonl suffix)
+        max_concurrent_tasks: Maximum number of concurrent tasks
+        num_seeds: Number of seeds, i.e. how often to re-annotate the same data
+        prompt_principles: Whether to vote for prompt principles
+    """
 
     logger.info("Getting votes for principles")
     if prompt_principles:
@@ -34,55 +49,82 @@ def get_votes_for_principles(
     else:
         logger.info("Voting for regular principles")
 
-    summaries_parts = []
-    for i in range(0, len(summaries), max_votes_in_single_prompt):
-        summaries_parts.append(
-            {
-                k: v
-                for k, v in summaries.items()
-                if k in range(i, i + max_votes_in_single_prompt)
-            }
-        )
+    if len(summaries) == 0:
+        logger.warning("No principles to vote on, skipping voting.")
+        return pd.Series(), {}
 
-    logger.info(f"Split voting into {len(summaries_parts)} runs over entire dataset.")
+    num_passes = len(summaries) // max_votes_in_single_prompt + 1
+    logger.info(f"Split voting into {num_passes} passes over entire dataset.")
     logger.info(
         f"Running up to {max_concurrent_tasks} LLM calls asynchronously at the same time."
     )
 
-    assert sum(len(part) for part in summaries_parts) == len(summaries), (
-        f"Sum of lengths of summaries parts ({sum(len(part) for part in summaries_parts)}) "
-        f"does not match length of summaries ({len(summaries)})"
-        f"Full summaries: {summaries}\nFull summaries parts: {summaries_parts}"
-        f"max votes in single prompt: {max_votes_in_single_prompt}"
-    )
+    hashed_votes_per_seed = {seed: [] for seed in range(1, num_seeds + 1)}
 
-    hashed_votes = []
-
-    if len(summaries_parts) == 0:
-        logger.warning("No principles to vote on, skipping voting.")
-        return pd.Series(), {}
-
-    for i, summary_part in enumerate(summaries_parts):
-        logger.info(f"Starting pass {i+1}/{len(summaries_parts)}")
-
-        votes = asyncio.run(
-            run_pass_to_get_votes_for_principles(
-                feedback_df=feedback_df,
-                summaries=summary_part,
-                config=config,
-                model_name=model_name,
-                cache_path=cache_path,
-                prompt_principles=prompt_principles,
-                max_concurrent_tasks=max_concurrent_tasks,
-            )
+    for seed in range(1, num_seeds + 1):
+        # Shuffle summary keys and split into chunks
+        summary_keys = list(summaries.keys())
+        random.seed(seed)
+        random.shuffle(summary_keys)
+        summaries_parts = [
+            {k: summaries[k] for k in summary_keys[i : i + max_votes_in_single_prompt]}
+            for i in range(0, len(summary_keys), max_votes_in_single_prompt)
+        ]
+        assert sum(len(part) for part in summaries_parts) == len(summaries), (
+            f"Sum of lengths of summaries parts ({sum(len(part) for part in summaries_parts)}) "
+            f"does not match length of summaries ({len(summaries)})"
+            f"Full summaries: {summaries}\nFull summaries parts: {summaries_parts}"
+            f"max votes in single prompt: {max_votes_in_single_prompt}"
         )
-        hashed_votes.append(votes)
+        logger.info(f"Running voting for seed {seed}/{num_seeds}.")
+        for i, summary_part in enumerate(summaries_parts):
+            logger.info(f"Starting pass {i+1}/{len(summaries_parts)}")
+            cache_path_seed = Path(f"{cache_path}_seed_{seed}")
+            votes = asyncio.run(
+                run_pass_to_get_votes_for_principles(
+                    feedback_df=feedback_df,
+                    summaries=summary_part,
+                    config=config,
+                    model_name=model_name,
+                    cache_path=cache_path_seed,
+                    prompt_principles=prompt_principles,
+                    max_concurrent_tasks=max_concurrent_tasks,
+                )
+            )
+            hashed_votes_per_seed[seed].append(votes)
 
     logger.info(f"Post-processing votes")
     postprocess_start_time = time.time()
 
     # combine hashed votes across all passes into single dictionary
-    hashed_votes = {k: v for part in hashed_votes for k, v in part.items()}
+    for seed in hashed_votes_per_seed:
+        hashed_votes_per_seed[seed] = {
+            k: v for part in hashed_votes_per_seed[seed] for k, v in part.items()
+        }
+
+    # get all vote hashes (even if failed on some seed)
+    all_vote_hashes = set()
+    for seed in hashed_votes_per_seed:
+        all_vote_hashes.update(hashed_votes_per_seed[seed].keys())
+
+    hashed_votes = {}
+    for vote_hash in all_vote_hashes:
+        value_counts = {}
+        for seed in hashed_votes_per_seed:
+            vote = hashed_votes_per_seed[seed][vote_hash]
+            value_counts[vote] = value_counts.get(vote, 0) + 1
+
+        for vote, count in value_counts.items():
+            if voting_method_cross_seed == "majority":
+                if count > 0.5 * num_seeds:
+                    hashed_votes[vote_hash] = vote
+                    break
+            elif voting_method_cross_seed == "unanimous":
+                if count == num_seeds:
+                    hashed_votes[vote_hash] = vote
+                    break
+        if vote_hash not in hashed_votes:
+            hashed_votes[vote_hash] = None
 
     def _get_per_comparison_votes(row):
         """Returns a per-comparison vote containing all votes for all principles."""
