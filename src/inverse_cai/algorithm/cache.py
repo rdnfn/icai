@@ -27,34 +27,20 @@ class VoteCache:
         self.cache_dir = self.cache_path.parent
         self.cache_base = self.cache_path.stem
         self.cache_ext = ".jsonl"
-
-        self.hash_path = self.cache_path.with_suffix(".hash.json")
-        self.lock_path = self.cache_path.with_suffix(".lock")
-        self.lock_timeout = lock_timeout
-        self.lock = FileLock(self.lock_path, timeout=lock_timeout)
+        self.lock = FileLock(self.cache_path.with_suffix(".lock"), timeout=lock_timeout)
         self.verbose = verbose
         self.max_entries_per_file = max_entries_per_file
-
-        # In-memory cache of processed hashes for performance
-        self._processed_hashes = None
-        self._hash_dirty = False
 
         # Track current file and entry count for rotation
         self._current_file_index = 0
         self._current_file_entries = 0
         self._initialize_file_tracking()
 
-        # Create cache directory if it doesn't exist
+        # Create cache directory and initial file if needed
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-
-        # Initialize empty cache file if it doesn't exist
         current_cache_path = self._get_cache_file_path(self._current_file_index)
         if not current_cache_path.exists():
             current_cache_path.touch()
-
-        if not self.hash_path.exists():
-            with open(self.hash_path, "w", encoding="utf-8") as f:
-                json.dump([], f)
 
     def _get_cache_file_path(self, file_index: int) -> Path:
         """Get path for cache file with given index."""
@@ -64,10 +50,7 @@ class VoteCache:
         """Initialize file tracking by finding the current active file."""
         # Find the highest numbered cache file
         file_index = 0
-        while True:
-            cache_file = self._get_cache_file_path(file_index)
-            if not cache_file.exists():
-                break
+        while self._get_cache_file_path(file_index).exists():
             file_index += 1
 
         # Use the last existing file or start with 0
@@ -85,66 +68,49 @@ class VoteCache:
             self._current_file_entries = 0
 
     def get_processed_hashes(self) -> set:
-        """Load set of processed hashes."""
-        if self._processed_hashes is None:
-            with open(self.hash_path, "r", encoding="utf-8") as f:
-                self._processed_hashes = set(json.load(f))
-        return self._processed_hashes
+        """Load set of processed hashes from all cache files."""
+        return set(self._iter_cache_data(extract_keys_only=True))
 
     def check_if_hash_processed(self, hash: str) -> bool:
         """Check if hash has been processed."""
-        processed = self.get_processed_hashes()
-        return hash in processed
-
-    def _add_processed_hash(self, hash: str):
-        """Add hash to processed set."""
-        processed = self.get_processed_hashes()
-        processed.add(hash)
-        self._hash_dirty = True
-
-    def _flush_hashes(self):
-        """Write processed hashes to disk if dirty."""
-        if self._hash_dirty and self._processed_hashes is not None:
-            with open(self.hash_path, "w", encoding="utf-8") as f:
-                json.dump(list(self._processed_hashes), f)
-            self._hash_dirty = False
+        return hash in self.get_processed_hashes()
 
     def get_cached_votes(self) -> dict:
         """Get all cached votes as dictionary of hash -> dictionary of votes."""
         with self.lock:
             votes_dict = {}
+            for data in self._iter_cache_data():
+                votes_dict.update(data)
+            return votes_dict
 
-            # Read from all cache files
-            file_index = 0
-            while True:
-                cache_file = self._get_cache_file_path(file_index)
+    def _iter_cache_data(self, extract_keys_only: bool = False):
+        """Iterate through all cache files and yield data or keys."""
+        file_index = 0
+        while True:
+            cache_file = self._get_cache_file_path(file_index)
+            if not cache_file.exists() or cache_file.stat().st_size == 0:
                 if not cache_file.exists():
                     break
-
-                if cache_file.stat().st_size == 0:
-                    file_index += 1
-                    continue
-
-                with open(cache_file, "r", encoding="utf-8") as f:
-                    for line in f:
-                        if line.strip():
-                            try:
-                                data = json.loads(line.strip())
-                                hash_key = data["hash"]
-                                vote = data["vote"]
-                                votes_dict[hash_key] = vote
-                            except (json.JSONDecodeError, KeyError) as e:
-                                logger.warning(
-                                    f"Skipping malformed line in cache file {cache_file}: {line.strip()}, error: {e}"
-                                )
                 file_index += 1
-        return votes_dict
+                continue
+
+            with open(cache_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        try:
+                            data = json.loads(line.strip())
+                            if extract_keys_only:
+                                yield from data.keys()
+                            else:
+                                yield data
+                        except (json.JSONDecodeError, KeyError) as e:
+                            logger.warning(
+                                f"Skipping malformed line in cache file {cache_file}: {line.strip()}, error: {e}"
+                            )
+            file_index += 1
 
     def update_cache(self, hash: str, vote: dict):
-        """Update cache with new vote result by appending to file.
-
-        Will retry if lock is not available.
-        """
+        """Update cache with new vote result by appending to file."""
         max_retries = 10
         retry_delay = 1
 
@@ -170,15 +136,10 @@ class VoteCache:
                         self._current_file_index
                     )
                     with open(current_cache_path, "a", encoding="utf-8") as f:
-                        json_line = json.dumps({"hash": hash, "vote": vote})
-                        f.write(json_line + "\n")
+                        json.dump({hash: vote}, f)
+                        f.write("\n")
 
-                    self._add_processed_hash(hash)
                     self._current_file_entries += 1
-
-                    # Flush hashes periodically for safety (every 100 entries) or if requested
-                    if len(self._processed_hashes) % 100 == 0:
-                        self._flush_hashes()
                 return
             except TimeoutError as exc:
                 if attempt < max_retries - 1:
@@ -190,17 +151,6 @@ class VoteCache:
                     raise TimeoutError(
                         f"Failed to acquire lock after {max_retries} retries"
                     ) from exc
-
-    def close(self):
-        """Flush any pending hash updates to disk."""
-        self._flush_hashes()
-
-    def __del__(self):
-        """Cleanup - flush hashes on destruction."""
-        try:
-            self._flush_hashes()
-        except:
-            pass  # Ignore errors during cleanup
 
 
 def _get_hash(dict_to_hash: dict) -> str:
