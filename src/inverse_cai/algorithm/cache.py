@@ -31,6 +31,9 @@ class VoteCache:
         self.verbose = verbose
         self.max_entries_per_file = max_entries_per_file
 
+        # In-memory cache of processed hashes for performance
+        self._processed_hashes = None
+
         # Track current file and entry count for rotation
         self._current_file_index = 0
         self._current_file_entries = 0
@@ -68,8 +71,10 @@ class VoteCache:
             self._current_file_entries = 0
 
     def get_processed_hashes(self) -> set:
-        """Load set of processed hashes from all cache files."""
-        return set(self._iter_cache_data(extract_keys_only=True))
+        """Load set of processed hashes from all cache files (cached in memory)."""
+        if self._processed_hashes is None:
+            self._processed_hashes = set(self._iter_cache_data(extract_keys_only=True))
+        return self._processed_hashes
 
     def check_if_hash_processed(self, hash: str) -> bool:
         """Check if hash has been processed."""
@@ -138,6 +143,10 @@ class VoteCache:
                     with open(current_cache_path, "a", encoding="utf-8") as f:
                         json.dump({hash: vote}, f)
                         f.write("\n")
+
+                    # Update in-memory cache
+                    if self._processed_hashes is not None:
+                        self._processed_hashes.add(hash)
 
                     self._current_file_entries += 1
                 return
