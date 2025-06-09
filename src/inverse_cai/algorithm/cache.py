@@ -22,6 +22,10 @@ class VoteCache:
         self.lock = FileLock(self.lock_path, timeout=lock_timeout)
         self.verbose = verbose
 
+        # In-memory cache of processed hashes for performance
+        self._processed_hashes = None
+        self._hash_dirty = False
+
         # Initialize empty cache file if it doesn't exist
         if not self.cache_path.exists():
             self.cache_path.touch()
@@ -32,8 +36,10 @@ class VoteCache:
 
     def get_processed_hashes(self) -> set:
         """Load set of processed hashes."""
-        with open(self.hash_path, "r", encoding="utf-8") as f:
-            return set(json.load(f))
+        if self._processed_hashes is None:
+            with open(self.hash_path, "r", encoding="utf-8") as f:
+                self._processed_hashes = set(json.load(f))
+        return self._processed_hashes
 
     def check_if_hash_processed(self, hash: str) -> bool:
         """Check if hash has been processed."""
@@ -44,8 +50,14 @@ class VoteCache:
         """Add hash to processed set."""
         processed = self.get_processed_hashes()
         processed.add(hash)
-        with open(self.hash_path, "w", encoding="utf-8") as f:
-            json.dump(list(processed), f)
+        self._hash_dirty = True
+
+    def _flush_hashes(self):
+        """Write processed hashes to disk if dirty."""
+        if self._hash_dirty and self._processed_hashes is not None:
+            with open(self.hash_path, "w", encoding="utf-8") as f:
+                json.dump(list(self._processed_hashes), f)
+            self._hash_dirty = False
 
     def get_cached_votes(self) -> dict:
         """Get all cached votes as dictionary of hash -> dictionary of votes."""
@@ -92,6 +104,9 @@ class VoteCache:
                         f.write(json_line + "\n")
 
                     self._add_processed_hash(hash)
+                    # Flush hashes periodically for safety (every 100 entries) or if requested
+                    if len(self._processed_hashes) % 100 == 0:
+                        self._flush_hashes()
                 return
             except TimeoutError as exc:
                 if attempt < max_retries - 1:
@@ -103,6 +118,17 @@ class VoteCache:
                     raise TimeoutError(
                         f"Failed to acquire lock after {max_retries} retries"
                     ) from exc
+
+    def close(self):
+        """Flush any pending hash updates to disk."""
+        self._flush_hashes()
+
+    def __del__(self):
+        """Cleanup - flush hashes on destruction."""
+        try:
+            self._flush_hashes()
+        except:
+            pass  # Ignore errors during cleanup
 
 
 def _get_hash(dict_to_hash: dict) -> str:
