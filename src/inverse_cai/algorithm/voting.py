@@ -141,8 +141,8 @@ async def run_pass_to_get_votes_for_principles(
     feedback_df = feedback_df.copy()
     feedback_df["votes"] = None
 
-    initial_cache = VoteCache(cache_path)
-    initial_cached_votes = initial_cache.get_cached_votes()
+    vote_cache = VoteCache(cache_path)
+    initial_cached_votes = vote_cache.get_cached_votes()
 
     # Create semaphore for controlling concurrency
     semaphore = asyncio.Semaphore(max_concurrent_tasks)
@@ -183,10 +183,6 @@ async def run_pass_to_get_votes_for_principles(
                 preferred = get_preferred_text(row)
                 rejected = get_rejected_text(row)
 
-                # Check cache first
-                # Initialize cache
-                vote_cache = VoteCache(cache_path)
-
                 principles = list(summaries.values())
                 hashes = {
                     principle: get_vote_hash(
@@ -218,7 +214,8 @@ async def run_pass_to_get_votes_for_principles(
 
                 # Update cache
                 hashed_vote = {
-                    hash_str: vote[principle] for principle, hash_str in hashes.items()
+                    hash_str: vote.get(principle, "invalid")
+                    for principle, hash_str in hashes.items()
                 }
                 for hash_str, vote_value in hashed_vote.items():
                     vote_cache.update_cache(hash_str, vote_value)
