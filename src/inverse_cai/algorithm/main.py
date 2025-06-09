@@ -171,7 +171,7 @@ def run(
 
     if not skip_voting:
 
-        new_vote_cache_path = save_path / "046_votes_cache.jsonl"
+        new_vote_cache_path = save_path / "cache" / "step_3_votes_cache"
         if config.prior_cache_path is not None:
             # copy over prior cache file
             shutil.copy(
