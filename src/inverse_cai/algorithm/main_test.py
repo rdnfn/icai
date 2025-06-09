@@ -263,7 +263,7 @@ def test_run_integration(
     mock_get_model.return_value = mock_model
 
     # Disable parallel processing for the test
-    mock_config.parallel_workers = 1  # Force sequential processing
+    mock_config.async_task_num = 1  # Force sequential processing
 
     # Run the function with minimal mocking
     result = run(
