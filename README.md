@@ -1,4 +1,3 @@
-
 <p align="center">
 <img src="./docs/img/00_logo_v0.png" width="110px" align="center">
 </p>
@@ -6,6 +5,9 @@
 # Inverse Constitutional AI
 
 This repository contains the official implementation of the *Inverse Constitutional AI* (ICAI) algorithm [[paper]](https://arxiv.org/abs/2406.06560). ICAI compresses pairwise preference datasets into a readable list of principles (constitution) that the annotations appear to follow (e.g. "select the friendlier response"). ICAI principles provide an interpretable overview of a feedback dataset, enabling users to discover *problematic annotation biases*  or *better understand differences between datasets, user groups or models*.
+
+> [!WARNING]
+> Recent improvements to the quality of principle annotations in [v0.4.2](https://github.com/rdnfn/icai/releases/tag/v0.4.2) (and higher) require more API calls. This change **increases the default number of API calls by ~3x** over previous package versions for most experiments. Set `s3_num_seeds_to_reannotate_with=1` to retain the old behaviour and cost. Note that the new higher-quality (but more expensive) annotations are recommended if possible.
 
 <p align="center">
 <img src="./docs/img/01_basic_overview_v2.png" width="750px" align="center">
