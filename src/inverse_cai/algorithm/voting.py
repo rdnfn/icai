@@ -102,29 +102,48 @@ def get_votes_for_principles(
             k: v for part in hashed_votes_per_seed[seed] for k, v in part.items()
         }
 
-    # get all vote hashes (even if failed on some seed)
-    all_vote_hashes = set()
-    for seed in hashed_votes_per_seed:
-        all_vote_hashes.update(hashed_votes_per_seed[seed].keys())
+    def _get_cross_seed_votes(hashed_votes_per_seed, voting_method_cross_seed):
+        """Combine votes per datapoint across seeds with voting method."""
 
-    hashed_votes = {}
-    for vote_hash in all_vote_hashes:
-        value_counts = {}
+        num_seeds = len(hashed_votes_per_seed)
+
+        # get all vote hashes (even if failed on some seed)
+        all_vote_hashes = set()
         for seed in hashed_votes_per_seed:
-            vote = hashed_votes_per_seed[seed][vote_hash]
-            value_counts[vote] = value_counts.get(vote, 0) + 1
+            all_vote_hashes.update(hashed_votes_per_seed[seed].keys())
 
-        for vote, count in value_counts.items():
-            if voting_method_cross_seed == "majority":
-                if count > 0.5 * num_seeds:
-                    hashed_votes[vote_hash] = vote
-                    break
-            elif voting_method_cross_seed == "unanimous":
-                if count == num_seeds:
-                    hashed_votes[vote_hash] = vote
-                    break
-        if vote_hash not in hashed_votes:
-            hashed_votes[vote_hash] = None
+        hashed_votes = {}
+        for vote_hash in all_vote_hashes:
+
+            # collect vote value counts
+            value_counts = {}
+            for seed in hashed_votes_per_seed:
+                vote = hashed_votes_per_seed[seed][vote_hash]
+                value_counts[vote] = value_counts.get(vote, 0) + 1
+
+            # find if any vote value succeeded according to voting method
+            for vote, count in value_counts.items():
+                if voting_method_cross_seed == "majority":
+                    if count > 0.5 * num_seeds:
+                        hashed_votes[vote_hash] = vote
+                        break
+                elif voting_method_cross_seed == "unanimous":
+                    if count == num_seeds:  # all votes agree
+                        hashed_votes[vote_hash] = vote
+                        break
+
+            # if no vote succeeded according to voting method,
+            # set to None (principle not applicable)
+            if vote_hash not in hashed_votes:
+                hashed_votes[vote_hash] = None
+
+        return hashed_votes
+
+    hashed_votes = _get_cross_seed_votes(
+        hashed_votes_per_seed, voting_method_cross_seed
+    )
+
+    # Transform to standard vote representation used throughout ICAI codebase
 
     def _get_per_comparison_votes(row):
         """Returns a per-comparison vote containing all votes for all principles."""
