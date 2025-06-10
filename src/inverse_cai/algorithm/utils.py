@@ -1,3 +1,5 @@
+import shutil
+from pathlib import Path
 from loguru import logger
 import alpaca_eval.utils
 
@@ -47,3 +49,17 @@ def get_prompt_from_two_samples(sample_a: str, sample_b: str) -> str:
     )
     assert prompt_a == prompt_b
     return prompt_a.strip()
+
+
+def copy_cache(source_results_path: Path, target_results_path: Path):
+    """Copy over cache from source results dir to target results dir.
+
+    Args:
+        source_results_path: Path to source results directory (e.g YYYY_MM_DD_HH_MM_SS/results/)
+        target_results_path: Path to target results directory (similar as above)
+    """
+    # copy over prior cache file/directory
+    shutil.copytree(
+        source_results_path / "cache", target_results_path / "cache", dirs_exist_ok=True
+    )
+    logger.info(f"Copied over prior cache from '{source_results_path}'")

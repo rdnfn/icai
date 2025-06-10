@@ -12,6 +12,7 @@ from inverse_cai.algorithm.clustering import (
 from inverse_cai.algorithm.proposal import generate_principles_from_feedback
 from inverse_cai.algorithm.voting import get_votes_for_principles
 from inverse_cai.algorithm.filter import filter_according_to_votes
+from inverse_cai.algorithm.utils import copy_cache
 from inverse_cai.utils import save_to_json
 from inverse_cai.experiment.config import ExpConfig
 from inverse_cai.experiment.config.default_principles import DEFAULT_PRINCIPLES
@@ -63,6 +64,14 @@ def run(
     if contains_ties:
         logger.warning(
             "Preferred text column contains ties, this may cause issues for some functionalities."
+        )
+
+    if config.prior_cache_path is not None:
+        # note that the prior cache path is not directly the results path,
+        # (thus adding /results)
+        copy_cache(
+            source_results_path=Path(config.prior_cache_path) / "results",
+            target_results_path=save_path,
         )
 
     if not config.s0_skip_principle_generation:
@@ -170,23 +179,7 @@ def run(
     logger.info("Stage 3: Get votes for principles")
 
     if not skip_voting:
-
-        new_vote_cache_path = save_path / "cache" / "step_3_votes_cache"
-        if config.prior_cache_path is not None:
-            # copy over prior cache file
-            shutil.copy(
-                Path(config.prior_cache_path)
-                / "results"
-                / "040_votes_per_comparison.csv",
-                new_vote_cache_path,
-            )
-            shutil.copy(
-                Path(config.prior_cache_path)
-                / "results"
-                / "040_votes_per_comparison.index.json",
-                new_vote_cache_path.with_suffix(".index.json"),
-            )
-            logger.info(f"Copied over prior cache from '{config.prior_cache_path}'")
+        new_vote_cache_path = save_path / "cache" / "01_principle_votes_step3"
 
         raw_votes, combined_votes = get_votes_for_principles(
             feedback_df=feedback,

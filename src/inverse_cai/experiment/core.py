@@ -319,7 +319,7 @@ def run(cfg: DictConfig):
     if cfg.test_data_annotate_with_principles:
         for i, test_df in enumerate(test_data):
             test_annotation_cache_path = (
-                results_path / "043_votes_per_comparison_testset.csv"
+                results_path / "cache" / "02_principle_votes_testset"
             )
 
             logger.info("Annotating test data by principle-following annotators")
