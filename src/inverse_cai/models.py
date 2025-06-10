@@ -3,13 +3,24 @@ import json
 import numpy as np
 import os
 
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_anthropic import ChatAnthropic
 from langchain_community.callbacks import get_openai_callback
 import inverse_cai.local_secrets  # required to load env vars
 from loguru import logger
 
 NULL_LOGPROB_VALUE = -1000000
+
+
+# Custom OpenRouter headers
+# https://openrouter.ai/docs/api-reference/overview#headers
+OPENROUTER_HEADERS = {
+    "X-Title": "ICAI",
+    # We need to set HTTP-Referer in addition to X-Title since otherwise openrouter does
+    # not show an App name in the activity overview. If we set both, it shows the X-Title
+    # and links to HTTP-Referer.
+    "HTTP-Referer": "https://github.com/rdnfn/icai",
+}
 
 
 def get_model(
@@ -51,15 +62,6 @@ def get_model(
         )
 
     if name.startswith("openrouter"):
-        # Custom OpenRouter headers
-        # https://openrouter.ai/docs/api-reference/overview#headers
-        custom_headers = {
-            "X-Title": "ICAI",
-            # We need to set HTTP-Referer in addition to X-Title since otherwise openrouter does
-            # not show an App name in the activity overview. If we set both, it shows the X-Title
-            # and links to HTTP-Referer.
-            "HTTP-Referer": "https://github.com/rdnfn/icai",
-        }
 
         # Extract the actual model from openrouter/provider/model format
         parts = name.split("/", 2)
@@ -84,9 +86,23 @@ def get_model(
             temperature=temp,
             openai_api_key=openrouter_api_key,  # Use the OpenRouter API key
             openai_api_base="https://openrouter.ai/api/v1",
-            default_headers=custom_headers,
+            default_headers=OPENROUTER_HEADERS,
             model_kwargs=model_kwargs,
         )
+
+
+def get_embeddings_model(name):
+    # TODO: support other embeddings?
+
+    openrouter = name.startswith("openrouter")
+    openai_api_key = os.environ.get("OPENAI_API_KEY")
+
+    if openrouter and not openai_api_key:
+        raise ValueError(
+            "OpenRouter doesn't support embedding models, OPENAI_API_KEY still required"
+        )
+
+    return OpenAIEmbeddings()
 
 
 def get_token_probs(tokens: list[str], model: str, messages: list) -> dict[float]:
