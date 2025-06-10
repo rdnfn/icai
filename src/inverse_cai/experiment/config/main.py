@@ -195,6 +195,10 @@ class ExpConfig:
     # Stage 3: principle approximate voting
     s3_skip_voting_entirely: bool = False
     s3_filter_max_votes_in_single_prompt: int = 40
+    s3_num_seeds_to_reannotate_with: int = (
+        3  # how often to re-annotate the same data to combine into final vote
+    )
+    s3_voting_method_cross_seed: str = "unanimous"  # one of "majority", "unanimous"
     s3_filter_majority_true: bool = True
     s3_filter_majority_relevant: bool = False
     s3_filter_majority_valid: bool = True
