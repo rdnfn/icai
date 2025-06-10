@@ -133,6 +133,7 @@ def votes_to_annotations(
 def add_annotators(
     output: Dict,
     principles: Mapping[int, str] | None = None,
+    principle_type: str = "principle",
     additional_columns: List[str] = None,
 ) -> None:
     """Add all annotators to the output structure.
@@ -165,7 +166,7 @@ def add_annotators(
         annotator_id = hash_string(principle)
         output["annotators"][annotator_id] = {
             "description": principle,
-            "type": "principle",
+            "type": principle_type,
         }
 
     # Create column annotators if additional columns are specified
@@ -277,12 +278,14 @@ def create_annotated_pairs(
     add_annotators(
         output,
         principles,
+        "preference_principle",
         all_additional_columns,
     )
 
     add_annotators(
         output,
         non_preference_principles,
+        "non_preference_principle",
         all_additional_columns,
     )
 

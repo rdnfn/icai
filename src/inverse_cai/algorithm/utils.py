@@ -9,13 +9,16 @@ import logging
 import re
 
 
-def parse_prompt(prompt_str: str, prompt_kwargs) -> list[dict]:
+def parse_prompt(prompt_str: str, prompt_kwargs, prompt_optional_kwargs) -> list[dict]:
     """Parse prompt str to list of messages."""
 
     # check kwargs in prompt_str and log warnings for unused keys
     for key in prompt_kwargs:
         if f"{{{key}}}" not in prompt_str:
             logger.error(f"Key '{key}' not found in prompt_str. Check your prompts.")
+
+    # It's ok if optional kwargs aren't present in the prompt
+    prompt_kwargs |= prompt_optional_kwargs
 
     messages = alpaca_eval.utils.prompt_to_chatml(prompt_str)
 
@@ -33,26 +36,41 @@ def parse_prompt(prompt_str: str, prompt_kwargs) -> list[dict]:
 
     return messages
 
+prompt_warned = False
 
-def get_prompt_from_two_samples(sample_a: str, sample_b: str) -> str:
+def get_prompt_from_row(row) -> str:
     """
-    Get the prompt from two samples.
+    Get the prompt of a row
 
     In some datasets, the prompt is not available in the data but rather
     included in the text_a and text_b columns. This function attempts to
     extract the prompt from the two samples.
     """
+    if "prompt" in row:
+        return row["prompt"]
+
     prompt_a = (
-        sample_a.split("Instruction:\n")[-1]
+        row["text_a"].split("Instruction:\n")[-1]
         .split("Response:\n")[0]
         .split("Assistant:\n")[0]
     )
     prompt_b = (
-        sample_b.split("Instruction:\n")[-1]
+        row["text_b"].split("Instruction:\n")[-1]
         .split("Response:\n")[0]
         .split("Assistant:\n")[0]
     )
-    assert prompt_a == prompt_b
+    if prompt_a != prompt_b:
+        global prompt_warned
+        if not prompt_warned:
+            # TODO: there's probably a neater way to do this
+            logger.warning(
+                "ICAI doesn't know how to get prompts from this data: "
+                "there is no \"prompt\" column and it couldn't be figured "
+                "out from text_a and text_b"
+            )
+            prompt_warned = True
+        return ""
+
     return prompt_a.strip()
 
 

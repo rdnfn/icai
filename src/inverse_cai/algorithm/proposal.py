@@ -84,6 +84,7 @@ def generate_principles_from_feedback(
                 async with semaphore:
                     principles, prompt_principles = (
                         await generate_principles_from_single_ranking(
+                            prompt=inverse_cai.algorithm.utils.get_prompt_from_row(row),
                             preferred_text=get_preferred_text(row),
                             rejected_text=get_rejected_text(row),
                             num_principles=num_principles_per_sampling_step,
@@ -137,6 +138,7 @@ def generate_principles_from_feedback(
 
 
 async def generate_principles_from_single_ranking(
+    prompt: str,
     preferred_text: str,
     rejected_text: str,
     num_principles,
@@ -160,68 +162,55 @@ async def generate_principles_from_single_ranking(
 
     # get the model
     model = inverse_cai.models.get_model(model_name)
-    principles: list = []
-    prompt_principles: list = []
+    principless: list = []
 
-    for prompt in config.alg_prompts.generator_prompts:
-        messages = inverse_cai.algorithm.utils.parse_prompt(
-            prompt_str=prompt,
-            prompt_kwargs=dict(
-                preferred_sample=preferred_text,
-                rejected_sample=rejected_text,
-                num_principles=num_principles,
-            ),
-        )
+    for generator, kwargs, optional_kwargs in [ (
+        config.alg_prompts.generator_prompts,
+        dict(
+            preferred_sample=preferred_text,
+            rejected_sample=rejected_text,
+            num_principles=num_principles,
+        ),
+        dict()
+    ), (
+        config.alg_prompts.prompt_generator_prompts,
+        dict(
+            prompt=prompt,
+            num_principles=num_principles,
+        ),
+        dict(
+            preferred_sample=preferred_text,
+            rejected_sample=rejected_text,
+        ),
+    )]:
+        principles = []
+        for prompt in generator:
+            messages = inverse_cai.algorithm.utils.parse_prompt(
+                prompt_str=prompt,
+                prompt_kwargs=kwargs,
+                prompt_optional_kwargs=optional_kwargs,
+            )
 
-        # generate principles
-        principle_output = (await inverse_cai.algorithm.utils.run_with_http_retries(model.ainvoke, messages)).content
+            # generate principles
+            principle_output = (await inverse_cai.algorithm.utils.run_with_http_retries(model.ainvoke, messages)).content
 
-        # parse the principles
-        try:
-            principle_output = clean_principle_str(principle_output)
-            parsed_output = ast.literal_eval(principle_output)["principles"]
-            principles += parsed_output
-            if len(parsed_output) < num_principles:
-                logger.warning(
-                    f"Generated fewer ({len(parsed_output)}) principles "
-                    f"than expected ({num_principles})"
-                )
-        except Exception as e:
-            logger.error(f"Failed to parse principles: {principle_output}")
-            logger.error(e)
+            # parse the principles
+            try:
+                principle_output = clean_principle_str(principle_output)
+                parsed_output = ast.literal_eval(principle_output)
+                principles.extend(parsed_output.get("features") or parsed_output["principles"])
+                if len(principles) != num_principles:
+                    logger.warning(
+                        f"Generated a different number ({len(parsed_output)}) "
+                        f"of principles than expected ({num_principles})"
+                    )
+            except Exception as e:
+                logger.error(f"Failed to parse principles: {principle_output}")
+                logger.error(e)
 
-    for prompt in config.alg_prompts.prompt_generator_prompts:
-        messages = inverse_cai.algorithm.utils.parse_prompt(
-            prompt_str=prompt,
-            prompt_kwargs=dict(
-                preferred_sample=preferred_text,
-                rejected_sample=rejected_text,
-                prompt=inverse_cai.algorithm.utils.get_prompt_from_two_samples(
-                    sample_a=preferred_text,
-                    sample_b=rejected_text,
-                ),
-                num_principles=num_principles,
-            ),
-        )
+        principless.append(principles)
 
-        # generate principles
-        principle_output = (await inverse_cai.algorithm.utils.run_with_http_retries(model.ainvoke, messages)).content
-
-        # parse the principles
-        try:
-            principle_output = clean_principle_str(principle_output)
-            parsed_output = ast.literal_eval(principle_output)["features"]
-            prompt_principles += parsed_output
-            if len(parsed_output) < num_principles:
-                logger.warning(
-                    f"Generated fewer ({len(parsed_output)}) principles "
-                    f"than expected ({num_principles})"
-                )
-        except Exception as e:
-            logger.error(f"Failed to parse principles: {principle_output}")
-            logger.error(e)
-
-    return principles, prompt_principles
+    return tuple(principless)
 
 
 def clean_principle_str(principle_str: str) -> str:
