@@ -20,6 +20,13 @@ def parse_prompt(prompt_str: str, prompt_kwargs, prompt_optional_kwargs) -> list
     # It's ok if optional kwargs aren't present in the prompt
     prompt_kwargs |= prompt_optional_kwargs
 
+    # check prompt_str keys are in kwargs and log warnings for invalid keys
+    for m in re.finditer(r'{([^{} ]+)}', prompt_str):
+        key = m.group(1)
+        if key not in prompt_kwargs:
+            logger.error(f"Key '{key}' is not a valid key. Check your prompts.")
+            prompt_str = prompt_str.replace(f"{{{key}}}", "")
+
     messages = alpaca_eval.utils.prompt_to_chatml(prompt_str)
 
     # add values to individual messages AFTER prompt to chatml
