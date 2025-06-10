@@ -271,6 +271,21 @@ We introduce a first *Inverse Constitutional AI* (ICAI) algorithm that generates
 <img src="./docs/img/03_algorithm.png" width="800px" align="center">
 </p>
 
+# Citation
+
+If you find this work useful in your research, please consider citing our [ICLR 2025 paper](https://iclr.cc/virtual/2025/poster/30711) (also [available on arxiv](https://arxiv.org/abs/2406.06560)):
+```bib
+@inproceedings{findeis2025InverseConstitutionalAI,
+  title = {Inverse {{Constitutional AI}}: {{Compressing Preferences}} into {{Principles}}},
+  shorttitle = {Inverse {{Constitutional AI}}},
+  booktitle = {The {{Thirteenth International Conference}} on {{Learning Representations}}},
+  author = {Findeis, Arduin and Kaufmann, Timo and H{\"u}llermeier, Eyke and Albanie, Samuel and Mullins, Robert D.},
+  year = {2025},
+  url = {https://iclr.cc/virtual/2025/poster/30711},
+}
+
+```
+
 
 # License
 
