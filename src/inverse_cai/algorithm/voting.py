@@ -45,7 +45,7 @@ def get_votes_for_principles(
 
     logger.info("Getting votes for principles")
     if prompt_principles:
-        logger.info("Voting for prompt principles (rather than regular principles)")
+        logger.info("Voting for prompt principles")
     else:
         logger.info("Voting for regular principles")
 
@@ -327,23 +327,7 @@ async def get_prompt_principle_vote_for_single_text(
     )
 
     model = inverse_cai.models.get_model(model_name)
-
-    sleep_time = 1  # simple exponential backoff
-    while True:
-        try:
-            vote = (await model.ainvoke(messages)).content
-            break
-        except Exception as e:
-            if "Error code: 429" in str(e):
-                logger.warning(f"Ratelimit error invoking model: {e}")
-                logger.warning(f"Sleeping for {sleep_time}s and trying again...")
-                await asyncio.sleep(sleep_time)
-                sleep_time *= 2
-            else:
-                logger.error(f"Error invoking model: {e}")
-                logger.error(f"Parsed messages: {messages}")
-                raise e
-
+    vote = (await inverse_cai.algorithm.utils.run_with_http_retries(model.ainvoke, messages)).content
     vote = parse_individual_pref_vote(
         vote, num_principles=len(summaries), prompt_principles=True
     )
@@ -399,23 +383,7 @@ async def get_preference_vote_for_single_text(
     )
 
     model = inverse_cai.models.get_model(model_name)
-
-    sleep_time = 1  # simple exponential backoff
-    while True:
-        try:
-            vote = (await model.ainvoke(messages)).content
-            break
-        except Exception as e:
-            if "Error code: 429" in str(e):
-                logger.warning(f"Ratelimit error invoking model: {e}")
-                logger.warning(f"Sleeping for {sleep_time}s and trying again...")
-                await asyncio.sleep(sleep_time)
-                sleep_time *= 2
-            else:
-                logger.error(f"Error invoking model: {e}")
-                logger.error(f"Parsed messages: {messages}")
-                raise e
-
+    vote = (await inverse_cai.algorithm.utils.run_with_http_retries(model.ainvoke, messages)).content
     vote = parse_individual_pref_vote(vote, num_principles=len(principles))
 
     # change back to original keys

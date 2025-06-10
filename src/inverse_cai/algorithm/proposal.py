@@ -174,7 +174,7 @@ async def generate_principles_from_single_ranking(
         )
 
         # generate principles
-        principle_output = (await model.ainvoke(messages)).content
+        principle_output = (await inverse_cai.algorithm.utils.run_with_http_retries(model.ainvoke, messages)).content
 
         # parse the principles
         try:
@@ -205,7 +205,7 @@ async def generate_principles_from_single_ranking(
         )
 
         # generate principles
-        principle_output = (await model.ainvoke(messages)).content
+        principle_output = (await inverse_cai.algorithm.utils.run_with_http_retries(model.ainvoke, messages)).content
 
         # parse the principles
         try:
