@@ -419,7 +419,7 @@ async def get_preference_vote_for_single_text(
     vote = parse_individual_pref_vote(vote, num_principles=len(principles))
 
     # change back to original keys
-    vote = {numbered_principles[k]: v for k, v in vote.items()}
+    vote = {numbered_principles[k]: v for k, v in vote.items() if k in numbered_principles}
 
     if flipped:
         vote = {k: "A" if v == "B" else "B" if v == "A" else v for k, v in vote.items()}
