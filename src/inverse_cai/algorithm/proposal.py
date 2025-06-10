@@ -35,8 +35,10 @@ def generate_principles_from_feedback(
     Returns:
         A list of principles.
     """
+    num_samples = config.s1_num_samples_for_principle_generation or len(feedback)
+
     logger.info("Generating principles from feedback")
-    logger.info(f"Number of rankings: {len(feedback)}")
+    logger.info(f"Number of rankings: {num_samples}")
     logger.info(
         "Number of different prompt templates used for generation: "
         f"{len(config.alg_prompts.generator_prompts)}"
@@ -48,7 +50,7 @@ def generate_principles_from_feedback(
         f"Number of principles per sampling step per prompt: {num_principles_per_sampling_step}"
     )
     overall_num_principles = (
-        -(len(feedback) // -num_rankings_per_sampling_step)  # ceiling division
+        -(num_samples // -num_rankings_per_sampling_step)  # ceiling division
         * len(config.alg_prompts.generator_prompts)
         * num_principles_per_sampling_step
     )
@@ -96,7 +98,7 @@ def generate_principles_from_feedback(
                 process_row(
                     index, row, num_principles_per_sampling_step, model_name, config
                 )
-                for index, row in feedback.iterrows()
+                for index, row in feedback.sample(num_samples).iterrows()
             ]
 
             # execute all tasks concurrently
