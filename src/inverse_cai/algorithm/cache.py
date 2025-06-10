@@ -13,7 +13,7 @@ class VoteCache:
         cache_path: Path,
         lock_timeout: int = 10,
         verbose: bool = False,
-        max_entries_per_file: int = 5000,
+        max_entries_per_file: int = 10000,
     ):
         """Initialize vote cache with path to jsonl file.
 
