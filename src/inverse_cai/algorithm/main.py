@@ -108,6 +108,7 @@ def run(
         clusters = cluster_principles(
             principles,
             num_clusters=num_clusters,
+            model_name=model_name,
             random_clusters=random_clusters,
         )
         save_to_json(clusters, save_path / "020_principle_clusters.json")
@@ -123,6 +124,7 @@ def run(
         prompt_clusters = cluster_principles(
             prompt_principles,
             num_clusters=num_clusters,
+            model_name=model_name,
             random_clusters=random_clusters,
         )
         save_to_json(prompt_clusters, save_path / "025_prompt_principle_clusters.json")
@@ -263,6 +265,7 @@ def run(
             filtered_clusters = cluster_principles(
                 filtered_principles,
                 num_clusters=max_principles,
+                model_name=model_name,
                 random_clusters=False,
             )
 

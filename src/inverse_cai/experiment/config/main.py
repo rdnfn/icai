@@ -183,6 +183,7 @@ class ExpConfig:
     s0_skip_principle_generation: bool = False
 
     # Stage 1: principle generation
+    s1_num_samples_for_principle_generation: int | None = None
     s1_num_principles_per_sampling_step: int = 3
     s1_num_principles_per_instance: int | None = None
     s1_num_rankings_per_sampling_step: int = 1

@@ -3,7 +3,6 @@ import copy
 from sklearn.cluster import KMeans
 from loguru import logger
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import OpenAIEmbeddings
 
 import inverse_cai.models
 from inverse_cai.experiment.config import ExpConfig
@@ -13,6 +12,7 @@ import inverse_cai.algorithm.utils
 def cluster_principles(
     principles: list,
     num_clusters: int,
+    model_name: str,
     random_clusters: bool,
 ):
     """
@@ -29,7 +29,7 @@ def cluster_principles(
         )
         return {i: [principle] for i, principle in enumerate(set(principles))}
     else:
-        return cluster_principles_with_embedding(principles, num_clusters)
+        return cluster_principles_with_embedding(principles, num_clusters, model_name)
 
 
 def cluster_principles_random(
@@ -56,6 +56,7 @@ def cluster_principles_random(
 def cluster_principles_with_embedding(
     principles: list,
     num_clusters: int,
+    model_name: str,
 ):
     """
     Cluster principles.
@@ -63,7 +64,7 @@ def cluster_principles_with_embedding(
 
     # generating embedding for each principle
     logger.info("Generating embeddings for principles")
-    embeddings_model = OpenAIEmbeddings()
+    embeddings_model = inverse_cai.models.get_embeddings_model(model_name)
     embeddings = embeddings_model.embed_documents(principles)
     logger.info("Embeddings generated")
 

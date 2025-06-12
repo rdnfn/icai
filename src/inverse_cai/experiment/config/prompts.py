@@ -154,7 +154,7 @@ class PromptConfig:
     prompt_generator_prompts: list[str] = field(
         default_factory=lambda: [
             # DEFAULT_PROMPT_GENERATOR_PROMPT_V1,
-            # DEFAULT_PROMPT_GENERATOR_PROMPT_V2,
+            DEFAULT_PROMPT_GENERATOR_PROMPT_V2,
         ]
     )
     voting_prompt: str = DEFAULT_VOTING_PROMPT
