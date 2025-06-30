@@ -269,8 +269,6 @@ We introduce a first *Inverse Constitutional AI* (ICAI) algorithm that generates
 <img src="./docs/img/03_algorithm.png" width="800px" align="center">
 </p>
 
-Test
-
 # License
 
 All code in this repo is licensed under [Apache-2.0](./LICENSE).
