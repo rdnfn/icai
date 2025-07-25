@@ -132,7 +132,7 @@ class ExpConfig:
 
     # General config
     secrets_path: str = "./secrets.toml"  # Path to the secrets file
-    async_task_num: int = 30  # Number of tasks to run asynchronously
+    async_task_num: int = 100  # Number of tasks to run asynchronously
     # Relevant for steps calling API models (principle proposal and voting)
 
     # logging config via wandb (DEPRECATED, only here for compatibility)
