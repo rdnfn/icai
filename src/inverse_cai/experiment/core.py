@@ -11,8 +11,6 @@ from loguru import logger
 import dotenv
 import pathlib
 import numpy as np
-import langchain.cache
-import langchain.globals
 
 import inverse_cai
 from inverse_cai.experiment.config.main import ExpConfig
