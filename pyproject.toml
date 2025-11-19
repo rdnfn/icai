@@ -7,7 +7,7 @@ authors = [
 ]
 description = "Inverse Constitutional AI (ICAI) pipeline for interpreting pairwise preferences"
 readme = "docs/pypi_readme.md"
-requires-python = ">=3.10, !3.14.0"
+requires-python = ">=3.10, !=3.14.0"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
