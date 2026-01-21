@@ -2,6 +2,7 @@ from loguru import logger
 import pandas as pd
 import random
 import shutil
+import numpy as np
 from pathlib import Path
 
 from inverse_cai.algorithm.clustering import (
@@ -309,7 +310,9 @@ def run(
 
         # randomly sample from all principles instead of voting
         available_principles = list(summaries.values())
-        final_principles = random.choices(available_principles, k=max_principles)
+
+        # random seed has already been set
+        final_principles = np.random.choice(available_principles, size=max_principles)
 
     # Generate constitution text from principles
     constitution = "\n".join(

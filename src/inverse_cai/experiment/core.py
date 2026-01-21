@@ -210,7 +210,6 @@ def run(cfg: DictConfig):
         langchain.globals.set_llm_cache(
             langchain.cache.SQLiteCache(database_path=".langchain.db")
         )
-        np.random.seed(123)
 
     # Handle OpenRouter flag
     if cfg.alg_use_openrouter:
@@ -230,6 +229,9 @@ def run(cfg: DictConfig):
             "but also `generate_constitution` is set to True. "
             "Please only set one of them."
         )
+
+    # set random seed
+    np.random.seed(cfg.random_seed)
 
     # load secrets
     dotenv.load_dotenv(cfg.secrets_path, verbose=True)

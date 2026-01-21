@@ -149,6 +149,8 @@ class ExpConfig:
         True  # Whether to merge the prompts and texts, if available
     )
 
+    random_seed: int = 0
+
     # Test data config
     test_data_path: Any = None
     test_data_len: Any = None

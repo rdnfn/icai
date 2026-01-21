@@ -1,6 +1,7 @@
 import ast
 import asyncio
 import pandas as pd
+import traceback
 from tqdm.asyncio import tqdm
 from loguru import logger
 
@@ -160,8 +161,11 @@ async def generate_principles_from_single_ranking(
     """
     assert num_principles > 0, "Number of principles must be greater than 0"
 
+    # NOTE: this function can't contain randomness because it might be run
+    # out of order. If it does need to, a seed must be carefully passed in.
+
     # get the model
-    model = inverse_cai.models.get_model(model_name)
+    model = inverse_cai.models.get_model(model_name, cache_seed=config.random_seed)
     principless: list = []
 
     # Allows disabling prompt principle generation entirely
@@ -202,6 +206,7 @@ async def generate_principles_from_single_ranking(
 
             # generate principles
             try:
+                # TODO: HTTP failures are now cached. There needs to be a way to invalidate the cache!
                 principle_output = (
                     await inverse_cai.algorithm.utils.run_with_http_retries(
                         model.ainvoke, messages
@@ -210,6 +215,8 @@ async def generate_principles_from_single_ranking(
             except Exception as e:
                 logger.error(f"Failed to generate principles")
                 logger.error(e)
+                logger.error(traceback.format_exc())
+                continue
 
             # parse the principles
             try:
@@ -226,6 +233,8 @@ async def generate_principles_from_single_ranking(
             except Exception as e:
                 logger.error(f"Failed to parse principles: {principle_output}")
                 logger.error(e)
+                logger.error(traceback.format_exc())
+                continue
 
         principless.append(principles)
 

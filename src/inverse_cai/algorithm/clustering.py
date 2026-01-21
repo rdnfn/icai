@@ -1,5 +1,6 @@
 import random
 import copy
+import numpy as np
 from sklearn.cluster import KMeans
 from loguru import logger
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -42,8 +43,9 @@ def cluster_principles_random(
     logger.info(f"Clustering principles randomly into {num_clusters} clusters")
     principles = copy.deepcopy(principles)
     principles_by_cluster = {}
-    # shuffle the principles
-    random.shuffle(principles)
+
+    # random seed has already been set
+    np.random.shuffle(principles)
     for i, principle in enumerate(principles):
         cluster = i % num_clusters
         if cluster not in principles_by_cluster:
@@ -116,7 +118,7 @@ def get_cluster_summaries(
         if len(principles) == 1:
             summaries[i] = principles[0]
         elif sample_instead_of_rewrite:
-            summaries[i] = random.choice(principles)
+            summaries[i] = np.random.choice(principles)
         else:
             summaries[i] = summarize_cluster(
                 principles,
@@ -148,7 +150,7 @@ def summarize_cluster(
         ),
     )
 
-    model = inverse_cai.models.get_model(model_name)
+    model = inverse_cai.models.get_model(model_name, cache_seed=config.random_seed)
 
     summary = model.invoke(messages).content
     return summary

@@ -1,11 +1,9 @@
 import shutil
 from pathlib import Path
 from loguru import logger
-from typing import Awaitable
 import openai
 import alpaca_eval.utils
 import backoff
-import logging
 import re
 
 

@@ -1,8 +1,17 @@
-from typing import Any
+from typing import Any, Sequence, Mapping, Union
+from functools import partial
 import json
-import numpy as np
-import os
+from filelock import FileLock
 
+import asyncio
+import langchain_core.messages.base
+import numpy as np
+import pickle
+import os
+import os.path
+import hashlib
+
+from functools import lru_cache
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_anthropic import ChatAnthropic
 from langchain_community.callbacks import get_openai_callback
@@ -23,11 +32,119 @@ OPENROUTER_HEADERS = {
 }
 
 
+def serializable(obj):
+    if isinstance(obj, Union[str, int, float, bool, type(None)]):
+        return obj
+    elif isinstance(obj, Sequence):
+        return tuple(serializable(x) for x in obj)
+    elif isinstance(obj, Mapping):
+        return {k: serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, langchain_core.messages.base.BaseMessage):
+        return serializable(langchain_core.messages.base.message_to_dict(obj))
+    else:
+        logger.warning(
+            f"{obj} ({type(obj).__name__}) is not serializable, converting to string for cache key"
+        )
+        return str(obj)
+
+
+def hash_obj(obj):
+    m = hashlib.sha256()
+    m.update(json.dumps(serializable(obj)).encode())
+    return m.hexdigest()
+
+
+def partial_hash(obj):
+    """
+    This function is for humans, to make it easier to inspect the differences
+    between objects
+    """
+    if isinstance(obj, str):
+        if len(obj) < 20:
+            return obj
+        else:
+            return f"hash:{hash_obj(obj)[:8]}"
+    elif isinstance(obj, Sequence):
+        return tuple(partial_hash(x) for x in obj)
+    elif isinstance(obj, Mapping):
+        return {k: partial_hash(v) for k, v in obj.items()}
+    else:
+        return f"hash:{hash_obj(obj)[:8]}"
+
+
+class CachedObject:
+    def __init__(self, obj, cache_dir, cached_funcs, seed=0):
+        self.obj = obj
+        self.cache_dir = cache_dir
+        self.cached_funcs = cached_funcs
+        self.seed = seed
+
+    @property
+    def cache_seed_path(self):
+        return f"{self.cache_dir}/{self.seed}"
+
+    def cache_key_path(self, key):
+        return f"{self.cache_seed_path}/{key}.pkl"
+
+    @lru_cache(maxsize=128)
+    def get_from_cache(self, key):
+        if os.path.isfile(self.cache_key_path(key)):
+            with open(self.cache_key_path(key), "rb") as cache_file:
+                return pickle.load(cache_file)
+
+        return None
+
+    def save_to_cache(self, key, value):
+        try:
+            with open(self.cache_key_path(key), "wb") as cache_file:
+                pickle.dump(value, cache_file)
+        except FileNotFoundError:
+            # using try-except means os.makedirs will only be run once at most
+            os.makedirs(self.cache_seed_path, exist_ok=True)
+            return self.save_to_cache(key, value)
+
+    @staticmethod
+    async def _arun(coroutine):
+        await coroutine
+        return coroutine
+
+    async def async_cache_run(self, func: str, *args, **kwargs):
+        h = hash_obj((func, args, kwargs))
+        result = self.get_from_cache(h)
+
+        if result is None:
+            logger.debug(f"cache {self.seed} miss ({h[:8]})")
+            result = getattr(self.obj, func)(*args, **kwargs)
+
+            if asyncio.iscoroutine(result):
+                result = await result
+
+            self.save_to_cache(h, result)
+        else:
+            logger.debug(f"cache {self.seed} hit ({h[:8]})")
+
+        return result
+
+    def cache_run(self, *args, **kwargs):
+        return asyncio.run(self.async_cache_run(*args, **kwargs))
+
+    def __getattr__(self, attr):
+        if attr in self.cached_funcs:
+            if asyncio.iscoroutinefunction(getattr(self.obj, attr)):
+                return partial(self.async_cache_run, attr)
+            else:
+                return partial(self.cache_run, attr)
+        else:
+            return self.obj.__getattr__(attr)
+
+
 def get_model(
     name: str,
     temp: float = 0.0,
     enable_logprobs: bool = False,
     max_tokens: int = 1000,
+    cache: bool = True,
+    cache_seed: int = 0,
 ) -> Any:
     """Get a language model instance.
 
@@ -36,9 +153,10 @@ def get_model(
         temp: Temperature for generation (default: 0.0)
         enable_logprobs: Whether to enable logprobs for token probabilities (default: False)
         max_tokens: Maximum tokens to generate (default: 1000)
+        cache: enable model cache
 
     Returns:
-        LogWrapper-wrapped language model instance
+        (possibly CachedObject-wrapped) LogWrapper-wrapped language model instance
     """
     if enable_logprobs:
         model_kwargs = {"logprobs": True, "top_logprobs": 10}
@@ -46,23 +164,22 @@ def get_model(
         model_kwargs = {}
 
     if name.startswith("openai"):
-        return ChatOpenAI(
+        model = ChatOpenAI(
             model=name.split("/")[1],
             max_tokens=max_tokens,
             temperature=temp,
             model_kwargs=model_kwargs,
         )
 
-    if name.startswith("anthropic"):
-        return ChatAnthropic(
+    elif name.startswith("anthropic"):
+        model = ChatAnthropic(
             model=name.split("/")[1],
             max_tokens=max_tokens,
             temperature=temp,
             model_kwargs=model_kwargs,
         )
 
-    if name.startswith("openrouter"):
-
+    elif name.startswith("openrouter"):
         # Extract the actual model from openrouter/provider/model format
         parts = name.split("/", 2)
         if len(parts) < 3:
@@ -80,7 +197,7 @@ def get_model(
                 "OPENROUTER_API_KEY environment variable must be set for OpenRouter models"
             )
 
-        return ChatOpenAI(
+        model = ChatOpenAI(
             model=model_id,
             max_tokens=max_tokens,
             temperature=temp,
@@ -89,11 +206,26 @@ def get_model(
             default_headers=OPENROUTER_HEADERS,
             model_kwargs=model_kwargs,
         )
+    else:
+        raise ValueError(f"{name} is not a recognised model name")
+
+    if cache:
+        model = CachedObject(
+            model,
+            cache_dir=f"exp/cache/models/{name}_{temp}_{enable_logprobs}_{max_tokens}",
+            cached_funcs=("invoke", "ainvoke"),
+            seed=cache_seed,
+        )
+
+    return model
 
 
-def get_embeddings_model(name):
-    # TODO: support other embeddings?
-
+def get_embeddings_model(
+    self,
+    name: str,
+    cache: bool = True,
+    cache_seed: int = 0,
+):
     openrouter = name.startswith("openrouter")
     openai_api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -102,7 +234,17 @@ def get_embeddings_model(name):
             "OpenRouter doesn't support embedding models, OPENAI_API_KEY still required"
         )
 
-    return OpenAIEmbeddings()
+    model = OpenAIEmbeddings()
+
+    if cache:
+        model = CachedObject(
+            model,
+            cache_dir=f"exp/cache/models/{name}",
+            cached_funcs=("embed_documents",),
+            seed=cache_seed,
+        )
+
+    return model
 
 
 def get_token_probs(tokens: list[str], model: str, messages: list) -> dict[float]:
