@@ -8,7 +8,7 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
 		// Install cuda
-		"ghcr.io/devcontainers/features/nvidia-cuda:1": {
+		"ghcr.io/devcontainers/features/nvidia-cuda:3": {
 			"installToolkit": true
 		}
 	},
