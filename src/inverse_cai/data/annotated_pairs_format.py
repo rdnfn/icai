@@ -269,7 +269,7 @@ def create_annotated_pairs(
     }
 
     df = df.copy()
-    df = df.applymap(str)  # ensure all columns are hashable
+    df = df.astype(str)  # ensure all columns are hashable
 
     # Detect annotator columns if enabled
     detected_columns = []
