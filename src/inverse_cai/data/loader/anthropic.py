@@ -93,7 +93,7 @@ def limit_text_length(df: pd.DataFrame, max_text_length: int) -> pd.DataFrame:
     """
     Limits the text length in the data frame to the given maximum text length.
     """
-    return df[df.applymap(str).applymap(len).lt(max_text_length).all(axis=1)]
+    return df[df.map(str).map(len).lt(max_text_length).all(axis=1)]
 
 
 def switch_labels_in_df(df: pd.DataFrame) -> pd.DataFrame:
