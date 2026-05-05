@@ -27,7 +27,7 @@ dependencies = [
   "loguru",
   "hydra-core",
   "matplotlib",
-  "setuptools<81", # for alpaca-eval
+  "setuptools<81", # for alpaca-eval, which requires pkg_resources, which in turn has been removed from setuptool >=81
   "backoff",
 ]
 
