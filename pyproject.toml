@@ -27,7 +27,7 @@ dependencies = [
   "loguru",
   "hydra-core",
   "matplotlib",
-  "setuptools", # for alpaca-eval
+  "setuptools<81", # for alpaca-eval
   "backoff",
 ]
 
