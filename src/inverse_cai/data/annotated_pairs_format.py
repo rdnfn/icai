@@ -8,6 +8,7 @@ comparisons with annotations from both human evaluators and principles.
 import datetime
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Union, Any
 
@@ -479,6 +480,16 @@ def results_to_annotated_pairs(
     return result
 
 
+def _sanitize(obj):
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize(v) for v in obj]
+    return obj
+
+
 def save_annotated_pairs_to_file(
     annotated_pairs: Dict, output_file: str | Path
 ) -> None:
@@ -490,7 +501,9 @@ def save_annotated_pairs_to_file(
     """
     output_file = Path(output_file)
     with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(annotated_pairs, f, ensure_ascii=False, indent=2)
+        json.dump(
+            _sanitize(annotated_pairs), f, ensure_ascii=False, indent=2, allow_nan=False
+        )
     logger.info(f"Created annotated pairs format dataset: {output_file}")
     logger.info(f"- Dataset contains {len(annotated_pairs['comparisons'])} comparisons")
     logger.info(f"- Dataset contains {len(annotated_pairs['annotators'])} annotators")
