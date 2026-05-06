@@ -35,7 +35,7 @@ dependencies = [
 dev = [
     "pytest >=6.0",
     "pytest-asyncio",
-    "black ==24.10.0",
+    "black ==26.3.1",
     "bump-my-version",
 ]
 app = [
